@@ -188,13 +188,39 @@ Run local LLM tests:
 cargo test --features local-llm-tests -- --ignored
 ```
 
+### What to Assert
+
+Local LLM tests should verify **doneness, not correctness**. The model completed the task
+and returned something — not that it returned a specific string.
+
+```rust
+// WRONG — brittle, model-dependent phrasing
+assert_eq!(result, "The capital of France is Paris.");
+assert!(result.contains("Paris"));
+
+// CORRECT — verify task completion
+assert!(!result.is_empty(), "model returned no output");
+assert!(result.len() > 10, "response too short to be a real answer");
+
+// CORRECT — verify structural properties, not content
+assert!(result.trim().ends_with('.') || result.trim().ends_with('?') || result.trim().ends_with('!'),
+    "response should be a complete sentence");
+
+// CORRECT — for agent/tool tests, verify the tool was called
+assert!(executor_called_tool, "agent should have invoked the tool");
+assert!(!result.is_empty(), "agent should have produced a final answer");
+```
+
+Test failure means the chain/agent **broke** (panicked, returned error, returned empty),
+not that the model gave a different phrasing than expected.
+
 ### Model Selection Guide
 
-| Model          | Size  | Use for                                    |
-| -------------- | ----- | ------------------------------------------ |
-| `qwen2.5:0.5b` | 400MB | basic tool call / echo tests               |
-| `llama3.2:1b`  | 1.3GB | chain reasoning, short answers             |
-| `phi3:mini`    | 2.2GB | agent tests requiring multi-step reasoning |
+| Model          | Size  | Use for                                     |
+| -------------- | ----- | ------------------------------------------- |
+| `qwen2.5:0.5b` | 400MB | basic doneness checks (non-empty, no panic) |
+| `llama3.2:1b`  | 1.3GB | chain flow tests, multi-turn memory         |
+| `phi3:mini`    | 2.2GB | agent tool-use loop tests                   |
 
 Always use the smallest model that passes the test — prefer `qwen2.5:0.5b` by default.
 </local-llm>
