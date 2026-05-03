@@ -3,6 +3,7 @@ pub mod agent;
 pub mod chain;
 pub mod document_loaders;
 pub mod embedding;
+pub mod errors;
 pub mod language_models;
 pub mod llm;
 pub mod memory;
@@ -14,4 +15,5 @@ pub mod text_splitter;
 pub mod tools;
 pub mod vectorstore;
 
+pub use errors::LangChainError;
 pub use url;

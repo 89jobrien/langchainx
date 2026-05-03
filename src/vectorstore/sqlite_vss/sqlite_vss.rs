@@ -1,4 +1,4 @@
-use std::{collections::HashMap, error::Error, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
 use serde_json::{json, Value};
@@ -7,7 +7,7 @@ use sqlx::{Pool, Row, Sqlite};
 use crate::{
     embedding::embedder_trait::Embedder,
     schemas::Document,
-    vectorstore::{VecStoreOptions, VectorStore},
+    vectorstore::{VecStoreOptions, VectorStore, VectorStoreError},
 };
 
 pub struct Store {
@@ -20,12 +20,12 @@ pub struct Store {
 pub type SqliteVssOptions = VecStoreOptions<Value>;
 
 impl Store {
-    pub async fn initialize(&self) -> Result<(), Box<dyn Error>> {
+    pub async fn initialize(&self) -> Result<(), VectorStoreError> {
         self.create_table_if_not_exists().await?;
         Ok(())
     }
 
-    async fn create_table_if_not_exists(&self) -> Result<(), Box<dyn Error>> {
+    async fn create_table_if_not_exists(&self) -> Result<(), VectorStoreError> {
         let table = &self.table;
 
         sqlx::query(&format!(
@@ -81,17 +81,16 @@ impl VectorStore for Store {
         &self,
         docs: &[Document],
         opt: &Self::Options,
-    ) -> Result<Vec<String>, Box<dyn Error>> {
+    ) -> Result<Vec<String>, VectorStoreError> {
         let texts: Vec<String> = docs.iter().map(|d| d.page_content.clone()).collect();
 
         let embedder = opt.embedder.as_ref().unwrap_or(&self.embedder);
 
         let vectors = embedder.embed_documents(&texts).await?;
         if vectors.len() != docs.len() {
-            return Err(Box::new(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Number of vectors and documents do not match",
-            )));
+            return Err(VectorStoreError::OtherError(
+                "Number of vectors and documents do not match".to_string(),
+            ));
         }
 
         let table = &self.table;
@@ -129,7 +128,7 @@ impl VectorStore for Store {
         query: &str,
         limit: usize,
         _opt: &Self::Options,
-    ) -> Result<Vec<Document>, Box<dyn Error>> {
+    ) -> Result<Vec<Document>, VectorStoreError> {
         let table = &self.table;
 
         let query_vector = json!(self.embedder.embed_query(query).await?);
@@ -171,7 +170,8 @@ impl VectorStore for Store {
                     score,
                 })
             })
-            .collect::<Result<Vec<Document>, sqlx::Error>>()?;
+            .collect::<Result<Vec<Document>, sqlx::Error>>()
+            .map_err(VectorStoreError::from)?;
 
         Ok(docs)
     }

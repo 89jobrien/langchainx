@@ -9,6 +9,7 @@ mod common;
 
 use langchain_rust::{
     chain::{conversational::builder::ConversationalChainBuilder, Chain, LLMChainBuilder},
+    embedding::OllamaEmbedder,
     fmt_template,
     llm::ollama::client::Ollama,
     memory::SimpleMemory,
@@ -20,6 +21,7 @@ use langchain_rust::{
 use common::ollama_available;
 
 const MODEL: &str = "qwen2.5:0.5b";
+const EMBED_MODEL: &str = "nomic-embed-text";
 
 // ---------------------------------------------------------------------------
 // LLMChain — real generation completes without error
@@ -127,4 +129,66 @@ async fn test_ollama_conversational_chain_multi_turn() {
     // Verify doneness: both turns returned non-empty output
     assert!(!r1.is_empty(), "turn 1 returned no output");
     assert!(!r2.is_empty(), "turn 2 returned no output");
+}
+
+// ---------------------------------------------------------------------------
+// OllamaEmbedder — single query returns a non-empty vector
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn test_ollama_embed_query_doneness() {
+    if !ollama_available(EMBED_MODEL).await {
+        eprintln!("SKIP: ollama model {EMBED_MODEL} not available");
+        return;
+    }
+
+    use langchain_rust::embedding::embedder_trait::Embedder;
+
+    let embedder = OllamaEmbedder::default().with_model(EMBED_MODEL);
+    let vector = embedder
+        .embed_query("Why is the sky blue?")
+        .await
+        .expect("embed_query failed");
+
+    assert!(!vector.is_empty(), "embed_query returned empty vector");
+}
+
+// ---------------------------------------------------------------------------
+// OllamaEmbedder — batch embed returns one vector per document
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn test_ollama_embed_documents_doneness() {
+    if !ollama_available(EMBED_MODEL).await {
+        eprintln!("SKIP: ollama model {EMBED_MODEL} not available");
+        return;
+    }
+
+    use langchain_rust::embedding::embedder_trait::Embedder;
+
+    let embedder = OllamaEmbedder::default().with_model(EMBED_MODEL);
+    let docs = vec![
+        "rust is a systems programming language".to_string(),
+        "embeddings map text into vector space".to_string(),
+        "ollama runs models locally".to_string(),
+    ];
+
+    let vectors = embedder
+        .embed_documents(&docs)
+        .await
+        .expect("embed_documents failed");
+
+    assert_eq!(
+        vectors.len(),
+        docs.len(),
+        "wrong number of embeddings returned"
+    );
+    for (i, v) in vectors.iter().enumerate() {
+        assert!(!v.is_empty(), "embedding {i} is empty");
+        assert_eq!(
+            v.len(),
+            vectors[0].len(),
+            "embedding {i} has inconsistent dimensions"
+        );
+    }
 }

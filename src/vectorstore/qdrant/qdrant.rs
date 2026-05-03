@@ -1,8 +1,7 @@
 use async_trait::async_trait;
-use qdrant_client::client::Payload;
 use qdrant_client::qdrant::{Filter, PointStruct, SearchPointsBuilder, UpsertPointsBuilder};
+use qdrant_client::Payload;
 use serde_json::{json, Value};
-use std::error::Error;
 use std::sync::Arc;
 
 pub use qdrant_client::Qdrant;
@@ -14,7 +13,7 @@ pub use qdrant_client::Qdrant as QdrantClient;
 use crate::{
     embedding::embedder_trait::Embedder,
     schemas::Document,
-    vectorstore::{VecStoreOptions, VectorStore},
+    vectorstore::{VecStoreOptions, VectorStore, VectorStoreError},
 };
 use uuid::Uuid;
 
@@ -39,7 +38,7 @@ impl VectorStore for Store {
         &self,
         docs: &[Document],
         opt: &QdrantOptions,
-    ) -> Result<Vec<String>, Box<dyn Error>> {
+    ) -> Result<Vec<String>, VectorStoreError> {
         let embedder = opt.embedder.as_ref().unwrap_or(&self.embedder);
         let texts: Vec<String> = docs.iter().map(|d| d.page_content.clone()).collect();
 
@@ -84,17 +83,19 @@ impl VectorStore for Store {
         query: &str,
         limit: usize,
         opt: &QdrantOptions,
-    ) -> Result<Vec<Document>, Box<dyn Error>> {
+    ) -> Result<Vec<Document>, VectorStoreError> {
         if opt.name_space.is_some() {
-            return Err("Qdrant doesn't support namespaces".into());
+            return Err(VectorStoreError::OtherError(
+                "Qdrant doesn't support namespaces".to_string(),
+            ));
         }
 
         if opt.filters.is_some() {
-            return Err(
-                "'qdrant_client' doesn't support 'serde_json::Value' filters. 
-            Use `search_filter` when constructing VectorStore instead"
-                    .into(),
-            );
+            return Err(VectorStoreError::OtherError(
+                "'qdrant_client' doesn't support 'serde_json::Value' filters. \
+                Use `search_filter` when constructing VectorStore instead"
+                    .to_string(),
+            ));
         }
 
         let embedder = opt.embedder.as_ref().unwrap_or(&self.embedder);

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, error::Error, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
 use serde::Deserialize;
@@ -8,7 +8,7 @@ use surrealdb::{Connection, Surreal};
 use crate::{
     embedding::embedder_trait::Embedder,
     schemas::Document,
-    vectorstore::{VecStoreOptions, VectorStore},
+    vectorstore::{VecStoreOptions, VectorStore, VectorStoreError},
 };
 
 // INSERT INTO documents {
@@ -42,12 +42,12 @@ impl<C: Connection> Store<C> {
             .unwrap_or_else(|| "collection".to_string())
     }
 
-    pub async fn initialize(&self) -> Result<(), Box<dyn Error>> {
+    pub async fn initialize(&self) -> Result<(), VectorStoreError> {
         self.create_collection_table_if_not_exists().await?;
         Ok(())
     }
 
-    async fn create_collection_table_if_not_exists(&self) -> Result<(), Box<dyn Error>> {
+    async fn create_collection_table_if_not_exists(&self) -> Result<(), VectorStoreError> {
         if !self.schemafull {
             return Ok(());
         }
@@ -97,17 +97,16 @@ impl<C: Connection> VectorStore for Store<C> {
         &self,
         docs: &[Document],
         opt: &Self::Options,
-    ) -> Result<Vec<String>, Box<dyn Error>> {
+    ) -> Result<Vec<String>, VectorStoreError> {
         let texts: Vec<String> = docs.iter().map(|d| d.page_content.clone()).collect();
 
         let embedder = opt.embedder.as_ref().unwrap_or(&self.embedder);
 
         let vectors = embedder.embed_documents(&texts).await?;
         if vectors.len() != docs.len() {
-            return Err(Box::new(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Number of vectors and documents do not match",
-            )));
+            return Err(VectorStoreError::OtherError(
+                "Number of vectors and documents do not match".to_string(),
+            ));
         }
 
         let mut ids = Vec::with_capacity(docs.len());
@@ -172,7 +171,7 @@ impl<C: Connection> VectorStore for Store<C> {
         query: &str,
         limit: usize,
         opt: &Self::Options,
-    ) -> Result<Vec<Document>, Box<dyn Error>> {
+    ) -> Result<Vec<Document>, VectorStoreError> {
         let collection_name = &self.collection_name;
         let collection_table_name = self.get_collection_table_name();
 

@@ -5,7 +5,6 @@ use opensearch::indices::{IndicesCreateParts, IndicesDeleteParts};
 use opensearch::{BulkParts, SearchParts};
 use serde_json::{json, Value};
 use std::collections::HashMap;
-use std::error::Error;
 use std::sync::Arc;
 
 pub use opensearch::auth::Credentials;
@@ -16,7 +15,7 @@ pub use opensearch::OpenSearch;
 use crate::{
     embedding::embedder_trait::Embedder,
     schemas::Document,
-    vectorstore::{VecStoreOptions, VectorStore},
+    vectorstore::{VecStoreOptions, VectorStore, VectorStoreError},
 };
 
 pub struct Store {
@@ -33,7 +32,7 @@ pub struct Store {
 // https://opensearch.org/docs/latest/clients/rust/
 
 impl Store {
-    pub async fn delete_index(&self) -> Result<Response, Box<dyn Error>> {
+    pub async fn delete_index(&self) -> Result<Response, VectorStoreError> {
         let response = self
             .client
             .indices()
@@ -41,12 +40,14 @@ impl Store {
             .send()
             .await?;
 
-        let result = response.error_for_status_code().map_err(|e| Box::new(e))?;
+        let result = response
+            .error_for_status_code()
+            .map_err(|e| VectorStoreError::ConnectionError(e.to_string()))?;
 
         Ok(result)
     }
 
-    pub async fn create_index(&self) -> Result<Response, Box<dyn Error>> {
+    pub async fn create_index(&self) -> Result<Response, VectorStoreError> {
         let body = json!({
             "settings": {
                 "index.knn": true,
@@ -91,7 +92,9 @@ impl Store {
             .send()
             .await?;
 
-        let result = response.error_for_status_code().map_err(|e| Box::new(e))?;
+        let result = response
+            .error_for_status_code()
+            .map_err(|e| VectorStoreError::ConnectionError(e.to_string()))?;
 
         Ok(result)
     }
@@ -105,16 +108,15 @@ impl VectorStore for Store {
         &self,
         docs: &[Document],
         opt: &Self::Options,
-    ) -> Result<Vec<String>, Box<dyn Error>> {
+    ) -> Result<Vec<String>, VectorStoreError> {
         let texts: Vec<String> = docs.iter().map(|d| d.page_content.clone()).collect();
         let embedder = opt.embedder.as_ref().unwrap_or(&self.embedder);
         let vectors = embedder.embed_documents(&texts).await?;
 
         if vectors.len() != docs.len() {
-            return Err(Box::new(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Number of vectors and documents do not match",
-            )));
+            return Err(VectorStoreError::OtherError(
+                "Number of vectors and documents do not match".to_string(),
+            ));
         }
 
         let mut body: Vec<JsonBody<_>> = Vec::with_capacity(docs.len() * 2);
@@ -138,7 +140,7 @@ impl VectorStore for Store {
             .send()
             .await?
             .error_for_status_code()
-            .map_err(|e| Box::new(e))?;
+            .map_err(|e| VectorStoreError::ConnectionError(e.to_string()))?;
 
         let response_body = response.json::<Value>().await?;
 
@@ -157,7 +159,7 @@ impl VectorStore for Store {
         query: &str,
         limit: usize,
         opt: &Self::Options,
-    ) -> Result<Vec<Document>, Box<dyn Error>> {
+    ) -> Result<Vec<Document>, VectorStoreError> {
         let query_vector = self.embedder.embed_query(query).await?;
         let query = build_similarity_search_query(
             query_vector,

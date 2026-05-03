@@ -1,10 +1,8 @@
-use std::error::Error;
-
 use async_trait::async_trait;
 
 use crate::schemas::{self, Document};
 
-use super::VecStoreOptions;
+use super::{VecStoreOptions, VectorStoreError};
 
 // VectorStore is the trait for saving and querying documents in the
 // form of vector embeddings.
@@ -16,14 +14,14 @@ pub trait VectorStore: Send + Sync {
         &self,
         docs: &[Document],
         opt: &Self::Options,
-    ) -> Result<Vec<String>, Box<dyn Error>>;
+    ) -> Result<Vec<String>, VectorStoreError>;
 
     async fn similarity_search(
         &self,
         query: &str,
         limit: usize,
         opt: &Self::Options,
-    ) -> Result<Vec<Document>, Box<dyn Error>>;
+    ) -> Result<Vec<Document>, VectorStoreError>;
 }
 
 impl<VS, F> From<VS> for Box<dyn VectorStore<Options = F>>
@@ -85,9 +83,13 @@ impl<F> Retriever<F> {
 
 #[async_trait]
 impl<O: Sync + Send> schemas::Retriever for Retriever<O> {
-    async fn get_relevant_documents(&self, query: &str) -> Result<Vec<Document>, Box<dyn Error>> {
+    async fn get_relevant_documents(
+        &self,
+        query: &str,
+    ) -> Result<Vec<Document>, Box<dyn std::error::Error>> {
         self.vstore
             .similarity_search(query, self.num_docs, &self.options)
             .await
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
     }
 }

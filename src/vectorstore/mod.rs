@@ -1,3 +1,4 @@
+mod error;
 mod options;
 
 #[cfg(feature = "postgres")]
@@ -20,5 +21,6 @@ pub mod qdrant;
 
 mod vectorstore;
 
+pub use error::VectorStoreError;
 pub use options::*;
 pub use vectorstore::*;
