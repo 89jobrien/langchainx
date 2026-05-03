@@ -1,10 +1,71 @@
-/// Tier 3 — full-stack e2e tests using testcontainers.
+/// Tier 3 — full-stack e2e tests using smolvm (no Docker required).
 ///
-/// Requires Docker. Spins up real Postgres/pgvector and Qdrant containers,
-/// runs add→search round-trips with FakeEmbedder, then tears down automatically.
+/// Spins up real Postgres/pgvector and Qdrant VMs via smolvm, runs
+/// add→search round-trips with FakeEmbedder, then tears them down.
 ///
 /// Run: `cargo test --test e2e_containers --features postgres,qdrant`
+///
+/// Requires smolvm on PATH. Tests skip automatically if smolvm is unavailable.
 mod common;
+
+use std::net::TcpListener;
+
+/// Allocate an available localhost port by binding to :0 and releasing it.
+fn free_port() -> u16 {
+    TcpListener::bind("127.0.0.1:0")
+        .expect("failed to bind")
+        .local_addr()
+        .unwrap()
+        .port()
+}
+
+/// Returns true if `smolvm` is on PATH.
+fn smolvm_available() -> bool {
+    std::process::Command::new("smolvm")
+        .arg("--version")
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+}
+
+/// RAII guard: stops and deletes a named smolvm machine on drop.
+struct SmolvmMachine {
+    name: String,
+}
+
+impl SmolvmMachine {
+    /// Start a machine in detached mode and return a guard.
+    /// `extra_args` are inserted before `--image` (e.g. `-p HOST:GUEST`, `-e KEY=VAL`).
+    fn start(name: &str, image: &str, extra_args: &[&str]) -> Self {
+        let mut cmd = std::process::Command::new("smolvm");
+        cmd.args(["machine", "run", "--detach", "--net"]);
+        for arg in extra_args {
+            cmd.arg(arg);
+        }
+        cmd.args(["--image", image]);
+
+        let status = cmd
+            .status()
+            .unwrap_or_else(|e| panic!("smolvm machine run failed: {e}"));
+        assert!(status.success(), "smolvm machine run exited non-zero");
+
+        Self {
+            name: name.to_string(),
+        }
+    }
+}
+
+impl Drop for SmolvmMachine {
+    fn drop(&mut self) {
+        // best-effort cleanup
+        let _ = std::process::Command::new("smolvm")
+            .args(["machine", "stop", "--name", &self.name])
+            .status();
+        let _ = std::process::Command::new("smolvm")
+            .args(["machine", "delete", &self.name])
+            .status();
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Postgres / pgvector
@@ -18,33 +79,61 @@ mod pgvector_tests {
         similarity_search,
         vectorstore::{pgvector::StoreBuilder, VectorStore},
     };
-    use testcontainers::{
-        core::WaitFor, runners::AsyncRunner, ContainerAsync, GenericImage, ImageExt,
-    };
 
     use crate::common::FakeEmbedder;
+    use crate::{free_port, smolvm_available, SmolvmMachine};
 
-    async fn start_pgvector() -> (ContainerAsync<GenericImage>, String) {
-        let container = GenericImage::new("pgvector/pgvector", "pg16")
-            .with_wait_for(WaitFor::message_on_stderr(
-                "database system is ready to accept connections",
-            ))
-            .with_env_var("POSTGRES_USER", "test")
-            .with_env_var("POSTGRES_PASSWORD", "test")
-            .with_env_var("POSTGRES_DB", "testdb")
-            .start()
-            .await
-            .expect("failed to start pgvector container");
+    async fn start_pgvector() -> (SmolvmMachine, String) {
+        let port = free_port();
+        let port_map = format!("{}:5432", port);
 
-        // publish_all_ports is true by default when no explicit mapping is given
-        let port = container.get_host_port_ipv4(5432).await.unwrap();
-        let url = format!("postgresql://test:test@localhost:{port}/testdb");
-        (container, url)
+        let machine_name = format!("langchainx-test-pg-{port}");
+
+        // smolvm machine run --detach --net -p PORT:5432
+        //   -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test -e POSTGRES_DB=testdb
+        //   --image pgvector/pgvector:pg16
+        let _m = SmolvmMachine::start(
+            &machine_name,
+            "pgvector/pgvector:pg16",
+            &[
+                "-p",
+                &port_map,
+                "-e",
+                "POSTGRES_USER=test",
+                "-e",
+                "POSTGRES_PASSWORD=test",
+                "-e",
+                "POSTGRES_DB=testdb",
+            ],
+        );
+
+        // Wait for Postgres to become ready
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
+        loop {
+            let result = tokio::net::TcpStream::connect(format!("127.0.0.1:{port}")).await;
+            if result.is_ok() {
+                break;
+            }
+            if std::time::Instant::now() > deadline {
+                panic!("Postgres did not become ready within 30s on port {port}");
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        }
+        // Extra settle time for Postgres to finish initialising after TCP opens
+        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
+        let url = format!("postgresql://test:test@127.0.0.1:{port}/testdb");
+        (_m, url)
     }
 
     #[tokio::test]
     async fn test_pgvector_add_and_search() {
-        let (_container, url) = start_pgvector().await;
+        if !smolvm_available() {
+            eprintln!("SKIP: smolvm not available");
+            return;
+        }
+
+        let (_machine, url) = start_pgvector().await;
 
         let embedder = FakeEmbedder::new(3);
 
@@ -77,7 +166,12 @@ mod pgvector_tests {
 
     #[tokio::test]
     async fn test_pgvector_empty_collection_search() {
-        let (_container, url) = start_pgvector().await;
+        if !smolvm_available() {
+            eprintln!("SKIP: smolvm not available");
+            return;
+        }
+
+        let (_machine, url) = start_pgvector().await;
 
         let embedder = FakeEmbedder::new(3);
 
@@ -115,30 +209,45 @@ mod qdrant_tests {
         vectorstore::{qdrant::StoreBuilder, VectorStore},
     };
     use qdrant_client::Qdrant;
-    use testcontainers::{
-        core::WaitFor, runners::AsyncRunner, ContainerAsync, GenericImage, ImageExt,
-    };
 
     use crate::common::FakeEmbedder;
+    use crate::{free_port, smolvm_available, SmolvmMachine};
 
-    async fn start_qdrant() -> (ContainerAsync<GenericImage>, String) {
-        let container = GenericImage::new("qdrant/qdrant", "latest")
-            .with_wait_for(WaitFor::message_on_stdout("gRPC server listening on"))
-            .start()
-            .await
-            .expect("failed to start qdrant container");
+    async fn start_qdrant() -> (SmolvmMachine, String) {
+        let grpc_port = free_port();
+        let port_map = format!("{}:6334", grpc_port);
+        let machine_name = format!("langchainx-test-qdrant-{grpc_port}");
 
-        let port = container.get_host_port_ipv4(6334).await.unwrap();
-        let url = format!("http://localhost:{port}");
-        (container, url)
+        let _m = SmolvmMachine::start(&machine_name, "qdrant/qdrant:latest", &["-p", &port_map]);
+
+        // Wait for Qdrant gRPC to become ready
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
+        loop {
+            let result = tokio::net::TcpStream::connect(format!("127.0.0.1:{grpc_port}")).await;
+            if result.is_ok() {
+                break;
+            }
+            if std::time::Instant::now() > deadline {
+                panic!("Qdrant did not become ready within 30s on port {grpc_port}");
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        }
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
+        let url = format!("http://127.0.0.1:{grpc_port}");
+        (_m, url)
     }
 
     #[tokio::test]
     async fn test_qdrant_add_and_search() {
-        let (_container, url) = start_qdrant().await;
+        if !smolvm_available() {
+            eprintln!("SKIP: smolvm not available");
+            return;
+        }
+
+        let (_machine, url) = start_qdrant().await;
 
         let embedder = FakeEmbedder::new(4);
-
         let client = Qdrant::from_url(&url)
             .build()
             .expect("failed to build Qdrant client");
@@ -172,10 +281,14 @@ mod qdrant_tests {
 
     #[tokio::test]
     async fn test_qdrant_search_limit_respected() {
-        let (_container, url) = start_qdrant().await;
+        if !smolvm_available() {
+            eprintln!("SKIP: smolvm not available");
+            return;
+        }
+
+        let (_machine, url) = start_qdrant().await;
 
         let embedder = FakeEmbedder::new(4);
-
         let client = Qdrant::from_url(&url)
             .build()
             .expect("failed to build Qdrant client");
