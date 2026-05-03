@@ -1,0 +1,8 @@
+project: langchainx
+id: langcha
+updated: 2026-05-03
+items: []
+log:
+  - date: 2026-05-03
+    summary: "Brainstorm session: analyzed langchainx codebase, validated 7 architectural issues via web search, created Linear issues JOB-251 through JOB-257 covering LLMClone hack, async_trait overhead, streaming_func side-channel, untyped PromptArgs, Box<dyn Error> tools, memory boilerplate, and missing FakeLLM test double"
+    commits: []
