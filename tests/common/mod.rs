@@ -64,10 +64,12 @@ impl LLM for FakeLLM {
 // FakeEmbedder — returns deterministic unit vectors based on string hash
 // ---------------------------------------------------------------------------
 
+#[allow(dead_code)]
 pub struct FakeEmbedder {
     pub dims: usize,
 }
 
+#[allow(dead_code)]
 impl FakeEmbedder {
     pub fn new(dims: usize) -> Self {
         Self { dims }
@@ -106,6 +108,7 @@ impl Embedder for FakeEmbedder {
 // Ollama availability check — skip tests when Ollama is not running
 // ---------------------------------------------------------------------------
 
+#[allow(dead_code)]
 /// Returns `true` if Ollama is reachable and `model` is available locally.
 /// Call at the top of any Ollama-tier test: `if !ollama_available("qwen2.5:0.5b").await { return; }`.
 pub async fn ollama_available(model: &str) -> bool {

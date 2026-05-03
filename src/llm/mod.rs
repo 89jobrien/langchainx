@@ -5,6 +5,7 @@ pub mod claude;
 pub use claude::*;
 
 pub mod ollama;
+#[cfg(feature = "ollama")]
 pub use ollama::*;
 
 pub mod qwen;
