@@ -31,7 +31,7 @@ use std::collections::VecDeque;
 use std::sync::{Arc, atomic::{AtomicUsize, Ordering}};
 use tokio::sync::Mutex;
 use async_trait::async_trait;
-use langchain_rust::{
+use langchainx::{
     language_models::{llm::LLM, options::CallOptions, GenerateResult, LLMError},
     schemas::{Message, StreamData},
 };
@@ -85,7 +85,7 @@ impl LLM for FakeLLM {
 mod tests {
     use super::*;
     use crate::test_utils::FakeLLM;
-    use langchain_rust::{
+    use langchainx::{
         chain::{Chain, LLMChainBuilder},
         message_formatter, fmt_template,
         prompt::{HumanMessagePromptTemplate, MessageOrTemplate},
@@ -148,12 +148,12 @@ ollama pull phi3:mini        # 2.2GB — strong reasoning
 ### Using Ollama in Tests
 
 ```rust
-// Cargo.toml: langchain-rust = { features = ["ollama"] }
+// Cargo.toml: langchainx = { features = ["ollama"] }
 
 #[tokio::test]
 #[cfg_attr(not(feature = "local-llm-tests"), ignore)]
 async fn test_chain_with_real_generation() {
-    use langchain_rust::llm::ollama::client::Ollama;
+    use langchainx::llm::ollama::client::Ollama;
 
     let llm = Ollama::default()
         .with_model("qwen2.5:0.5b")  // smallest available

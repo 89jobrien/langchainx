@@ -9,7 +9,7 @@ use async_trait::async_trait;
 use futures::Stream;
 use tokio::sync::Mutex;
 
-use langchain_rust::{
+use langchainx::{
     embedding::{embedder_trait::Embedder, EmbedderError},
     language_models::{llm::LLM, GenerateResult, LLMError},
     schemas::{Message, StreamData},
@@ -19,12 +19,14 @@ use langchain_rust::{
 // FakeLLM
 // ---------------------------------------------------------------------------
 
+#[allow(dead_code)]
 #[derive(Clone)]
 pub struct FakeLLM {
     pub responses: Arc<Mutex<VecDeque<String>>>,
     pub call_count: Arc<AtomicUsize>,
 }
 
+#[allow(dead_code)]
 impl FakeLLM {
     pub fn new(responses: Vec<&str>) -> Self {
         Self {
@@ -122,6 +124,12 @@ pub async fn ollama_available(model: &str) -> bool {
     if !output.status.success() {
         return false;
     }
+    // Match on word boundary: each line starts with "name:tag" followed by whitespace.
+    // Use line-prefix matching to avoid "nomic-embed-text" matching "nomic-embed-text-v2-moe".
     let stdout = String::from_utf8_lossy(&output.stdout);
-    stdout.contains(model)
+    stdout.lines().any(|line| {
+        let name = line.split_whitespace().next().unwrap_or("");
+        // Strip optional ":tag" suffix for bare-name matches (e.g. "qwen2.5:0.5b" exact)
+        name == model || name.starts_with(&format!("{model}:"))
+    })
 }

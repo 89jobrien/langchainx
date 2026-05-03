@@ -1,64 +1,58 @@
 # 🦜️🔗LangChain Rust
 
-[![Latest Version]][crates.io]
+Building applications with LLMs through composability, with Rust!
 
-[Latest Version]: https://img.shields.io/crates/v/langchain-rust.svg
-[crates.io]: https://crates.io/crates/langchain-rust
-
-⚡ Building applications with LLMs through composability, with Rust! ⚡
-
-[![Discord](https://dcbadge.vercel.app/api/server/JJFcTFbanu?style=for-the-badge)](https://discord.gg/JJFcTFbanu)
-[![Docs: Tutorial](https://img.shields.io/badge/docs-tutorial-success?style=for-the-badge&logo=appveyor)](https://langchain-rust.sellie.tech/get-started/quickstart)
-
-## 🤔 What is this?
+## What is this?
 
 This is the Rust language implementation of [LangChain](https://github.com/langchain-ai/langchain).
 
 ## Current Features
 
 - LLMs
-  - [x] [OpenAi](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/llm_openai.rs)
-  - [x] [Azure OpenAi](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/llm_azure_open_ai.rs)
-  - [x] [Ollama](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/llm_ollama.rs)
-  - [x] [Anthropic Claude](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/llm_anthropic_claude.rs)
+  - [x] [OpenAi](https://github.com/89jobrien/langchainx/blob/main/examples/llm_openai.rs)
+  - [x] [Azure OpenAi](https://github.com/89jobrien/langchainx/blob/main/examples/llm_azure_open_ai.rs)
+  - [x] [Ollama](https://github.com/89jobrien/langchainx/blob/main/examples/llm_ollama.rs)
+  - [x] [Anthropic Claude](https://github.com/89jobrien/langchainx/blob/main/examples/llm_anthropic_claude.rs)
+  - [x] DeepSeek (OpenAI-compatible, streaming + reasoning_content support)
+  - [x] Qwen / Alibaba Cloud (OpenAI-compatible)
 
 - Embeddings
-  - [x] [OpenAi](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/embedding_openai.rs)
-  - [x] [Azure OpenAi](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/embedding_azure_open_ai.rs)
-  - [x] [Ollama](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/embedding_ollama.rs)
-  - [x] [Local FastEmbed](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/embedding_fastembed.rs)
-  - [x] [MistralAI](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/embedding_mistralai.rs)
+  - [x] [OpenAi](https://github.com/89jobrien/langchainx/blob/main/examples/embedding_openai.rs)
+  - [x] [Azure OpenAi](https://github.com/89jobrien/langchainx/blob/main/examples/embedding_azure_open_ai.rs)
+  - [x] [Ollama](https://github.com/89jobrien/langchainx/blob/main/examples/embedding_ollama.rs)
+  - [x] [Local FastEmbed](https://github.com/89jobrien/langchainx/blob/main/examples/embedding_fastembed.rs)
+  - [x] [MistralAI](https://github.com/89jobrien/langchainx/blob/main/examples/embedding_mistralai.rs)
 
 - VectorStores
-  - [x] [OpenSearch](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/vector_store_opensearch.rs)
-  - [x] [Postgres](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/vector_store_postgres.rs)
-  - [x] [Qdrant](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/vector_store_qdrant.rs)
-  - [x] [Sqlite](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/vector_store_sqlite_vss.rs)
-  - [x] [SurrealDB](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/vector_store_surrealdb/src/main.rs)
+  - [x] [OpenSearch](https://github.com/89jobrien/langchainx/blob/main/examples/vector_store_opensearch.rs)
+  - [x] [Postgres](https://github.com/89jobrien/langchainx/blob/main/examples/vector_store_postgres.rs)
+  - [x] [Qdrant](https://github.com/89jobrien/langchainx/blob/main/examples/vector_store_qdrant.rs)
+  - [x] [Sqlite](https://github.com/89jobrien/langchainx/blob/main/examples/vector_store_sqlite_vss.rs)
+  - [x] [SurrealDB](https://github.com/89jobrien/langchainx/blob/main/examples/vector_store_surrealdb/src/main.rs)
 
 - Chain
-  - [x] [LLM Chain](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/llm_chain.rs)
-  - [x] [Conversational Chain](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/conversational_chain.rs)
-  - [x] [Conversational Retriever Simple](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/conversational_retriever_simple_chain.rs)
-  - [x] [Conversational Retriever With Vector Store](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/conversational_retriever_chain_with_vector_store.rs)
-  - [x] [Sequential Chain](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/sequential_chain.rs)
-  - [x] [Q&A Chain](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/qa_chain.rs)
-  - [x] [SQL Chain](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/sql_chain.rs)
+  - [x] [LLM Chain](https://github.com/89jobrien/langchainx/blob/main/examples/llm_chain.rs)
+  - [x] [Conversational Chain](https://github.com/89jobrien/langchainx/blob/main/examples/conversational_chain.rs)
+  - [x] [Conversational Retriever Simple](https://github.com/89jobrien/langchainx/blob/main/examples/conversational_retriever_simple_chain.rs)
+  - [x] [Conversational Retriever With Vector Store](https://github.com/89jobrien/langchainx/blob/main/examples/conversational_retriever_chain_with_vector_store.rs)
+  - [x] [Sequential Chain](https://github.com/89jobrien/langchainx/blob/main/examples/sequential_chain.rs)
+  - [x] [Q&A Chain](https://github.com/89jobrien/langchainx/blob/main/examples/qa_chain.rs)
+  - [x] [SQL Chain](https://github.com/89jobrien/langchainx/blob/main/examples/sql_chain.rs)
 
 - Agents
-  - [x] [Chat Agent with Tools](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/agent.rs)
-  - [x] [Open AI Compatible Tools Agent](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/open_ai_tools_agent.rs)
+  - [x] [Chat Agent with Tools](https://github.com/89jobrien/langchainx/blob/main/examples/agent.rs)
+  - [x] [Open AI Compatible Tools Agent](https://github.com/89jobrien/langchainx/blob/main/examples/open_ai_tools_agent.rs)
 
 - Tools
   - [x] Serpapi/Google
   - [x] DuckDuckGo Search
-  - [x] [Wolfram/Math](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/wolfram_tool.rs)
+  - [x] [Wolfram/Math](https://github.com/89jobrien/langchainx/blob/main/examples/wolfram_tool.rs)
   - [x] Command line
-  - [x] [Text2Speech](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/speech2text_openai.rs)
+  - [x] [Text2Speech](https://github.com/89jobrien/langchainx/blob/main/examples/speech2text_openai.rs)
 
 - Semantic Routing
-  - [x] [Static Routing](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/semantic_routes.rs)
-  - [x] [Dynamic Routing](https://github.com/Abraxas-365/langchain-rust/blob/main/examples/dynamic_semantic_routes.rs)
+  - [x] [Static Routing](https://github.com/89jobrien/langchainx/blob/main/examples/semantic_routes.rs)
+  - [x] [Dynamic Routing](https://github.com/89jobrien/langchainx/blob/main/examples/dynamic_semantic_routes.rs)
 
 - Document Loaders
   - [x] PDF
@@ -208,6 +202,34 @@ This is the Rust language implementation of [LangChain](https://github.com/langc
     let documents = stream.map(|x| x.unwrap()).collect::<Vec<_>>().await;
     ```
 
+## Testing
+
+This fork ships a three-tier e2e test suite. All tiers are independent and skip gracefully
+when their prerequisites are unavailable.
+
+| Tier           | File                      | Prerequisite                           | Command                                                       |
+| -------------- | ------------------------- | -------------------------------------- | ------------------------------------------------------------- |
+| 1 — Offline    | `tests/e2e_offline.rs`    | None — uses `FakeLLM`/`FakeEmbedder`   | `cargo test --test e2e_offline`                               |
+| 2 — Local LLM  | `tests/e2e_local_llm.rs`  | Ollama running + `qwen2.5:0.5b` pulled | `cargo test --test e2e_local_llm --features ollama`           |
+| 3 — Containers | `tests/e2e_containers.rs` | `smolvm` on PATH (no Docker required)  | `cargo test --test e2e_containers --features postgres,qdrant` |
+
+**Tier 1** always passes in CI. Tests verify chain correctness using deterministic fakes.
+
+**Tier 2** skips automatically when Ollama is unavailable. Assertions check doneness (non-empty
+output, no panic) rather than exact model responses.
+
+**Tier 3** spins up real Postgres/pgvector and Qdrant VMs via
+[smolvm](https://github.com/smolvm/smolvm) — no Docker daemon required. Each test allocates
+a free port, starts the VM, runs add→search round-trips, and tears the VM down on drop.
+
+```bash
+# Pull the model for tier 2
+ollama pull qwen2.5:0.5b
+
+# Run all tiers
+cargo test --all-features
+```
+
 ## Installation
 
 This library heavily relies on `serde_json` for its operation.
@@ -220,14 +242,14 @@ First, ensure `serde_json` is added to your Rust project.
 cargo add serde_json
 ```
 
-### Step 2: Add `langchain-rust`
+### Step 2: Add `langchainx`
 
-Then, you can add `langchain-rust` to your Rust project.
+Then, you can add `langchainx` to your Rust project.
 
 #### Simple install
 
 ```bash
-cargo add langchain-rust
+cargo add langchainx
 ```
 
 #### With Sqlite
@@ -237,7 +259,7 @@ cargo add langchain-rust
 Download additional sqlite_vss libraries from <https://github.com/asg017/sqlite-vss>
 
 ```bash
-cargo add langchain-rust --features sqlite-vss
+cargo add langchainx --features sqlite-vss
 ```
 
 ##### sqlite-vec
@@ -245,31 +267,31 @@ cargo add langchain-rust --features sqlite-vss
 Download additional sqlite_vec libraries from <https://github.com/asg017/sqlite-vec>
 
 ```bash
-cargo add langchain-rust --features sqlite-vec
+cargo add langchainx --features sqlite-vec
 ```
 
 #### With Postgres
 
 ```bash
-cargo add langchain-rust --features postgres
+cargo add langchainx --features postgres
 ```
 
 #### With SurrialDB
 
 ```bash
-cargo add langchain-rust --features surrealdb
+cargo add langchainx --features surrealdb
 ```
 
 #### With Qdrant
 
 ```bash
-cargo add langchain-rust --features qdrant
+cargo add langchainx --features qdrant
 ```
 
 Please remember to replace the feature flags `sqlite`, `postgres` or `surrealdb` based on your
 specific use case.
 
-This will add both `serde_json` and `langchain-rust` as dependencies in your `Cargo.toml`
+This will add both `serde_json` and `langchainx` as dependencies in your `Cargo.toml`
 file. Now, when you build your project, both dependencies will be fetched and compiled, and will be available for use in your project.
 
 Remember, `serde_json` is a necessary dependencies, and `sqlite`, `postgres` and `surrealdb`
@@ -278,7 +300,7 @@ are optional features that may be added according to project needs.
 ### Quick Start Conversational Chain
 
 ```rust
-use langchain_rust::{
+use langchainx::{
     chain::{Chain, LLMChainBuilder},
     fmt_message, fmt_placeholder, fmt_template,
     language_models::llm::LLM,

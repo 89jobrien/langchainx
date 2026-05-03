@@ -1,4 +1,4 @@
-use langchain_rust::embedding::{
+use langchainx::embedding::{
     embedder_trait::Embedder,
     openai::openai_embedder::{AzureConfig, OpenAiEmbedder},
 };

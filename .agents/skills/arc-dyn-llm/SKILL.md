@@ -33,7 +33,7 @@ let condense_chain = CondenseQuestionGeneratorChain::new(llm.clone_box());
 
 ```rust
 use std::sync::Arc;
-use langchain_rust::language_models::llm::LLM;
+use langchainx::language_models::llm::LLM;
 
 // Cheap clone — just an atomic ref count increment
 let llm: Arc<dyn LLM> = Arc::new(Claude::new());

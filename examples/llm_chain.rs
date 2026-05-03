@@ -1,4 +1,4 @@
-use langchain_rust::{
+use langchainx::{
     chain::{Chain, LLMChainBuilder},
     fmt_message, fmt_placeholder, fmt_template,
     language_models::llm::LLM,

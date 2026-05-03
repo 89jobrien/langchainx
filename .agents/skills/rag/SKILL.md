@@ -47,7 +47,7 @@ pub trait VectorStore: Send + Sync {
 Use the `add_documents!` and `similarity_search!` macros for ergonomic default options:
 
 ```rust
-use langchain_rust::{add_documents, similarity_search};
+use langchainx::{add_documents, similarity_search};
 
 add_documents!(store, &docs).await?;
 let results = similarity_search!(store, "query text", 5).await?;
@@ -61,7 +61,7 @@ let results = similarity_search!(store, "query text", 5).await?;
 Wraps a VectorStore for use in chains:
 
 ```rust
-use langchain_rust::vectorstore::Retriever;
+use langchainx::vectorstore::Retriever;
 
 let retriever = Retriever::new(vector_store, 5);  // 5 = num docs to retrieve
 ```
@@ -72,8 +72,8 @@ let retriever = Retriever::new(vector_store, 5);  // 5 = num docs to retrieve
 ## Full RAG Pipeline (Postgres/pgvector example)
 
 ```rust
-// Cargo.toml: langchain-rust = { features = ["postgres"] }
-use langchain_rust::{
+// Cargo.toml: langchainx = { features = ["postgres"] }
+use langchainx::{
     chain::{Chain, ConversationalRetrieverChainBuilder},
     embedding::openai::OpenAiEmbedder,
     llm::openai::OpenAI,
@@ -115,7 +115,7 @@ All implement `Loader` returning `Stream<Item = Result<Document, LoaderError>>`.
 
 ```rust
 use futures::StreamExt;
-use langchain_rust::document_loaders::{TextLoader, CsvLoader, HtmlLoader};
+use langchainx::document_loaders::{TextLoader, CsvLoader, HtmlLoader};
 
 let mut stream = TextLoader::new("path/to/file.txt").load().await?;
 while let Some(doc) = stream.next().await {

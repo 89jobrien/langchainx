@@ -132,7 +132,7 @@ impl LLM for Ollama {
                     None,
                     message.content,
                 )),
-                // TODO: no need to return error, see https://github.com/Abraxas-365/langchain-rust/issues/140
+                // TODO: no need to return error, see https://github.com/89jobrien/langchainx/issues/140
                 None => Err(LLMError::ContentNotFound(
                     "No message in response".to_string(),
                 )),

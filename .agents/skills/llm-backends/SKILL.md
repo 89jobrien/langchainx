@@ -25,7 +25,7 @@ temperature/max_tokens/stop words. API keys come from env vars by default.
 ## OpenAI
 
 ```rust
-use langchain_rust::llm::openai::{OpenAI, OpenAIModel};
+use langchainx::llm::openai::{OpenAI, OpenAIModel};
 use async_openai::config::OpenAIConfig;
 
 // Default (reads OPENAI_API_KEY from env)
@@ -45,7 +45,7 @@ let llm = OpenAI::new(config).with_model(OpenAIModel::Gpt4o.to_string());
 ## Claude
 
 ```rust
-use langchain_rust::llm::claude::{Claude, ClaudeModel};
+use langchainx::llm::claude::{Claude, ClaudeModel};
 
 // Default (reads CLAUDE_API_KEY from env)
 let llm = Claude::new();
@@ -64,8 +64,8 @@ models (claude-sonnet-4-6, claude-opus-4-6) pass the string directly to `.with_m
 ## DeepSeek / Qwen (OpenAI-compatible)
 
 ```rust
-use langchain_rust::llm::deepseek::Deepseek;
-use langchain_rust::llm::qwen::Qwen;
+use langchainx::llm::deepseek::Deepseek;
+use langchainx::llm::qwen::Qwen;
 
 let deepseek = Deepseek::default(); // reads DEEPSEEK_API_KEY
 let qwen = Qwen::default();         // reads DASHSCOPE_API_KEY
@@ -81,7 +81,7 @@ Both reuse the OpenAI client with a custom base URL internally.
 or directly to the LLM via `.with_options()`.
 
 ```rust
-use langchain_rust::language_models::options::CallOptions;
+use langchainx::language_models::options::CallOptions;
 
 let options = CallOptions::new()
     .with_max_tokens(512)
@@ -93,7 +93,7 @@ let options = CallOptions::new()
 let llm = Claude::new().with_options(options.clone());
 
 // Or via chain builder (preferred — chain merges into LLM options)
-use langchain_rust::chain::options::ChainCallOptions;
+use langchainx::chain::options::ChainCallOptions;
 let chain_opts = ChainCallOptions::default()
     .with_max_tokens(512)
     .with_temperature(0.7);

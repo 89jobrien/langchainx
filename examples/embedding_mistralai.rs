@@ -1,5 +1,5 @@
 #[cfg(feature = "mistralai")]
-use langchain_rust::embedding::{embedder_trait::Embedder, mistralai::MistralAIEmbedder};
+use langchainx::embedding::{embedder_trait::Embedder, mistralai::MistralAIEmbedder};
 
 #[cfg(feature = "mistralai")]
 #[tokio::main]

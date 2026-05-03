@@ -4,7 +4,7 @@
 /// These must always pass in CI.
 mod common;
 
-use langchain_rust::{
+use langchainx::{
     chain::{
         conversational::builder::ConversationalChainBuilder, Chain, LLMChainBuilder,
         SequentialChainBuilder,

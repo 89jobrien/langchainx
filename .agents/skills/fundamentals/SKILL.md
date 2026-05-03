@@ -1,6 +1,6 @@
 ---
 name: fundamentals
-description: Core langchain-rust patterns — LLMChain, builder pattern, Chain trait, prompt macros, and basic invocation.
+description: Core langchainx patterns — LLMChain, builder pattern, Chain trait, prompt macros, and basic invocation.
 ---
 
 <oneliner>
@@ -29,7 +29,7 @@ let chain = LLMChainBuilder::new()
 ## Prompt Macros
 
 ```rust
-use langchain_rust::{
+use langchainx::{
     message_formatter, fmt_message, fmt_template,
     prompt::{HumanMessagePromptTemplate, MessageOrTemplate},
     prompt_args, template_fstring,
@@ -56,7 +56,7 @@ let input = prompt_args! {
 ## LLMChain — Basic Usage
 
 ```rust
-use langchain_rust::{
+use langchainx::{
     chain::{Chain, LLMChainBuilder},
     llm::openai::OpenAI,
     message_formatter, fmt_message, fmt_template,

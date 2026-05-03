@@ -13,7 +13,7 @@ streaming_func in CallOptions; that is a deprecated side-channel that will be re
 
 ```rust
 use futures::StreamExt;
-use langchain_rust::{
+use langchainx::{
     chain::{Chain, LLMChainBuilder},
     prompt_args,
 };
@@ -37,8 +37,8 @@ println!(); // final newline
 ## LLM-Level Streaming
 
 ```rust
-use langchain_rust::language_models::llm::LLM;
-use langchain_rust::schemas::Message;
+use langchainx::language_models::llm::LLM;
+use langchainx::schemas::Message;
 
 let mut stream = llm.stream(&[Message::new_human_message("Hello")]).await?;
 while let Some(chunk) = stream.next().await {

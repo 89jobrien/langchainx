@@ -1,4 +1,4 @@
-use langchain_rust::tools::{Tool, Wolfram};
+use langchainx::tools::{Tool, Wolfram};
 
 #[tokio::main]
 async fn main() {

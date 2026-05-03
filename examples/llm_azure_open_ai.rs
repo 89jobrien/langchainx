@@ -1,4 +1,4 @@
-use langchain_rust::{
+use langchainx::{
     language_models::llm::LLM,
     llm::openai::{AzureConfig, OpenAI},
 };

@@ -27,7 +27,7 @@ pub trait BaseMemory: Send + Sync {
 ## Memory Types
 
 ```rust
-use langchain_rust::memory::{SimpleMemory, WindowBufferMemory, DummyMemory};
+use langchainx::memory::{SimpleMemory, WindowBufferMemory, DummyMemory};
 
 // Unbounded history
 let mem = SimpleMemory::new();
@@ -49,7 +49,7 @@ All memory types implement `Into<Arc<Mutex<dyn BaseMemory>>>`. Use `.into()`:
 ```rust
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use langchain_rust::{
+use langchainx::{
     memory::SimpleMemory,
     schemas::memory::BaseMemory,
 };

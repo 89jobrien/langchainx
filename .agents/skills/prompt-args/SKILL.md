@@ -23,7 +23,7 @@ It is an alias — not a newtype. There is no compile-time enforcement of requir
 ## prompt_args! Macro
 
 ```rust
-use langchain_rust::prompt_args;
+use langchainx::prompt_args;
 
 let args = prompt_args! {
     "input" => "Hello world",

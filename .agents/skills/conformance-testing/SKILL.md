@@ -1,6 +1,6 @@
 ---
 name: conformance-testing
-description: Trait conformance tests, property-based tests (proptest), fuzz targets, and boundary contracts for langchain-rust traits.
+description: Trait conformance tests, property-based tests (proptest), fuzz targets, and boundary contracts for langchainx traits.
 ---
 
 <oneliner>
@@ -21,7 +21,7 @@ Place these in `tests/conformance/<trait_name>.rs`.
 //! Conformance tests for the Tool trait.
 //! Any Tool impl can be tested by instantiating conformance_suite(tool).
 
-use langchain_rust::tools::Tool;
+use langchainx::tools::Tool;
 
 pub async fn conformance_suite(tool: &dyn Tool) {
     test_name_is_nonempty(tool);
@@ -89,7 +89,7 @@ async fn word_count_tool_conforms() {
 
 ```rust
 // tests/conformance/chain.rs
-use langchain_rust::chain::Chain;
+use langchainx::chain::Chain;
 use crate::test_utils::FakeLLM;
 
 pub async fn conformance_suite(chain: &dyn Chain) {
@@ -124,7 +124,7 @@ proptest = "1"
 ```rust
 // tests/proptest/prompt.rs
 use proptest::prelude::*;
-use langchain_rust::{prompt_args, template_fstring};
+use langchainx::{prompt_args, template_fstring};
 
 proptest! {
     #[test]
@@ -141,7 +141,7 @@ proptest! {
         capacity in 1usize..=20,
         messages in proptest::collection::vec(".*", 0..=50),
     ) {
-        use langchain_rust::{memory::WindowBufferMemory, schemas::Message};
+        use langchainx::{memory::WindowBufferMemory, schemas::Message};
         let mut mem = WindowBufferMemory::new(capacity);
         for msg in &messages {
             mem.add_user_message(msg.clone());
@@ -165,7 +165,7 @@ Init: `cargo fuzz init` (creates `fuzz/` directory)
 // fuzz/fuzz_targets/tool_parse_input.rs
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use langchain_rust::tools::Tool;
+use langchainx::tools::Tool;
 
 // A concrete tool to fuzz
 struct EchoTool;
@@ -197,8 +197,8 @@ Run: `cargo fuzz run tool_parse_input`
 // fuzz/fuzz_targets/prompt_format.rs
 fuzz_target!(|data: &[u8]| {
     if let Ok(s) = std::str::from_utf8(data) {
-        use langchain_rust::{prompt_args, template_fstring};
-        use langchain_rust::prompt::{HumanMessagePromptTemplate, FormatPrompter};
+        use langchainx::{prompt_args, template_fstring};
+        use langchainx::prompt::{HumanMessagePromptTemplate, FormatPrompter};
 
         // Arbitrary template — format must not panic even on bad input
         let template = template_fstring!("{input}", "input");

@@ -36,7 +36,7 @@ Uses OpenAI function-calling API. More reliable than ReAct text parsing.
 
 ```rust
 use std::sync::Arc;
-use langchain_rust::{
+use langchainx::{
     agent::{AgentExecutor, OpenAIToolsAgentBuilder},
     chain::Chain,
     llm::openai::OpenAI,
@@ -72,7 +72,7 @@ println!("{result}");
 Uses text-based ReAct reasoning. Works with any LLM but is less reliable than function calling.
 
 ```rust
-use langchain_rust::agent::{AgentExecutor, ChatAgentBuilder};
+use langchainx::agent::{AgentExecutor, ChatAgentBuilder};
 
 let agent = ChatAgentBuilder::new()
     .tools(&tools)

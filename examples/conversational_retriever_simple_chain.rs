@@ -2,7 +2,7 @@ use std::error::Error;
 
 use async_trait::async_trait;
 use futures_util::StreamExt;
-use langchain_rust::{
+use langchainx::{
     chain::{Chain, ConversationalRetrieverChainBuilder},
     fmt_message, fmt_template,
     llm::{OpenAI, OpenAIModel},

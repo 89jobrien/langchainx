@@ -1,6 +1,6 @@
-use langchain_rust::language_models::llm::LLM;
-use langchain_rust::llm::Qwen;
-use langchain_rust::schemas::Message;
+use langchainx::language_models::llm::LLM;
+use langchainx::llm::Qwen;
+use langchainx::schemas::Message;
 
 #[tokio::main]
 async fn main() {

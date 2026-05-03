@@ -49,7 +49,7 @@ Until JOB-256 is merged, implement the conversions manually:
 ```rust
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use langchain_rust::schemas::memory::BaseMemory;
+use langchainx::schemas::memory::BaseMemory;
 
 pub struct SlidingWindowMemory { /* ... */ }
 

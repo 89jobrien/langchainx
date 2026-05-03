@@ -49,7 +49,7 @@ impl<C: Connection> StoreBuilder<C> {
 
     /// Use surrealdb
     /// ```no_run
-    /// use langchain_rust::vectorstore::surrealdb::StoreBuilder;
+    /// use langchainx::vectorstore::surrealdb::StoreBuilder;
     ///
     /// #[tokio::main]
     /// async fn main() {

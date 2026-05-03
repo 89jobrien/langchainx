@@ -26,7 +26,7 @@ usage, stream() for streaming. ConversationalChain needs memory; retrieval chain
 ## ConversationalChain
 
 ```rust
-use langchain_rust::{
+use langchainx::{
     chain::{Chain, ConversationalChainBuilder},
     llm::openai::OpenAI,
     memory::SimpleMemory,
@@ -52,7 +52,7 @@ The default input key is `"input"`. History is stored under `"history"` in the p
 ## SequentialChain
 
 ```rust
-use langchain_rust::chain::{SequentialChainBuilder, Chain};
+use langchainx::chain::{SequentialChainBuilder, Chain};
 
 let chain = SequentialChainBuilder::new()
     .add_chain(chain1)   // Box<dyn Chain>
@@ -71,7 +71,7 @@ let chain = SequentialChainBuilder::new()
 Stuffs retrieved documents into the prompt context.
 
 ```rust
-use langchain_rust::chain::StuffDocumentBuilder;
+use langchainx::chain::StuffDocumentBuilder;
 
 let chain = StuffDocumentBuilder::new()
     .llm(OpenAI::default())
@@ -85,7 +85,7 @@ Used internally by `ConversationalRetrieverChain` and `question_answering::load_
 ## ConversationalRetrievalQA
 
 ```rust
-use langchain_rust::{
+use langchainx::{
     chain::{Chain, ConversationalRetrieverChainBuilder},
     llm::openai::OpenAI,
     memory::SimpleMemory,

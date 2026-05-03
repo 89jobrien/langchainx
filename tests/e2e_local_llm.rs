@@ -7,7 +7,7 @@
 /// not the specific content of the model's response.
 mod common;
 
-use langchain_rust::{
+use langchainx::{
     chain::{conversational::builder::ConversationalChainBuilder, Chain, LLMChainBuilder},
     embedding::OllamaEmbedder,
     fmt_template,
@@ -21,7 +21,7 @@ use langchain_rust::{
 use common::ollama_available;
 
 const MODEL: &str = "qwen2.5:0.5b";
-const EMBED_MODEL: &str = "nomic-embed-text";
+const EMBED_MODEL: &str = "nomic-embed-text-v2-moe";
 
 // ---------------------------------------------------------------------------
 // LLMChain — real generation completes without error
@@ -142,7 +142,7 @@ async fn test_ollama_embed_query_doneness() {
         return;
     }
 
-    use langchain_rust::embedding::embedder_trait::Embedder;
+    use langchainx::embedding::embedder_trait::Embedder;
 
     let embedder = OllamaEmbedder::default().with_model(EMBED_MODEL);
     let vector = embedder
@@ -164,7 +164,7 @@ async fn test_ollama_embed_documents_doneness() {
         return;
     }
 
-    use langchain_rust::embedding::embedder_trait::Embedder;
+    use langchainx::embedding::embedder_trait::Embedder;
 
     let embedder = OllamaEmbedder::default().with_model(EMBED_MODEL);
     let docs = vec![

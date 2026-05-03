@@ -15,7 +15,7 @@ Optional: parameters() for OpenAI function-call schema. parse_input() has a sens
 use async_trait::async_trait;
 use serde_json::Value;
 use std::error::Error;
-use langchain_rust::tools::Tool;
+use langchainx::tools::Tool;
 
 #[async_trait]
 pub trait Tool: Send + Sync {
@@ -45,7 +45,7 @@ pub trait Tool: Send + Sync {
 use async_trait::async_trait;
 use serde_json::Value;
 use std::error::Error;
-use langchain_rust::tools::Tool;
+use langchainx::tools::Tool;
 
 pub struct WordCount;
 
@@ -122,8 +122,8 @@ Tools are passed as `Vec<Arc<dyn Tool>>` via the agent builder, not directly to 
 
 ```rust
 use std::sync::Arc;
-use langchain_rust::agent::{AgentExecutor, OpenAIToolsAgentBuilder};
-use langchain_rust::tools::Tool;
+use langchainx::agent::{AgentExecutor, OpenAIToolsAgentBuilder};
+use langchainx::tools::Tool;
 
 let tools: Vec<Arc<dyn Tool>> = vec![
     Arc::new(WordCount),

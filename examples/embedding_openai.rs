@@ -1,4 +1,4 @@
-use langchain_rust::embedding::{embedder_trait::Embedder, openai::OpenAiEmbedder};
+use langchainx::embedding::{embedder_trait::Embedder, openai::OpenAiEmbedder};
 
 #[tokio::main]
 async fn main() {
