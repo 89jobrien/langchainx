@@ -1,0 +1,120 @@
+name: auto-version-bump
+
+# Runs on feature branches when src/*.rs files change.
+# Patch bump  (+0.0.1) — only existing .rs files modified.
+# Minor bump  (+0.1.0) — at least one new .rs file added.
+# Major bumps (+1.0.0) — done manually by the human.
+#
+# Guard: if the last commit is already a chore(version): bump commit,
+# the job exits immediately to avoid chasing its own push.
+#
+# Security: all github context values that flow into run: steps are
+# passed via env: vars, never interpolated directly into shell commands.
+
+on:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - "src/**/*.rs"
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Guard ────────────────────────────────────────────────────────────────
+      - name: Skip if last commit is already a version bump
+        id: guard
+        run: |
+          LAST_MSG=$(git log -1 --pretty=%s)
+          if echo "$LAST_MSG" | grep -qE '^chore\(version\): bump'; then
+            echo "skip=true"  >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── Classify changes ─────────────────────────────────────────────────────
+      - name: Determine bump type
+        if: steps.guard.outputs.skip == 'false'
+        id: bump
+        run: |
+          git fetch origin main --depth=50 2>/dev/null || true
+          BASE=$(git merge-base HEAD origin/main 2>/dev/null \
+                 || git rev-list --max-parents=0 HEAD)
+
+          NEW_RS=$(git diff --name-only --diff-filter=A "$BASE" HEAD \
+                   | grep '^src/.*\.rs$' | wc -l | tr -d ' ')
+          MOD_RS=$(git diff --name-only --diff-filter=M "$BASE" HEAD \
+                   | grep '^src/.*\.rs$' | wc -l | tr -d ' ')
+
+          echo "new_rs=$NEW_RS  mod_rs=$MOD_RS"
+
+          if [ "$NEW_RS" -gt 0 ]; then
+            echo "type=minor"                                          >> "$GITHUB_OUTPUT"
+            echo "reason=${NEW_RS} new src/*.rs file(s) added"        >> "$GITHUB_OUTPUT"
+          elif [ "$MOD_RS" -gt 0 ]; then
+            echo "type=patch"                                          >> "$GITHUB_OUTPUT"
+            echo "reason=${MOD_RS} existing src/*.rs file(s) modified" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=none"                   >> "$GITHUB_OUTPUT"
+            echo "reason=no src/*.rs changes"  >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── Read current version ─────────────────────────────────────────────────
+      - name: Read current version
+        if: steps.guard.outputs.skip == 'false' && steps.bump.outputs.type != 'none'
+        id: current
+        run: |
+          VERSION=$(grep -m1 '^version = ' Cargo.toml \
+                    | sed 's/version = "\(.*\)"/\1/')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      # ── Compute next version ─────────────────────────────────────────────────
+      - name: Compute next version
+        if: steps.guard.outputs.skip == 'false' && steps.bump.outputs.type != 'none'
+        id: next
+        env:
+          BUMP_TYPE: ${{ steps.bump.outputs.type }}
+          CURRENT_VERSION: ${{ steps.current.outputs.version }}
+        run: |
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+          if [ "$BUMP_TYPE" = "minor" ]; then
+            NEXT="${MAJOR}.$((MINOR + 1)).0"
+          else
+            NEXT="${MAJOR}.${MINOR}.$((PATCH + 1))"
+          fi
+          echo "version=$NEXT" >> "$GITHUB_OUTPUT"
+
+      # ── Apply bump ───────────────────────────────────────────────────────────
+      - name: Apply bump to Cargo.toml
+        if: steps.guard.outputs.skip == 'false' && steps.bump.outputs.type != 'none'
+        env:
+          CURRENT_VERSION: ${{ steps.current.outputs.version }}
+          NEXT_VERSION: ${{ steps.next.outputs.version }}
+        run: |
+          sed -i \
+            "s/^version = \"${CURRENT_VERSION}\"/version = \"${NEXT_VERSION}\"/" \
+            Cargo.toml
+          grep -m1 '^version = ' Cargo.toml
+
+      # ── Commit & push ────────────────────────────────────────────────────────
+      - name: Commit and push
+        if: steps.guard.outputs.skip == 'false' && steps.bump.outputs.type != 'none'
+        env:
+          CURRENT_VERSION: ${{ steps.current.outputs.version }}
+          NEXT_VERSION: ${{ steps.next.outputs.version }}
+          BUMP_REASON: ${{ steps.bump.outputs.reason }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Cargo.toml
+          git commit -m "chore(version): bump ${CURRENT_VERSION} -> ${NEXT_VERSION} (${BUMP_REASON})"
+          git push
