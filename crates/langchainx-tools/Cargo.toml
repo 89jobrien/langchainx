@@ -35,9 +35,9 @@ mockito  = "1.4.0"
 tempfile = "3"
 
 [features]
-default  = []
-postgres = ["dep:sqlx"]
+default    = []
+postgres   = ["dep:sqlx"]
 sqlite-vss = ["dep:sqlx"]
 sqlite-vec = ["dep:sqlx"]
-bash-tool = []
-nu-tool = []
+bash-tool  = []
+nu-tool    = []

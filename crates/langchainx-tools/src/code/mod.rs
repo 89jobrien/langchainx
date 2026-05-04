@@ -23,13 +23,15 @@ pub use glob::GlobTool;
 pub mod grep;
 pub use grep::GrepTool;
 
-// NuTool — placeholder, tracked in issue #78
-// #[cfg(feature = "nu-tool")]
-// pub mod nu;
+#[cfg(feature = "nu-tool")]
+pub mod nu;
+#[cfg(feature = "nu-tool")]
+pub use nu::NuTool;
 
 /// Returns the standard set of coding agent tools rooted at `base_dir`.
 ///
 /// With `bash-tool` feature enabled, `BashTool` is also included.
+/// With `nu-tool` feature enabled, `NuTool` is also included.
 pub fn coding_tools(base_dir: impl Into<PathBuf>) -> Vec<Arc<dyn Tool>> {
     let base: PathBuf = base_dir.into();
 
@@ -45,6 +47,9 @@ pub fn coding_tools(base_dir: impl Into<PathBuf>) -> Vec<Arc<dyn Tool>> {
     #[cfg(feature = "bash-tool")]
     tools.push(Arc::new(BashTool));
 
+    #[cfg(feature = "nu-tool")]
+    tools.push(Arc::new(NuTool::new()));
+
     tools
 }
 
@@ -55,11 +60,12 @@ mod tests {
     #[test]
     fn coding_tools_returns_expected_count() {
         let tools = coding_tools(".");
-        // 5 tools always; BashTool added with bash-tool feature
+        let mut expected = 5;
         #[cfg(feature = "bash-tool")]
-        assert_eq!(tools.len(), 6);
-        #[cfg(not(feature = "bash-tool"))]
-        assert_eq!(tools.len(), 5);
+        { expected += 1; }
+        #[cfg(feature = "nu-tool")]
+        { expected += 1; }
+        assert_eq!(tools.len(), expected);
     }
 
     #[test]
