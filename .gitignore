@@ -1,6 +1,11 @@
 target/
 Cargo.lock
 .DS_Store
+.env
+.env.local
+!.env.example
+.nuenv
+!.nuenv.example
 .fastembed_cache
 .vscode
 .idea

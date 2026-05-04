@@ -1,0 +1,48 @@
+{
+  "name": "langchainx",
+  "image": "mcr.microsoft.com/devcontainers/rust:1-bullseye",
+  "features": {
+    "ghcr.io/devcontainers/features/rust:1": {
+      "version": "stable",
+      "profile": "default"
+    },
+    "ghcr.io/devcontainers/features/nushell:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "tamasfe.even-better-toml",
+        "serayuzgur.crates",
+        "vadimcn.vscode-lldb"
+      ],
+      "settings": {
+        "rust-analyzer.cargo.features": "all",
+        "rust-analyzer.check.command": "clippy",
+        "editor.formatOnSave": true,
+        "[rust]": {
+          "editor.defaultFormatter": "rust-lang.rust-analyzer"
+        }
+      }
+    }
+  },
+  "forwardPorts": [
+    11434,
+    5432,
+    6334,
+    8000,
+    9200
+  ],
+  "portsAttributes": {
+    "11434": { "label": "Ollama" },
+    "5432":  { "label": "PostgreSQL" },
+    "6334":  { "label": "Qdrant" },
+    "8000":  { "label": "SurrealDB" },
+    "9200":  { "label": "OpenSearch" }
+  },
+  "remoteEnv": {
+    "RUST_LOG": "langchainx=debug"
+  }
+}

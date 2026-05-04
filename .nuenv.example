@@ -1,0 +1,58 @@
+# langchainx — nushell environment example
+# Copy to .nuenv and update op:// refs / plugin names to match your 1Password setup.
+# Secret resolution order:
+#   1. Already set in environment (highest priority)
+#   2. 1Password op plugin run (for configured plugins)
+#   3. 1Password op read (for all other vault items)
+#   4. Empty string / default fallback
+
+def --env try-op [ref: string, fallback: string = ""] {
+    if (which op | is-empty) { return $fallback }
+    let result = (do { op read $ref } | complete)
+    if $result.exit_code == 0 { $result.stdout | str trim } else { $fallback }
+}
+
+def --env try-op-plugin [plugin: string, env_var: string, fallback: string = ""] {
+    if (which op | is-empty) { return $fallback }
+    let result = (do { op plugin run -- $plugin env } | complete)
+    if $result.exit_code == 0 {
+        $result.stdout | lines | each { |l| $l | split column "=" } | flatten
+            | where column1 == $env_var
+            | get -i column2.0
+            | default $fallback
+    } else { $fallback }
+}
+
+def --env load-env [] {
+    # ── LLM backends ──────────────────────────────────────────────────────────
+    # Use try-op-plugin for services with a configured op plugin, try-op otherwise.
+    $env.OPENAI_API_KEY     = ($env | get -i OPENAI_API_KEY     | default (try-op-plugin "openai" "OPENAI_API_KEY"))
+    $env.ANTHROPIC_API_KEY  = ($env | get -i ANTHROPIC_API_KEY  | default (try-op "op://Personal/<Anthropic item>/credential"))
+    $env.DEEPSEEK_API_KEY   = ($env | get -i DEEPSEEK_API_KEY   | default (try-op "op://Personal/<DeepSeek item>/credential"))
+    $env.QWEN_API_KEY       = ($env | get -i QWEN_API_KEY       | default (try-op "op://Personal/<Qwen item>/credential"))
+    $env.MISTRAL_API_KEY    = ($env | get -i MISTRAL_API_KEY    | default (try-op "op://Personal/<MistralAI item>/credential"))
+    $env.OLLAMA_HOST        = ($env | get -i OLLAMA_HOST        | default "http://localhost:11434")
+
+    # ── Vector stores ──────────────────────────────────────────────────────────
+    $env.POSTGRES_URL       = ($env | get -i POSTGRES_URL       | default "postgresql://localhost:5432/langchainx")
+    $env.SURREALDB_URL      = ($env | get -i SURREALDB_URL      | default "ws://localhost:8000")
+    $env.SURREALDB_NS       = ($env | get -i SURREALDB_NS       | default "langchainx")
+    $env.SURREALDB_DB       = ($env | get -i SURREALDB_DB       | default "langchainx")
+    $env.SURREALDB_USER     = ($env | get -i SURREALDB_USER     | default (try-op "op://Personal/<SurrealDB item>/username"))
+    $env.SURREALDB_PASS     = ($env | get -i SURREALDB_PASS     | default (try-op "op://Personal/<SurrealDB item>/password"))
+    $env.QDRANT_URL         = ($env | get -i QDRANT_URL         | default "http://localhost:6334")
+    $env.QDRANT_API_KEY     = ($env | get -i QDRANT_API_KEY     | default (try-op "op://Personal/<Qdrant item>/credential"))
+    $env.OPENSEARCH_URL     = ($env | get -i OPENSEARCH_URL     | default "http://localhost:9200")
+    $env.OPENSEARCH_USER    = ($env | get -i OPENSEARCH_USER    | default "")
+    $env.OPENSEARCH_PASS    = ($env | get -i OPENSEARCH_PASS    | default (try-op "op://Personal/<OpenSearch item>/password"))
+    $env.SQLITE_PATH        = ($env | get -i SQLITE_PATH        | default "./langchainx.db")
+
+    # ── Tools ──────────────────────────────────────────────────────────────────
+    $env.SERPAPI_API_KEY    = ($env | get -i SERPAPI_API_KEY    | default (try-op "op://Personal/<SerpAPI item>/credential"))
+    $env.WOLFRAM_APP_ID     = ($env | get -i WOLFRAM_APP_ID     | default (try-op "op://Personal/<Wolfram item>/credential"))
+
+    # ── Dev / test ─────────────────────────────────────────────────────────────
+    $env.RUST_LOG           = ($env | get -i RUST_LOG           | default "langchainx=debug")
+}
+
+load-env
