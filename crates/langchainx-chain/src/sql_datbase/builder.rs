@@ -8,8 +8,8 @@ use crate::{
     output_parsers::OutputParser,
     prompt::HumanMessagePromptTemplate,
     template_jinja2,
-    tools::SQLDatabase,
 };
+use langchainx_tools::SQLDatabase;
 
 use super::{
     STOP_WORD,

@@ -1,10 +1,6 @@
 #![allow(clippy::module_inception)]
 
-mod error;
-pub use error::ToolError;
-
-mod tool;
-pub use tool::Tool;
+pub use langchainx_core::tools::{Tool, ToolError};
 
 pub mod wolfram;
 pub use wolfram::Wolfram;

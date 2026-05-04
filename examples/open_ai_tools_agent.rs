@@ -1,14 +1,12 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use langchainx::{
-    agent::{AgentExecutor, OpenAiToolAgentBuilder},
-    chain::{Chain, options::ChainCallOptions},
-    llm::openai::OpenAI,
-    memory::SimpleMemory,
-    prompt_args,
-    tools::{CommandExecutor, DuckDuckGoSearchResults, SerpApi, Tool, ToolError},
-};
+use langchainx_agent::{AgentExecutor, OpenAiToolAgentBuilder};
+use langchainx_chain::{Chain, options::ChainCallOptions};
+use langchainx_llm::OpenAI;
+use langchainx_memory::SimpleMemory;
+use langchainx_prompt::prompt_args;
+use langchainx_tools::{CommandExecutor, DuckDuckGoSearchResults, SerpApi, Tool, ToolError};
 
 use serde_json::Value;
 struct Date {}

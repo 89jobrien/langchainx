@@ -13,7 +13,7 @@ pub mod openai {
 
 #[cfg(feature = "fastembed")]
 pub mod fastembed {
-    pub use langchainx_embedding::fastembed::*;
+    pub use langchainx_embedding::embedding::fastembed::*;
 }
 
 #[cfg(feature = "mistralai")]

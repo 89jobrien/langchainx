@@ -12,7 +12,7 @@ pub mod openai;
 pub use error::*;
 
 #[cfg(feature = "fastembed")]
-mod fastembed;
+pub mod fastembed;
 #[cfg(feature = "fastembed")]
 pub use fastembed::*;
 

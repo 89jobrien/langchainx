@@ -10,8 +10,8 @@ use crate::{
     prompt::PromptArgs,
     prompt_args,
     schemas::StreamData,
-    tools::SQLDatabase,
 };
+use langchainx_tools::SQLDatabase;
 
 use super::{
     QUERY_PREFIX_WITH, SQL_CHAIN_DEFAULT_INPUT_KEY_QUERY, SQL_CHAIN_DEFAULT_INPUT_KEY_TABLE_NAMES,

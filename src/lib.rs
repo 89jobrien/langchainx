@@ -39,4 +39,5 @@ pub mod tools;
 pub mod vectorstore;
 
 pub use langchainx_core::LangChainError;
+pub use langchainx_vectorstore::{add_documents, similarity_search};
 pub use url;

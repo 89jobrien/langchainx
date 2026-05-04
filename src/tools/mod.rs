@@ -3,6 +3,8 @@ pub use langchainx_tools::confluence;
 pub use langchainx_tools::google;
 pub use langchainx_tools::jira;
 pub use langchainx_tools::sql;
+#[cfg(feature = "postgres")]
+pub use langchainx_tools::sql::postgres;
 pub use langchainx_tools::text2speech::openai::{
     Config, OpenAIConfig, SpeechModel, SpeechResponseFormat, Voice,
 };

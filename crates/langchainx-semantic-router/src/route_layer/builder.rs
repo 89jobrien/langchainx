@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use futures_util::future::try_join_all;
 
-use langchainx_chain::{LLMChain, LLMChainBuilder};
 use langchainx_chain::language_models::llm::LLM;
+use langchainx_chain::{LLMChain, LLMChainBuilder};
 use langchainx_embedding::{Embedder, embedding::openai::OpenAiEmbedder};
 use langchainx_llm::openai::OpenAI;
 use langchainx_prompt::{HumanMessagePromptTemplate, template_jinja2};

@@ -1,11 +1,11 @@
 // To run this example execute: cargo run --example sql_chain --features postgres
 
 #[cfg(feature = "postgres")]
-use langchainx::{
-    chain::{Chain, SQLDatabaseChainBuilder, options::ChainCallOptions},
-    llm::openai::OpenAI,
-    tools::{SQLDatabaseBuilder, postgres::PostgreSQLEngine},
-};
+use langchainx_chain::{Chain, SQLDatabaseChainBuilder, options::ChainCallOptions};
+#[cfg(feature = "postgres")]
+use langchainx_llm::OpenAI;
+#[cfg(feature = "postgres")]
+use langchainx_tools::{SQLDatabaseBuilder, sql::postgres::PostgreSQLEngine};
 
 #[cfg(feature = "postgres")]
 use std::io::{self, Write}; // Include io Library for terminal input
