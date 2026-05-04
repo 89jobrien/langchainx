@@ -38,7 +38,8 @@ documentation = "https://github.com/89jobrien/langchainx"
 
 [dependencies]
 langchainx-core          = { path = "crates/langchainx-core" }
-langchainx-chain         = { path = "crates/langchainx-chain" }
+langchainx-chain          = { path = "crates/langchainx-chain" }
+langchainx-output-parsers = { path = "crates/langchainx-output-parsers" }
 langchainx-embedding     = { path = "crates/langchainx-embedding" }
 langchainx-llm           = { path = "crates/langchainx-llm" }
 langchainx-memory        = { path = "crates/langchainx-memory" }
