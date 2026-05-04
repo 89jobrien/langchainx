@@ -180,6 +180,23 @@ pub trait Chain: Sync + Send {
         unimplemented!()
     }
 
+    /// Returns the keys that must be present in input_variables for this chain.
+    /// Default implementation returns empty — override in chains that have required keys.
+    fn required_keys(&self) -> Vec<String> {
+        vec![]
+    }
+
+    /// Validates that all required keys are present in input_variables.
+    /// Returns `Err(ChainError::MissingInputVariable)` for the first missing key.
+    fn validate_input(&self, input_variables: &PromptArgs) -> Result<(), ChainError> {
+        for key in self.required_keys() {
+            if !input_variables.contains_key(&key) {
+                return Err(ChainError::MissingInputVariable(key));
+            }
+        }
+        Ok(())
+    }
+
     // Get the input keys of the prompt
     fn get_input_keys(&self) -> Vec<String> {
         log::info!("Using default implementation");
