@@ -1,4 +1,4 @@
-use crate::document_loaders::{process_doc_stream, LoaderError};
+use crate::document_loaders::{LoaderError, process_doc_stream};
 use crate::{document_loaders::Loader, schemas::Document, text_splitter::TextSplitter};
 use async_stream::stream;
 use async_trait::async_trait;

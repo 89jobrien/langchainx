@@ -1,8 +1,8 @@
 use std::collections::VecDeque;
 use std::pin::Pin;
 use std::sync::{
-    atomic::{AtomicUsize, Ordering},
     Arc,
+    atomic::{AtomicUsize, Ordering},
 };
 
 use async_trait::async_trait;
@@ -10,8 +10,8 @@ use futures::Stream;
 use tokio::sync::Mutex;
 
 use langchainx::{
-    embedding::{embedder_trait::Embedder, EmbedderError},
-    language_models::{llm::LLM, GenerateResult, LLMError},
+    embedding::{EmbedderError, embedder_trait::Embedder},
+    language_models::{GenerateResult, LLMError, llm::LLM},
     schemas::{Message, StreamData},
 };
 

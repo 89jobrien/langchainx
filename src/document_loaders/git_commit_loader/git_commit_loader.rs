@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::pin::Pin;
 
-use crate::document_loaders::{process_doc_stream, LoaderError};
+use crate::document_loaders::{LoaderError, process_doc_stream};
 use crate::{document_loaders::Loader, schemas::Document, text_splitter::TextSplitter};
 use async_trait::async_trait;
 use futures::Stream;

@@ -1,10 +1,10 @@
 use std::pin::Pin;
 
 use async_trait::async_trait;
-use futures::{stream, Stream};
+use futures::{Stream, stream};
 
 use crate::{
-    document_loaders::{process_doc_stream, Loader, LoaderError},
+    document_loaders::{Loader, LoaderError, process_doc_stream},
     schemas::Document,
     text_splitter::TextSplitter,
 };

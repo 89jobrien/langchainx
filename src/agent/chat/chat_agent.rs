@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use serde_json::json;
 
 use crate::{
-    agent::{agent::Agent, chat::prompt::FORMAT_INSTRUCTIONS, AgentError},
+    agent::{AgentError, agent::Agent, chat::prompt::FORMAT_INSTRUCTIONS},
     chain::chain_trait::Chain,
     message_formatter,
     prompt::{

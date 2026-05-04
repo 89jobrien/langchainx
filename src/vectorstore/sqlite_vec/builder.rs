@@ -1,8 +1,8 @@
 use std::{error::Error, str::FromStr, sync::Arc};
 
 use sqlx::{
-    sqlite::{SqliteConnectOptions, SqlitePoolOptions},
     Pool, Sqlite,
+    sqlite::{SqliteConnectOptions, SqlitePoolOptions},
 };
 
 use super::Store;
