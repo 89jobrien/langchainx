@@ -38,3 +38,9 @@ pub enum EmbedderError {
     #[error("MistralAI API error: {0}")]
     MistralAIApiError(#[from] ApiError),
 }
+
+impl From<EmbedderError> for langchainx_core::LangChainError {
+    fn from(e: EmbedderError) -> Self {
+        langchainx_core::LangChainError::Embedder(Box::new(e))
+    }
+}

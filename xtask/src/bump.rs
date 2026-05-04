@@ -49,10 +49,10 @@ fn parse_workspace_version(content: &str) -> Option<String> {
             if trimmed.starts_with('[') {
                 break;
             }
-            if let Some(v) = trimmed.strip_prefix("version = \"") {
-                if let Some(v) = v.strip_suffix('"') {
-                    return Some(v.to_string());
-                }
+            if let Some(v) = trimmed.strip_prefix("version = \"")
+                && let Some(v) = v.strip_suffix('"')
+            {
+                return Some(v.to_string());
             }
         }
     }

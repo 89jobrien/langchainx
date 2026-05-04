@@ -15,16 +15,21 @@ impl PromptValue {
         Self { messages }
     }
 
-    pub fn to_string(&self) -> String {
-        self.messages
-            .iter()
-            .map(|m| format!("{}: {}", m.message_type.to_string(), m.content))
-            .collect::<Vec<String>>()
-            .join("\n")
-    }
 
     pub fn to_chat_messages(&self) -> Vec<Message> {
         self.messages.clone()
+    }
+}
+
+impl std::fmt::Display for PromptValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = self
+            .messages
+            .iter()
+            .map(|m| format!("{}: {}", m.message_type, m.content))
+            .collect::<Vec<String>>()
+            .join("\n");
+        f.write_str(&s)
     }
 }
 

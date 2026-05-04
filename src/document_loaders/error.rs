@@ -47,3 +47,9 @@ pub enum LoaderError {
     #[error("Error: {0}")]
     OtherError(String),
 }
+
+impl From<LoaderError> for langchainx_core::LangChainError {
+    fn from(e: LoaderError) -> Self {
+        langchainx_core::LangChainError::Loader(Box::new(e))
+    }
+}

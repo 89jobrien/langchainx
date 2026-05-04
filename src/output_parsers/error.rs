@@ -9,3 +9,9 @@ pub enum OutputParserError {
     #[error("Parsing error: {0}")]
     ParsingError(String),
 }
+
+impl From<OutputParserError> for langchainx_core::LangChainError {
+    fn from(e: OutputParserError) -> Self {
+        langchainx_core::LangChainError::OutputParser(Box::new(e))
+    }
+}

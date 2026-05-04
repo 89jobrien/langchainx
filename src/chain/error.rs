@@ -40,3 +40,9 @@ pub enum ChainError {
     #[error("Agent error: {0}")]
     AgentError(String),
 }
+
+impl From<ChainError> for langchainx_core::LangChainError {
+    fn from(e: ChainError) -> Self {
+        langchainx_core::LangChainError::Chain(Box::new(e))
+    }
+}

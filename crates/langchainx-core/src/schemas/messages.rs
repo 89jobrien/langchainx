@@ -11,8 +11,9 @@ use serde_json::Value;
 /// let ai_message_type = MessageType::AIMessage;
 /// let human_message_type = MessageType::HumanMessage;
 /// ```
-#[derive(PartialEq, Eq, Serialize, Deserialize, Debug, Clone)]
+#[derive(PartialEq, Eq, Serialize, Deserialize, Debug, Clone, Default)]
 pub enum MessageType {
+    #[default]
     #[serde(rename = "system")]
     SystemMessage,
     #[serde(rename = "ai")]
@@ -23,20 +24,15 @@ pub enum MessageType {
     ToolMessage,
 }
 
-impl Default for MessageType {
-    fn default() -> Self {
-        Self::SystemMessage
-    }
-}
-
-impl MessageType {
-    pub fn to_string(&self) -> String {
-        match self {
-            MessageType::SystemMessage => "system".to_owned(),
-            MessageType::AIMessage => "ai".to_owned(),
-            MessageType::HumanMessage => "human".to_owned(),
-            MessageType::ToolMessage => "tool".to_owned(),
-        }
+impl std::fmt::Display for MessageType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            MessageType::SystemMessage => "system",
+            MessageType::AIMessage => "ai",
+            MessageType::HumanMessage => "human",
+            MessageType::ToolMessage => "tool",
+        };
+        f.write_str(s)
     }
 }
 
