@@ -9,6 +9,7 @@ members = [
     "crates/langchainx-embedding",
     "crates/langchainx-chain",
     "crates/langchainx-text-splitter",
+    "crates/langchainx-vectorstore",
     "examples/vector_store_surrealdb",
     "xtask",
 ]
@@ -33,7 +34,9 @@ documentation = "https://github.com/89jobrien/langchainx"
 
 [dependencies]
 langchainx-core          = { path = "crates/langchainx-core" }
+langchainx-embedding     = { path = "crates/langchainx-embedding" }
 langchainx-text-splitter = { path = "crates/langchainx-text-splitter" }
+langchainx-vectorstore   = { path = "crates/langchainx-vectorstore" }
 scraper = "0.21"
 serde = { version = "1.0", features = ["derive"] }
 async-trait = "0.1.80"
@@ -113,21 +116,21 @@ quick-xml = { version = "0.36", optional = true }
 [features]
 default = []
 test-utils = []
-fastembed = ["dep:fastembed"]
+fastembed = ["dep:fastembed", "langchainx-embedding/fastembed"]
 git = ["gix", "flume"]
 html-to-markdown = ["dep:htmd"]
-mistralai = ["mistralai-client"]
+mistralai = ["mistralai-client", "langchainx-embedding/mistralai"]
 lopdf = ["dep:lopdf"]
 pdf-extract = ["dep:lopdf", "dep:pdf-extract"]
-ollama = ["ollama-rs"]
-opensearch = ["dep:opensearch", "aws-config"]
-postgres = ["pgvector", "sqlx", "uuid"]
-qdrant = ["qdrant-client", "uuid"]
-sqlite-vss = ["sqlx"]
-sqlite-vec = ["sqlx"]
+ollama = ["ollama-rs", "langchainx-embedding/ollama"]
+opensearch = ["dep:opensearch", "aws-config", "langchainx-vectorstore/opensearch"]
+postgres = ["pgvector", "sqlx", "uuid", "langchainx-vectorstore/postgres"]
+qdrant = ["qdrant-client", "uuid", "langchainx-vectorstore/qdrant"]
+sqlite-vss = ["sqlx", "langchainx-vectorstore/sqlite-vss"]
+sqlite-vec = ["sqlx", "langchainx-vectorstore/sqlite-vec"]
 rss = ["dep:rss"]
 sitemap = ["dep:quick-xml"]
-surrealdb = ["dep:surrealdb"]
+surrealdb = ["dep:surrealdb", "langchainx-vectorstore/surrealdb"]
 tree-sitter = [
     "cc",
     "dep:tree-sitter",
