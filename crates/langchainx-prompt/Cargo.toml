@@ -1,0 +1,21 @@
+[package]
+name = "langchainx-prompt"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Prompt templates and output parsers for langchainx"
+
+[dependencies]
+langchainx-core           = { path = "../langchainx-core" }
+langchainx-output-parsers = { path = "../langchainx-output-parsers" }
+serde           = { version = "1.0", features = ["derive"] }
+serde_json      = "1.0"
+regex           = "1.10.4"
+thiserror       = "2.0.0"
+async-trait     = "0.1.80"
+log             = "0.4.21"
+tokio           = { version = "1", features = ["full"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
