@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    chain::{options::ChainCallOptions, ChainError, LLMChainBuilder},
+    chain::{ChainError, LLMChainBuilder, options::ChainCallOptions},
     language_models::llm::{IntoArcLLM, LLM},
     output_parsers::OutputParser,
     prompt::FormatPrompter,

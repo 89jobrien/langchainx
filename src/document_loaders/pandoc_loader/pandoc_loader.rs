@@ -1,7 +1,7 @@
 use std::{fmt, path::Path, pin::Pin, process::Stdio};
 
 use async_trait::async_trait;
-use futures_util::{stream, Stream};
+use futures_util::{Stream, stream};
 use tokio::{
     fs::File,
     io::{AsyncRead, AsyncWriteExt, BufReader},
@@ -9,7 +9,7 @@ use tokio::{
 };
 
 use crate::{
-    document_loaders::{process_doc_stream, Loader, LoaderError},
+    document_loaders::{Loader, LoaderError, process_doc_stream},
     schemas::Document,
     text_splitter::TextSplitter,
 };

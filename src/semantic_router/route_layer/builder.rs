@@ -4,7 +4,7 @@ use futures_util::future::try_join_all;
 
 use crate::{
     chain::{LLMChain, LLMChainBuilder},
-    embedding::{openai::OpenAiEmbedder, Embedder},
+    embedding::{Embedder, openai::OpenAiEmbedder},
     language_models::llm::LLM,
     llm::openai::OpenAI,
     prompt::HumanMessagePromptTemplate,

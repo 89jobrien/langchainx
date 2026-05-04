@@ -1,6 +1,6 @@
 use crate::{
-    language_models::{llm::LLM, options::CallOptions, GenerateResult, LLMError, TokenUsage},
     DeepseekError,
+    language_models::{GenerateResult, LLMError, TokenUsage, llm::LLM, options::CallOptions},
     schemas::{Message, StreamData},
 };
 use async_trait::async_trait;

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use langchainx::{
     agent::{AgentExecutor, ConversationalAgentBuilder},
-    chain::{options::ChainCallOptions, Chain},
+    chain::{Chain, options::ChainCallOptions},
     llm::openai::OpenAI,
     memory::SimpleMemory,
     prompt_args,

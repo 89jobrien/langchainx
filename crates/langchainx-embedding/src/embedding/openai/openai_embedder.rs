@@ -1,10 +1,10 @@
 #![allow(dead_code)]
 
-use crate::embedding::{embedder_trait::Embedder, EmbedderError};
+use crate::embedding::{EmbedderError, embedder_trait::Embedder};
 pub use async_openai::config::{AzureConfig, Config, OpenAIConfig};
 use async_openai::{
-    types::{CreateEmbeddingRequestArgs, EmbeddingInput},
     Client,
+    types::{CreateEmbeddingRequestArgs, EmbeddingInput},
 };
 use async_trait::async_trait;
 

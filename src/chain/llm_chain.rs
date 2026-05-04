@@ -7,15 +7,15 @@ use futures_util::TryStreamExt;
 
 use crate::{
     language_models::{
-        llm::{IntoArcLLM, LLM},
         GenerateResult,
+        llm::{IntoArcLLM, LLM},
     },
     output_parsers::{OutputParser, SimpleParser},
     prompt::{FormatPrompter, PromptArgs},
     schemas::StreamData,
 };
 
-use super::{chain_trait::Chain, options::ChainCallOptions, ChainError};
+use super::{ChainError, chain_trait::Chain, options::ChainCallOptions};
 
 pub struct LLMChainBuilder {
     prompt: Option<Box<dyn FormatPrompter>>,

@@ -8,7 +8,7 @@
 mod common;
 
 use langchainx::{
-    chain::{conversational::builder::ConversationalChainBuilder, Chain, LLMChainBuilder},
+    chain::{Chain, LLMChainBuilder, conversational::builder::ConversationalChainBuilder},
     embedding::OllamaEmbedder,
     fmt_template,
     llm::ollama::client::Ollama,

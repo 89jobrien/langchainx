@@ -7,7 +7,7 @@ use langchainx::{
     embedding::openai::openai_embedder::OpenAiEmbedder,
     schemas::Document,
     similarity_search,
-    vectorstore::{pgvector::StoreBuilder, VectorStore},
+    vectorstore::{VectorStore, pgvector::StoreBuilder},
 };
 #[cfg(feature = "postgres")]
 use std::io::Write;

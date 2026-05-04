@@ -6,11 +6,11 @@ use serde_json::Value;
 
 use crate::{
     chain::{
-        load_stuff_qa, options::ChainCallOptions, Chain, ChainError, LLMChain, StuffQAPromptBuilder,
+        Chain, ChainError, LLMChain, StuffQAPromptBuilder, load_stuff_qa, options::ChainCallOptions,
     },
     language_models::{
-        llm::{IntoArcLLM, LLM},
         GenerateResult,
+        llm::{IntoArcLLM, LLM},
     },
     prompt::PromptArgs,
     schemas::{Document, StreamData},
