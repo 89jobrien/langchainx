@@ -1,10 +1,10 @@
 #![allow(dead_code)]
 
-use crate::embedding::{embedder_trait::Embedder, EmbedderError};
+use crate::embedding::{EmbedderError, embedder_trait::Embedder};
 pub use async_openai::config::{AzureConfig, Config, OpenAIConfig};
 use async_openai::{
-    types::{CreateEmbeddingRequestArgs, EmbeddingInput},
     Client,
+    types::{CreateEmbeddingRequestArgs, EmbeddingInput},
 };
 use async_trait::async_trait;
 
@@ -14,9 +14,9 @@ pub struct OpenAiEmbedder<C: Config> {
     model: String,
 }
 
-impl<C: Config + Send + Sync + 'static> Into<Box<dyn Embedder>> for OpenAiEmbedder<C> {
-    fn into(self) -> Box<dyn Embedder> {
-        Box::new(self)
+impl<C: Config + Send + Sync + 'static> From<OpenAiEmbedder<C>> for Box<dyn Embedder> {
+    fn from(val: OpenAiEmbedder<C>) -> Self {
+        Box::new(val)
     }
 }
 

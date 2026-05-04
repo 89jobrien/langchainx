@@ -6,8 +6,8 @@ mod common;
 
 use langchainx::{
     chain::{
-        conversational::builder::ConversationalChainBuilder, Chain, LLMChainBuilder,
-        SequentialChainBuilder,
+        Chain, LLMChainBuilder, SequentialChainBuilder,
+        conversational::builder::ConversationalChainBuilder,
     },
     fmt_template,
     memory::SimpleMemory,

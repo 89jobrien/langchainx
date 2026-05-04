@@ -2,12 +2,12 @@
 // To start pgvector docker run ./scripts/run-pgvector
 
 #[cfg(feature = "postgres")]
-use langchainx::{
-    add_documents,
-    embedding::openai::openai_embedder::OpenAiEmbedder,
-    schemas::Document,
-    similarity_search,
-    vectorstore::{pgvector::StoreBuilder, VectorStore},
+use langchainx_core::schemas::Document;
+#[cfg(feature = "postgres")]
+use langchainx_embedding::embedding::openai::openai_embedder::OpenAiEmbedder;
+#[cfg(feature = "postgres")]
+use langchainx_vectorstore::{
+    VectorStore, add_documents, pgvector::StoreBuilder, similarity_search,
 };
 #[cfg(feature = "postgres")]
 use std::io::Write;

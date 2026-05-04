@@ -1,0 +1,15 @@
+[package]
+name = "langchainx-text-splitter"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Text splitting utilities for langchainx"
+
+[dependencies]
+langchainx-core  = { path = "../langchainx-core" }
+async-trait      = "0.1.80"
+thiserror        = "2.0.0"
+serde_json       = "1.0"
+text-splitter    = { version = "0.17", features = ["tiktoken-rs", "markdown"] }
+tiktoken-rs      = "0.5.8"

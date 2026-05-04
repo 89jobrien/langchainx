@@ -83,30 +83,3 @@ pub(crate) struct ApiResponse {
     pub usage: Usage,
     pub system_fingerprint: String,
 }
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub(crate) struct StreamChoice {
-    pub delta: Delta,
-    pub finish_reason: Option<String>,
-    pub index: u32,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub(crate) struct Delta {
-    #[serde(default)]
-    pub content: String,
-    pub role: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub reasoning_content: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub(crate) struct StreamResponse {
-    pub id: String,
-    pub object: String,
-    pub created: u64,
-    pub model: String,
-    pub choices: Vec<StreamChoice>,
-    pub system_fingerprint: String,
-    pub usage: Option<Usage>,
-}

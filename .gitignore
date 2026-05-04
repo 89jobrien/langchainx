@@ -22,3 +22,5 @@ Cargo.lock
 .ctx/HANDOFF.hj.hj.state.json
 .ctx/.initialized
 # handoff-end
+.worktrees/
+.claude/skills

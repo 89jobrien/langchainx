@@ -2,7 +2,7 @@ use std::{collections::HashMap, pin::Pin};
 
 use async_trait::async_trait;
 use futures::Stream;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use crate::{language_models::GenerateResult, prompt::PromptArgs, schemas::StreamData};
 

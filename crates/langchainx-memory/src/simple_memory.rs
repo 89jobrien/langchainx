@@ -4,6 +4,7 @@ use tokio::sync::Mutex;
 
 use crate::schemas::{memory::BaseMemory, messages::Message};
 
+#[derive(Default)]
 pub struct SimpleMemory {
     messages: Vec<Message>,
 }
@@ -16,9 +17,9 @@ impl SimpleMemory {
     }
 }
 
-impl Into<Arc<Mutex<dyn BaseMemory>>> for SimpleMemory {
-    fn into(self) -> Arc<Mutex<dyn BaseMemory>> {
-        Arc::new(Mutex::new(self))
+impl From<SimpleMemory> for Arc<Mutex<dyn BaseMemory>> {
+    fn from(m: SimpleMemory) -> Arc<Mutex<dyn BaseMemory>> {
+        Arc::new(Mutex::new(m))
     }
 }
 

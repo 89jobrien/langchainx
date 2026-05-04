@@ -12,6 +12,7 @@ langchainx-llm            = { path = "../langchainx-llm" }
 langchainx-prompt         = { path = "../langchainx-prompt" }
 langchainx-memory         = { path = "../langchainx-memory" }
 langchainx-output-parsers = { path = "../langchainx-output-parsers" }
+langchainx-tools          = { path = "../langchainx-tools", optional = true }
 
 async-trait    = "0.1.80"
 tokio          = { version = "1", features = ["full"] }
@@ -36,7 +37,7 @@ uuid = { version = "1.8.0", features = ["v4"], optional = true }
 [features]
 default    = []
 test-utils = []
-postgres   = ["sqlx", "uuid"]
+postgres   = ["sqlx", "uuid", "langchainx-tools/postgres"]
 sqlite-vss = ["sqlx"]
 sqlite-vec = ["sqlx"]
 

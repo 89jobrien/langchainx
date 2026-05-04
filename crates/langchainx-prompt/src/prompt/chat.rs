@@ -184,6 +184,7 @@ macro_rules! fmt_placeholder {
     };
 }
 
+#[derive(Default)]
 pub struct MessageFormatterStruct {
     items: Vec<MessageOrTemplate>,
 }
@@ -297,7 +298,7 @@ macro_rules! message_formatter {
 mod tests {
     use crate::{
         message_formatter,
-        prompt::{chat::AIMessagePromptTemplate, FormatPrompter},
+        prompt::{FormatPrompter, chat::AIMessagePromptTemplate},
         prompt_args,
         schemas::messages::Message,
         template_fstring,

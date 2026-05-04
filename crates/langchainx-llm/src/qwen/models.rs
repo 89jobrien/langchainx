@@ -77,30 +77,6 @@ pub(crate) struct Usage {
     pub total_tokens: u32,
 }
 
-// Stream response structures
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub(crate) struct StreamResponse {
-    pub id: String,
-    pub model: String,
-    pub created: u64,
-    pub choices: Vec<StreamChoice>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub(crate) struct StreamChoice {
-    pub delta: Delta,
-    pub finish_reason: Option<String>,
-    pub index: u32,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub(crate) struct Delta {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub role: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub content: Option<String>,
-}
-
 // Error response structure
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct ErrorResponse {

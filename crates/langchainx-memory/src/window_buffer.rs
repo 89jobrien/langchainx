@@ -24,9 +24,9 @@ impl WindowBufferMemory {
     }
 }
 
-impl Into<Arc<Mutex<dyn BaseMemory>>> for WindowBufferMemory {
-    fn into(self) -> Arc<Mutex<dyn BaseMemory>> {
-        Arc::new(Mutex::new(self))
+impl From<WindowBufferMemory> for Arc<Mutex<dyn BaseMemory>> {
+    fn from(m: WindowBufferMemory) -> Arc<Mutex<dyn BaseMemory>> {
+        Arc::new(Mutex::new(m))
     }
 }
 

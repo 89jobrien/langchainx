@@ -119,17 +119,18 @@ impl Drop for SmolvmMachine {
 
 /// Poll `addr` until a TCP connection succeeds or `timeout_secs` elapses.
 /// Prints "waiting for <label>..." once, then a dot every 5 seconds.
-async fn wait_for_tcp(addr: &str, label: &str, timeout_secs: u64) {
+async fn wait_for_tcp(addr: &str, label: &str, timeout_secs: u64) -> bool {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(timeout_secs);
     let mut last_dot = std::time::Instant::now();
     eprintln!("waiting for {label} at {addr}...");
     loop {
         if tokio::net::TcpStream::connect(addr).await.is_ok() {
             eprintln!(" ready.");
-            return;
+            return true;
         }
         if std::time::Instant::now() > deadline {
-            panic!("{label} did not become ready within {timeout_secs}s on {addr}");
+            eprintln!("SKIP: {label} did not become ready within {timeout_secs}s on {addr}");
+            return false;
         }
         if last_dot.elapsed() >= std::time::Duration::from_secs(5) {
             eprint!(".");
@@ -149,20 +150,21 @@ mod pgvector_tests {
         add_documents,
         schemas::Document,
         similarity_search,
-        vectorstore::{pgvector::StoreBuilder, VectorStore},
+        vectorstore::{VectorStore, pgvector::StoreBuilder},
     };
 
     use crate::common::FakeEmbedder;
-    use crate::{free_port, smolvm_available, wait_for_tcp, SmolvmMachine};
+    use crate::{SmolvmMachine, free_port, smolvm_available, wait_for_tcp};
     use serial_test::serial;
 
-    async fn start_pgvector() -> (SmolvmMachine, String) {
+    async fn start_pgvector() -> Option<(SmolvmMachine, String)> {
         let artifact = crate::artifact_dir().join("pgvector-pg16.smolmachine");
         crate::smolvm_pack_or_reuse("pgvector/pgvector:pg16", &artifact);
         let port = free_port();
         let port_map = format!("{port}:5432");
+        let machine_name = format!("pgvector-test-{port}");
         let machine = SmolvmMachine::launch(
-            "pgvector-test",
+            &machine_name,
             &artifact,
             &[
                 "-p",
@@ -176,10 +178,12 @@ mod pgvector_tests {
             ],
             port,
         );
-        wait_for_tcp(&format!("127.0.0.1:{port}"), "postgres", 90).await;
+        if !wait_for_tcp(&format!("*********:{port}"), "postgres", 90).await {
+            return None;
+        }
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
         let url = format!("postgresql://test:test@127.0.0.1:{port}/testdb");
-        (machine, url)
+        Some((machine, url))
     }
 
     #[tokio::test]
@@ -190,7 +194,9 @@ mod pgvector_tests {
             return;
         }
 
-        let (_machine, url) = start_pgvector().await;
+        let Some((_machine, url)) = start_pgvector().await else {
+            return;
+        };
 
         let embedder = FakeEmbedder::new(3);
 
@@ -229,7 +235,9 @@ mod pgvector_tests {
             return;
         }
 
-        let (_machine, url) = start_pgvector().await;
+        let Some((_machine, url)) = start_pgvector().await else {
+            return;
+        };
 
         let embedder = FakeEmbedder::new(3);
 
@@ -264,24 +272,27 @@ mod qdrant_tests {
         add_documents,
         schemas::Document,
         similarity_search,
-        vectorstore::{qdrant::StoreBuilder, VectorStore},
+        vectorstore::{VectorStore, qdrant::StoreBuilder},
     };
     use qdrant_client::Qdrant;
 
     use crate::common::FakeEmbedder;
-    use crate::{free_port, smolvm_available, wait_for_tcp, SmolvmMachine};
+    use crate::{SmolvmMachine, free_port, smolvm_available, wait_for_tcp};
     use serial_test::serial;
 
-    async fn start_qdrant() -> (SmolvmMachine, String) {
+    async fn start_qdrant() -> Option<(SmolvmMachine, String)> {
         let artifact = crate::artifact_dir().join("qdrant-latest.smolmachine");
         crate::smolvm_pack_or_reuse("qdrant/qdrant:latest", &artifact);
         let port = free_port();
         let port_map = format!("{port}:6334");
-        let machine = SmolvmMachine::launch("qdrant-test", &artifact, &["-p", &port_map], port);
-        wait_for_tcp(&format!("127.0.0.1:{port}"), "qdrant", 90).await;
+        let machine_name = format!("qdrant-test-{port}");
+        let machine = SmolvmMachine::launch(&machine_name, &artifact, &["-p", &port_map], port);
+        if !wait_for_tcp(&format!("127.0.0.1:{port}"), "qdrant", 90).await {
+            return None;
+        }
         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         let url = format!("http://127.0.0.1:{port}");
-        (machine, url)
+        Some((machine, url))
     }
 
     #[tokio::test]
@@ -292,7 +303,9 @@ mod qdrant_tests {
             return;
         }
 
-        let (_machine, url) = start_qdrant().await;
+        let Some((_machine, url)) = start_qdrant().await else {
+            return;
+        };
 
         let embedder = FakeEmbedder::new(4);
         let client = Qdrant::from_url(&url)
@@ -334,7 +347,9 @@ mod qdrant_tests {
             return;
         }
 
-        let (_machine, url) = start_qdrant().await;
+        let Some((_machine, url)) = start_qdrant().await else {
+            return;
+        };
 
         let embedder = FakeEmbedder::new(4);
         let client = Qdrant::from_url(&url)

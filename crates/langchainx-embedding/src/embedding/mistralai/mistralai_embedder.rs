@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::embedding::{embedder_trait::Embedder, EmbedderError};
+use crate::embedding::{EmbedderError, embedder_trait::Embedder};
 use async_trait::async_trait;
 use mistralai_client::v1::{client::Client, constants::EmbedModel};
 

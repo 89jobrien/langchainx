@@ -5,13 +5,13 @@ use futures::Stream;
 use serde_json::Value;
 
 use crate::{
-    chain::{chain_trait::Chain, llm_chain::LLMChain, ChainError},
+    chain::{ChainError, chain_trait::Chain, llm_chain::LLMChain},
     language_models::{GenerateResult, TokenUsage},
     prompt::PromptArgs,
     prompt_args,
     schemas::StreamData,
-    tools::SQLDatabase,
 };
+use langchainx_tools::SQLDatabase;
 
 use super::{
     QUERY_PREFIX_WITH, SQL_CHAIN_DEFAULT_INPUT_KEY_QUERY, SQL_CHAIN_DEFAULT_INPUT_KEY_TABLE_NAMES,
@@ -101,12 +101,12 @@ impl SQLDatabaseChain {
             .to_string();
 
         let mut tables: Vec<String> = Vec::new();
-        if let Some(value) = input_variables.get(SQL_CHAIN_DEFAULT_INPUT_KEY_TABLE_NAMES) {
-            if let serde_json::Value::Array(array) = value {
-                for item in array {
-                    if let serde_json::Value::String(str) = item {
-                        tables.push(str.clone());
-                    }
+        if let Some(value) = input_variables.get(SQL_CHAIN_DEFAULT_INPUT_KEY_TABLE_NAMES)
+            && let serde_json::Value::Array(array) = value
+        {
+            for item in array {
+                if let serde_json::Value::String(str) = item {
+                    tables.push(str.clone());
                 }
             }
         }
@@ -158,11 +158,11 @@ impl Chain for SQLDatabaseChain {
     async fn call(&self, input_variables: PromptArgs) -> Result<GenerateResult, ChainError> {
         let (llm_inputs, mut token_usage) = self.call_builder_chains(&input_variables).await?;
         let output = self.llmchain.call(llm_inputs).await?;
-        if let Some(tokens) = output.tokens {
-            if let Some(general_result) = token_usage.as_mut() {
-                general_result.completion_tokens += tokens.completion_tokens;
-                general_result.total_tokens += tokens.total_tokens;
-            }
+        if let Some(tokens) = output.tokens
+            && let Some(general_result) = token_usage.as_mut()
+        {
+            general_result.completion_tokens += tokens.completion_tokens;
+            general_result.total_tokens += tokens.total_tokens;
         }
 
         let strs: Vec<&str> = output

@@ -1,0 +1,39 @@
+[package]
+name = "langchainx-vectorstore"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Vector store backends for langchainx"
+
+[dependencies]
+langchainx-core      = { path = "../langchainx-core" }
+langchainx-embedding = { path = "../langchainx-embedding" }
+async-trait          = "0.1.80"
+serde                = { version = "1.0", features = ["derive"] }
+serde_json           = "1.0"
+thiserror            = "2.0.0"
+tokio                = { version = "1", features = ["full"] }
+
+sqlx = { version = "0.8.0", default-features = false, features = [
+    "postgres",
+    "sqlite",
+    "runtime-tokio-native-tls",
+    "json",
+    "uuid",
+], optional = true }
+uuid         = { version = "1.8.0", features = ["v4"], optional = true }
+pgvector     = { version = "0.4.0", features = ["postgres", "sqlx"], optional = true }
+surrealdb    = { version = "2.0.2", optional = true, default-features = false }
+opensearch   = { version = "2", optional = true, features = ["aws-auth"] }
+aws-config   = { version = "1.2", optional = true, features = ["behavior-version-latest"] }
+qdrant-client = { version = "1.10.1", optional = true }
+
+[features]
+default    = []
+postgres   = ["pgvector", "dep:sqlx", "dep:uuid"]
+qdrant     = ["dep:qdrant-client", "dep:uuid"]
+surrealdb  = ["dep:surrealdb"]
+opensearch = ["dep:opensearch", "dep:aws-config"]
+sqlite-vss = ["dep:sqlx"]
+sqlite-vec = ["dep:sqlx"]

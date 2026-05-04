@@ -1,9 +1,10 @@
-use std::pin::Pin;
+use std::{fmt, pin::Pin};
 
 pub use async_openai::config::{AzureConfig, Config, OpenAIConfig};
 
 use async_openai::types::{ChatCompletionToolChoiceOption, ResponseFormat};
 use async_openai::{
+    Client,
     error::OpenAIError,
     types::{
         ChatCompletionMessageToolCall, ChatCompletionRequestAssistantMessageArgs,
@@ -13,17 +14,16 @@ use async_openai::{
         ChatCompletionRequestUserMessageContentPart, ChatCompletionStreamOptions,
         CreateChatCompletionRequest, CreateChatCompletionRequestArgs,
     },
-    Client,
 };
 use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 
 use crate::schemas::convert::{LangchainIntoOpenAI, TryLangchainIntoOpenAI};
 use crate::{
-    language_models::{llm::LLM, options::CallOptions, GenerateResult, LLMError, TokenUsage},
+    language_models::{GenerateResult, LLMError, TokenUsage, llm::LLM, options::CallOptions},
     schemas::{
-        messages::{Message, MessageType},
         StreamData,
+        messages::{Message, MessageType},
     },
 };
 
@@ -36,21 +36,22 @@ pub enum OpenAIModel {
     Gpt4oMini,
 }
 
-impl ToString for OpenAIModel {
-    fn to_string(&self) -> String {
-        match self {
-            OpenAIModel::Gpt35 => "gpt-3.5-turbo".to_string(),
-            OpenAIModel::Gpt4 => "gpt-4".to_string(),
-            OpenAIModel::Gpt4Turbo => "gpt-4-turbo-preview".to_string(),
-            OpenAIModel::Gpt4o => "gpt-4o".to_string(),
-            OpenAIModel::Gpt4oMini => "gpt-4o-mini".to_string(),
-        }
+impl fmt::Display for OpenAIModel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            OpenAIModel::Gpt35 => "gpt-3.5-turbo",
+            OpenAIModel::Gpt4 => "gpt-4",
+            OpenAIModel::Gpt4Turbo => "gpt-4-turbo-preview",
+            OpenAIModel::Gpt4o => "gpt-4o",
+            OpenAIModel::Gpt4oMini => "gpt-4o-mini",
+        };
+        write!(f, "{s}")
     }
 }
 
-impl Into<String> for OpenAIModel {
-    fn into(self) -> String {
-        self.to_string()
+impl From<OpenAIModel> for String {
+    fn from(val: OpenAIModel) -> Self {
+        val.to_string()
     }
 }
 

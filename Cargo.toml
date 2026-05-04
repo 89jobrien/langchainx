@@ -8,11 +8,18 @@ members = [
     "crates/langchainx-prompt",
     "crates/langchainx-embedding",
     "crates/langchainx-chain",
+    "crates/langchainx-text-splitter",
+    "crates/langchainx-semantic-router",
+    "crates/langchainx-tools",
+    "crates/langchainx-loaders",
+    "crates/langchainx-vectorstore",
+    "crates/langchainx-agent",
     "examples/vector_store_surrealdb",
+    "xtask",
 ]
 
 [workspace.package]
-version     = "0.4.5"
+version     = "0.4.6"
 edition     = "2024"
 license     = "MIT"
 repository  = "https://github.com/89jobrien/langchainx"
@@ -30,6 +37,19 @@ documentation = "https://github.com/89jobrien/langchainx"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+langchainx-core          = { path = "crates/langchainx-core" }
+langchainx-chain          = { path = "crates/langchainx-chain" }
+langchainx-output-parsers = { path = "crates/langchainx-output-parsers" }
+langchainx-embedding     = { path = "crates/langchainx-embedding" }
+langchainx-llm           = { path = "crates/langchainx-llm" }
+langchainx-memory        = { path = "crates/langchainx-memory" }
+langchainx-prompt        = { path = "crates/langchainx-prompt" }
+langchainx-text-splitter    = { path = "crates/langchainx-text-splitter" }
+langchainx-semantic-router  = { path = "crates/langchainx-semantic-router" }
+langchainx-tools         = { path = "crates/langchainx-tools" }
+langchainx-loaders       = { path = "crates/langchainx-loaders" }
+langchainx-vectorstore   = { path = "crates/langchainx-vectorstore" }
+langchainx-agent         = { path = "crates/langchainx-agent" }
 scraper = "0.21"
 serde = { version = "1.0", features = ["derive"] }
 async-trait = "0.1.80"
@@ -104,28 +124,37 @@ ollama-rs = { version = "0.2.0", optional = true, features = [
 mistralai-client = { version = "0.14.0", optional = true }
 rss = { version = "2", optional = true }
 quick-xml = { version = "0.36", optional = true }
+tempfile = { version = "3", optional = true }
 
 
 [features]
 default = []
-test-utils = []
-fastembed = ["dep:fastembed"]
-git = ["gix", "flume"]
-html-to-markdown = ["dep:htmd"]
-mistralai = ["mistralai-client"]
-lopdf = ["dep:lopdf"]
-pdf-extract = ["dep:lopdf", "dep:pdf-extract"]
-ollama = ["ollama-rs"]
-opensearch = ["dep:opensearch", "aws-config"]
-postgres = ["pgvector", "sqlx", "uuid"]
-qdrant = ["qdrant-client", "uuid"]
-sqlite-vss = ["sqlx"]
-sqlite-vec = ["sqlx"]
-rss = ["dep:rss"]
-sitemap = ["dep:quick-xml"]
-surrealdb = ["dep:surrealdb"]
+test-utils = ["dep:tempfile"]
+fastembed = ["dep:fastembed", "langchainx-embedding/fastembed"]
+git = ["gix", "flume", "langchainx-loaders/git"]
+html-to-markdown = ["dep:htmd", "langchainx-loaders/html-to-markdown"]
+mistralai = ["mistralai-client", "langchainx-embedding/mistralai"]
+lopdf = ["dep:lopdf", "langchainx-loaders/lopdf"]
+pdf-extract = ["dep:lopdf", "dep:pdf-extract", "langchainx-loaders/pdf-extract"]
+ollama = ["ollama-rs", "langchainx-embedding/ollama", "langchainx-llm/ollama"]
+opensearch = ["dep:opensearch", "aws-config", "langchainx-vectorstore/opensearch"]
+postgres = [
+    "pgvector",
+    "sqlx",
+    "uuid",
+    "langchainx-chain/postgres",
+    "langchainx-tools/postgres",
+    "langchainx-vectorstore/postgres",
+]
+qdrant = ["qdrant-client", "uuid", "langchainx-vectorstore/qdrant"]
+sqlite-vss = ["sqlx", "langchainx-vectorstore/sqlite-vss"]
+sqlite-vec = ["sqlx", "langchainx-vectorstore/sqlite-vec"]
+rss = ["dep:rss", "langchainx-loaders/rss"]
+sitemap = ["dep:quick-xml", "langchainx-loaders/sitemap"]
+surrealdb = ["dep:surrealdb", "langchainx-vectorstore/surrealdb"]
 tree-sitter = [
     "cc",
+    "langchainx-loaders/tree-sitter",
     "dep:tree-sitter",
     "dep:tree-sitter-c",
     "dep:tree-sitter-c-sharp",
@@ -148,6 +177,7 @@ required-features = ["ollama"]
 base64 = "0.22.1"
 serial_test = "3.4.0"
 tokio-test = "0.4.4"
+tempfile = "3"
 
 [build-dependencies]
 cc = { version = "1", optional = true }

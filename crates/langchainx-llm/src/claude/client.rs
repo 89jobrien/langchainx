@@ -1,13 +1,13 @@
 use crate::{
-    language_models::{llm::LLM, options::CallOptions, GenerateResult, LLMError, TokenUsage},
     AnthropicError,
+    language_models::{GenerateResult, LLMError, TokenUsage, llm::LLM, options::CallOptions},
     schemas::{Message, MessageType, StreamData},
 };
 use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 use reqwest::Client;
 use serde_json::Value;
-use std::{collections::HashMap, pin::Pin};
+use std::{collections::HashMap, fmt, pin::Pin};
 
 use super::models::{ApiResponse, ClaudeMessage, Payload};
 
@@ -18,14 +18,15 @@ pub enum ClaudeModel {
     Claude3_5sonnet20240620,
 }
 
-impl ToString for ClaudeModel {
-    fn to_string(&self) -> String {
-        match self {
-            ClaudeModel::Claude3pus20240229 => "claude-3-opus-20240229".to_string(),
-            ClaudeModel::Claude3sonnet20240229 => "claude-3-sonnet-20240229".to_string(),
-            ClaudeModel::Claude3haiku20240307 => "claude-3-haiku-20240307".to_string(),
-            ClaudeModel::Claude3_5sonnet20240620 => "claude-3-5-sonnet-20240620".to_string(),
-        }
+impl fmt::Display for ClaudeModel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            ClaudeModel::Claude3pus20240229 => "claude-3-opus-20240229",
+            ClaudeModel::Claude3sonnet20240229 => "claude-3-sonnet-20240229",
+            ClaudeModel::Claude3haiku20240307 => "claude-3-haiku-20240307",
+            ClaudeModel::Claude3_5sonnet20240620 => "claude-3-5-sonnet-20240620",
+        };
+        write!(f, "{s}")
     }
 }
 
@@ -120,11 +121,11 @@ impl Claude {
 
     fn build_payload(&self, messages: &[Message], stream: bool) -> Payload {
         let (system_message, other_messages): (Vec<_>, Vec<_>) = messages
-            .into_iter()
+            .iter()
             .partition(|m| m.message_type == MessageType::SystemMessage);
         let mut payload = Payload {
             model: self.model.clone(),
-            system: system_message.get(0).map(|m| m.content.clone()),
+            system: system_message.first().map(|m| m.content.clone()),
             messages: other_messages
                 .into_iter()
                 .map(ClaudeMessage::from_message)

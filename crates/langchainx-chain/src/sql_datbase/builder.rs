@@ -2,19 +2,19 @@ use std::sync::Arc;
 
 use crate::{
     chain::{
-        llm_chain::LLMChainBuilder, options::ChainCallOptions, ChainError, DEFAULT_OUTPUT_KEY,
+        ChainError, DEFAULT_OUTPUT_KEY, llm_chain::LLMChainBuilder, options::ChainCallOptions,
     },
     language_models::llm::{IntoArcLLM, LLM},
     output_parsers::OutputParser,
     prompt::HumanMessagePromptTemplate,
     template_jinja2,
-    tools::SQLDatabase,
 };
+use langchainx_tools::SQLDatabase;
 
 use super::{
+    STOP_WORD,
     chain::SQLDatabaseChain,
     prompt::{DEFAULT_SQLSUFFIX, DEFAULT_SQLTEMPLATE},
-    STOP_WORD,
 };
 
 pub struct SQLDatabaseChainBuilder {

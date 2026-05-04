@@ -4,6 +4,10 @@ updated: 2026-05-04
 items: []
 log:
 - date: 2026-05-04
+  summary: 'Parallel agent wave: extracted 7 new workspace crates (tools, loaders, vectorstore, agent, semantic-router, utils, errors) and converted src/chain, src/llm, src/prompt, src/output_parsers to thin re-exports; src/memory blocked on #48 (schemas unification); issues #42-46, #22-28, #33 closed; wave 2 (#47,#48 schemas+language_models into core) next'
+  commits:
+  - d9c0676
+- date: 2026-05-04
   summary: session closed
   commits:
   - 11c28fc

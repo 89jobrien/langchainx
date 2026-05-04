@@ -6,7 +6,7 @@ use futures::Stream;
 
 use crate::schemas::{Message, StreamData};
 
-use super::{options::CallOptions, GenerateResult, LLMError};
+use super::{GenerateResult, LLMError, options::CallOptions};
 
 #[async_trait]
 pub trait LLM: Sync + Send {

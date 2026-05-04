@@ -45,8 +45,6 @@ impl FunctionDefinition {
             parameters,
         }
     }
-
-
 }
 
 impl TryOpenAiFromLangchain<FunctionDefinition> for ChatCompletionTool {
@@ -82,7 +80,7 @@ pub struct FunctionDetail {
 }
 
 impl FunctionCallResponse {
-    pub fn from_str(s: &str) -> Result<Self, serde_json::Error> {
+    pub fn parse(s: &str) -> Result<Self, serde_json::Error> {
         serde_json::from_str(s)
     }
 }

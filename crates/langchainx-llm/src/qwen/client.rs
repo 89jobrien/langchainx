@@ -1,13 +1,13 @@
 use crate::{
-    language_models::{llm::LLM, options::CallOptions, GenerateResult, LLMError, TokenUsage},
     QwenError,
+    language_models::{GenerateResult, LLMError, TokenUsage, llm::LLM, options::CallOptions},
     schemas::{Message, StreamData},
 };
 use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 use reqwest::Client;
 use serde_json::Value;
-use std::{pin::Pin, str, str::from_utf8};
+use std::{fmt, pin::Pin, str, str::from_utf8};
 
 use super::models::{ApiResponse, ErrorResponse, Payload, QwenMessage};
 
@@ -153,39 +153,40 @@ pub enum QwenModel {
     Qwen2_5_0_5B_INSTRUCT,
 }
 
-impl ToString for QwenModel {
-    fn to_string(&self) -> String {
-        match self {
-            QwenModel::QwenMax => "qwen-max".to_string(),
-            QwenModel::QwenTurbo => "qwen-turbo".to_string(),
-            QwenModel::QwenPlus => "qwen-plus".to_string(),
-            QwenModel::QwenLong => "qwen-long".to_string(),
-            QwenModel::Qwen1_72B_Chat => "qwen-72b-chat".to_string(),
-            QwenModel::Qwen1_14B_Chat => "qwen-14b-chat".to_string(),
-            QwenModel::Qwen1_7B_Chat => "qwen-7b-chat".to_string(),
-            QwenModel::Qwen1_1_8B_Chat => "qwen-1.8b-chat".to_string(),
-            QwenModel::Qwen1_5_110B_Chat => "qwen1.5-110b-chat".to_string(),
-            QwenModel::Qwen1_5_72B_Chat => "qwen-1.72b-chat".to_string(),
-            QwenModel::Qwen1_5_32B_Chat => "qwen1.5-32b-chat".to_string(),
-            QwenModel::Qwen1_5_14B_Chat => "qwen1.5-14b-chat".to_string(),
-            QwenModel::Qwen1_5_7B_Chat => "qwen1.5-7b-chat".to_string(),
-            QwenModel::Qwen1_5_1_8B_Chat => "qwen1.5-1.8b-chat".to_string(),
-            QwenModel::Qwen1_5_0_5B_Chat => "qwen1.5-0.5b-chat".to_string(),
-            QwenModel::QWEN2_72B_INSTRUCT => "qwen2-72b-instruct".to_string(),
-            QwenModel::QWEN2_57B_A14B_INSTRUCT => "qwen2-57b-a14b-instruct".to_string(),
-            QwenModel::QWEN2_7B_INSTRUCT => "qwen2-7b-instruct".to_string(),
-            QwenModel::QWEN2_1_5B_INSTRUCT => "qwen2-1.5-b-instruct".to_string(),
-            QwenModel::QWEN2_0_5B_INSTRUCT => "qwen2-0.5-b-instruct".to_string(),
-            QwenModel::Qwen2_5_14B_INSTRUCT_1M => "qwen2.5-14b-instruct-1m".to_string(),
-            QwenModel::Qwen2_5_7B_INSTRUCT_1M => "qwen2.5-7b-instruct-1m".to_string(),
-            QwenModel::Qwen2_5_72B_INSTRUCT => "qwen2.5-72b-instruct".to_string(),
-            QwenModel::Qwen2_5_32B_INSTRUCT => "qwen2.5-32b-instruct".to_string(),
-            QwenModel::Qwen2_5_14B_INSTRUCT => "qwen2.5-14b-instruct".to_string(),
-            QwenModel::Qwen2_5_7B_INSTRUCT => "qwen2.5-7b-instruct".to_string(),
-            QwenModel::Qwen2_5_3B_INSTRUCT => "qwen2.5-3b-instruct".to_string(),
-            QwenModel::Qwen2_5_1_5B_INSTRUCT => "qwen2.5-1.5b-instruct".to_string(),
-            QwenModel::Qwen2_5_0_5B_INSTRUCT => "qwen2.5-0.5b-instruct".to_string(),
-        }
+impl fmt::Display for QwenModel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            QwenModel::QwenMax => "qwen-max",
+            QwenModel::QwenTurbo => "qwen-turbo",
+            QwenModel::QwenPlus => "qwen-plus",
+            QwenModel::QwenLong => "qwen-long",
+            QwenModel::Qwen1_72B_Chat => "qwen-72b-chat",
+            QwenModel::Qwen1_14B_Chat => "qwen-14b-chat",
+            QwenModel::Qwen1_7B_Chat => "qwen-7b-chat",
+            QwenModel::Qwen1_1_8B_Chat => "qwen-1.8b-chat",
+            QwenModel::Qwen1_5_110B_Chat => "qwen1.5-110b-chat",
+            QwenModel::Qwen1_5_72B_Chat => "qwen-1.72b-chat",
+            QwenModel::Qwen1_5_32B_Chat => "qwen1.5-32b-chat",
+            QwenModel::Qwen1_5_14B_Chat => "qwen1.5-14b-chat",
+            QwenModel::Qwen1_5_7B_Chat => "qwen1.5-7b-chat",
+            QwenModel::Qwen1_5_1_8B_Chat => "qwen1.5-1.8b-chat",
+            QwenModel::Qwen1_5_0_5B_Chat => "qwen1.5-0.5b-chat",
+            QwenModel::QWEN2_72B_INSTRUCT => "qwen2-72b-instruct",
+            QwenModel::QWEN2_57B_A14B_INSTRUCT => "qwen2-57b-a14b-instruct",
+            QwenModel::QWEN2_7B_INSTRUCT => "qwen2-7b-instruct",
+            QwenModel::QWEN2_1_5B_INSTRUCT => "qwen2-1.5-b-instruct",
+            QwenModel::QWEN2_0_5B_INSTRUCT => "qwen2-0.5-b-instruct",
+            QwenModel::Qwen2_5_14B_INSTRUCT_1M => "qwen2.5-14b-instruct-1m",
+            QwenModel::Qwen2_5_7B_INSTRUCT_1M => "qwen2.5-7b-instruct-1m",
+            QwenModel::Qwen2_5_72B_INSTRUCT => "qwen2.5-72b-instruct",
+            QwenModel::Qwen2_5_32B_INSTRUCT => "qwen2.5-32b-instruct",
+            QwenModel::Qwen2_5_14B_INSTRUCT => "qwen2.5-14b-instruct",
+            QwenModel::Qwen2_5_7B_INSTRUCT => "qwen2.5-7b-instruct",
+            QwenModel::Qwen2_5_3B_INSTRUCT => "qwen2.5-3b-instruct",
+            QwenModel::Qwen2_5_1_5B_INSTRUCT => "qwen2.5-1.5b-instruct",
+            QwenModel::Qwen2_5_0_5B_INSTRUCT => "qwen2.5-0.5b-instruct",
+        };
+        write!(f, "{s}")
     }
 }
 
@@ -262,7 +263,7 @@ impl Qwen {
                     None => {
                         return Err(LLMError::ContentNotFound(
                             "No content returned from API".to_string(),
-                        ))
+                        ));
                     }
                 };
 
@@ -331,8 +332,7 @@ impl Qwen {
         let mut values = Vec::new();
 
         for line in text.lines() {
-            if line.starts_with("data: ") {
-                let data = &line[6..];
+            if let Some(data) = line.strip_prefix("data: ") {
                 if data == "[DONE]" {
                     continue;
                 }
@@ -389,46 +389,31 @@ impl LLM for Qwen {
                             for chunk in chunks {
                                 if let Some(choices) =
                                     chunk.get("choices").and_then(|c| c.as_array())
+                                    && let Some(choice) = choices.first()
+                                    && let Some(delta) = choice.get("delta")
+                                    && let Some(content) =
+                                        delta.get("content").and_then(|c| c.as_str())
+                                    && !content.is_empty()
                                 {
-                                    if let Some(choice) = choices.first() {
-                                        if let Some(delta) = choice.get("delta") {
-                                            // Extract content from delta
-                                            if let Some(content) =
-                                                delta.get("content").and_then(|c| c.as_str())
-                                            {
-                                                if !content.is_empty() {
-                                                    let usage =
-                                                        if let Some(usage) = chunk.get("usage") {
-                                                            Some(TokenUsage {
-                                                                prompt_tokens: usage
-                                                                    .get("prompt_tokens")
-                                                                    .and_then(|t| t.as_u64())
-                                                                    .unwrap_or(0)
-                                                                    as u32,
-                                                                completion_tokens: usage
-                                                                    .get("completion_tokens")
-                                                                    .and_then(|t| t.as_u64())
-                                                                    .unwrap_or(0)
-                                                                    as u32,
-                                                                total_tokens: usage
-                                                                    .get("total_tokens")
-                                                                    .and_then(|t| t.as_u64())
-                                                                    .unwrap_or(0)
-                                                                    as u32,
-                                                            })
-                                                        } else {
-                                                            None
-                                                        };
+                                    let usage = chunk.get("usage").map(|usage| TokenUsage {
+                                        prompt_tokens: usage
+                                            .get("prompt_tokens")
+                                            .and_then(|t| t.as_u64())
+                                            .unwrap_or(0)
+                                            as u32,
+                                        completion_tokens: usage
+                                            .get("completion_tokens")
+                                            .and_then(|t| t.as_u64())
+                                            .unwrap_or(0)
+                                            as u32,
+                                        total_tokens: usage
+                                            .get("total_tokens")
+                                            .and_then(|t| t.as_u64())
+                                            .unwrap_or(0)
+                                            as u32,
+                                    });
 
-                                                    return Ok(StreamData::new(
-                                                        chunk.clone(),
-                                                        usage,
-                                                        content,
-                                                    ));
-                                                }
-                                            }
-                                        }
-                                    }
+                                    return Ok(StreamData::new(chunk.clone(), usage, content));
                                 }
                             }
 

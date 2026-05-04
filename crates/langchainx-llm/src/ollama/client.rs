@@ -1,17 +1,17 @@
 use crate::{
-    language_models::{llm::LLM, GenerateResult, LLMError, TokenUsage},
+    language_models::{GenerateResult, LLMError, TokenUsage, llm::LLM},
     schemas::{Message, MessageType, StreamData},
 };
 use async_trait::async_trait;
 use futures::Stream;
 use ollama_rs::generation::images::Image;
 pub use ollama_rs::{
+    Ollama as OllamaClient,
     error::OllamaError,
     generation::{
-        chat::{request::ChatMessageRequest, ChatMessage, MessageRole},
+        chat::{ChatMessage, MessageRole, request::ChatMessageRequest},
         options::GenerationOptions,
     },
-    Ollama as OllamaClient,
 };
 use std::pin::Pin;
 use std::sync::Arc;
@@ -51,39 +51,34 @@ impl Ollama {
     }
 
     fn generate_request(&self, messages: &[Message]) -> ChatMessageRequest {
-        let mapped_messages = messages.iter().map(|message| message.into()).collect();
+        let mapped_messages = messages.iter().map(chat_message_from_message).collect();
         ChatMessageRequest::new(self.model.clone(), mapped_messages)
     }
 }
-
-impl From<&Message> for ChatMessage {
-    fn from(message: &Message) -> Self {
-        let images = match message.images.clone() {
-            Some(images) => {
-                let images = images
-                    .iter()
-                    .map(|image| Image::from_base64(&image.image_url))
-                    .collect();
-                Some(images)
-            }
-            None => None,
-        };
-        ChatMessage {
-            content: message.content.clone(),
-            images,
-            role: message.message_type.clone().into(),
+fn chat_message_from_message(message: &Message) -> ChatMessage {
+    let images = match message.images.clone() {
+        Some(images) => {
+            let images = images
+                .iter()
+                .map(|image| Image::from_base64(&image.image_url))
+                .collect();
+            Some(images)
         }
+        None => None,
+    };
+    ChatMessage {
+        content: message.content.clone(),
+        images,
+        role: message_role_from_message_type(&message.message_type),
     }
 }
 
-impl From<MessageType> for MessageRole {
-    fn from(message_type: MessageType) -> Self {
-        match message_type {
-            MessageType::AIMessage => MessageRole::Assistant,
-            MessageType::ToolMessage => MessageRole::Assistant,
-            MessageType::SystemMessage => MessageRole::System,
-            MessageType::HumanMessage => MessageRole::User,
-        }
+fn message_role_from_message_type(message_type: &MessageType) -> MessageRole {
+    match message_type {
+        MessageType::AIMessage => MessageRole::Assistant,
+        MessageType::ToolMessage => MessageRole::Assistant,
+        MessageType::SystemMessage => MessageRole::System,
+        MessageType::HumanMessage => MessageRole::User,
     }
 }
 

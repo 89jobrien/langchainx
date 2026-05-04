@@ -3,19 +3,19 @@ use std::{pin::Pin, sync::Arc};
 use async_stream::stream;
 use async_trait::async_trait;
 use futures::Stream;
-use futures_util::{pin_mut, StreamExt};
+use futures_util::{StreamExt, pin_mut};
 use tokio::sync::Mutex;
 
 use crate::{
     language_models::GenerateResult,
     prompt::PromptArgs,
     prompt_args,
-    schemas::{memory::BaseMemory, messages::Message, StreamData},
+    schemas::{StreamData, memory::BaseMemory, messages::Message},
 };
 
 const DEFAULT_INPUT_VARIABLE: &str = "input";
 
-use super::{chain_trait::Chain, llm_chain::LLMChain, ChainError};
+use super::{ChainError, chain_trait::Chain, llm_chain::LLMChain};
 
 pub mod builder;
 mod prompt;
@@ -136,7 +136,7 @@ impl Chain for ConversationalChain {
 #[cfg(test)]
 mod tests {
     use crate::{
-        chain::{conversational::builder::ConversationalChainBuilder, Chain},
+        chain::{Chain, conversational::builder::ConversationalChainBuilder},
         prompt_args,
         test_utils::FakeLLM,
     };
