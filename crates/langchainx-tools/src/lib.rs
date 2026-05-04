@@ -23,6 +23,14 @@ pub use command_executor::CommandExecutor;
 pub mod text2speech;
 pub use text2speech::{SpeechStorage, Text2SpeechOpenAI};
 
+// Placeholder modules — not yet implemented. Tracking: issue #39.
+// Hidden from public docs until implementation is complete.
+#[doc(hidden)]
 pub mod confluence;
+#[doc(hidden)]
 pub mod google;
+#[doc(hidden)]
 pub mod jira;
+
+pub mod minibox;
+pub use minibox::MiniboxTool;
