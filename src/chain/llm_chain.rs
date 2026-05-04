@@ -71,9 +71,14 @@ impl LLMChainBuilder {
 
         if let Some(options) = self.options {
             let llm_options = ChainCallOptions::to_llm_options(options);
-            Arc::get_mut(&mut llm)
-                .expect("Arc<dyn LLM> must not be shared when setting options")
-                .add_options(llm_options);
+            if let Some(llm_mut) = Arc::get_mut(&mut llm) {
+                llm_mut.add_options(llm_options);
+            } else {
+                log::warn!(
+                    "LLMChain: Arc<dyn LLM> is shared; chain-level options were not applied. \
+                     Pass options directly to the LLM before wrapping in Arc."
+                );
+            }
         }
 
         let chain = LLMChain {
