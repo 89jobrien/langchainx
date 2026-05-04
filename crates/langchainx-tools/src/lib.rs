@@ -34,3 +34,8 @@ pub mod jira;
 
 pub mod minibox;
 pub use minibox::MiniboxTool;
+
+#[cfg(feature = "nu-tool")]
+pub mod code;
+#[cfg(feature = "nu-tool")]
+pub use code::NuTool;
