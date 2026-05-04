@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
-use crate::semantic_router::{IndexError, Router, utils::cosine_similarity};
+use crate::{IndexError, Router, utils::cosine_similarity};
 
 use super::Index;
 
@@ -14,6 +14,12 @@ impl MemoryIndex {
         Self {
             routers: HashMap::new(),
         }
+    }
+}
+
+impl Default for MemoryIndex {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
-use crate::semantic_router::{IndexError, Router};
+use crate::{IndexError, Router};
 
 #[async_trait]
-pub trait Index {
+pub trait Index: Send + Sync {
     async fn add(&mut self, router: &[Router]) -> Result<(), IndexError>;
 
     async fn delete(&mut self, route_name: &str) -> Result<(), IndexError>;

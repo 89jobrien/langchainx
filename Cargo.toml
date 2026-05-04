@@ -9,6 +9,7 @@ members = [
     "crates/langchainx-embedding",
     "crates/langchainx-chain",
     "crates/langchainx-text-splitter",
+    "crates/langchainx-semantic-router",
     "crates/langchainx-tools",
     "crates/langchainx-loaders",
     "crates/langchainx-vectorstore",
@@ -39,7 +40,8 @@ documentation = "https://github.com/89jobrien/langchainx"
 langchainx-core          = { path = "crates/langchainx-core" }
 langchainx-embedding     = { path = "crates/langchainx-embedding" }
 langchainx-llm           = { path = "crates/langchainx-llm" }
-langchainx-text-splitter = { path = "crates/langchainx-text-splitter" }
+langchainx-text-splitter    = { path = "crates/langchainx-text-splitter" }
+langchainx-semantic-router  = { path = "crates/langchainx-semantic-router" }
 langchainx-tools         = { path = "crates/langchainx-tools" }
 langchainx-loaders       = { path = "crates/langchainx-loaders" }
 langchainx-vectorstore   = { path = "crates/langchainx-vectorstore" }

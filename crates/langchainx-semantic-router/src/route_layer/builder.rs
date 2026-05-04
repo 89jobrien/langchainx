@@ -2,15 +2,13 @@ use std::sync::Arc;
 
 use futures_util::future::try_join_all;
 
-use crate::{
-    chain::{LLMChain, LLMChainBuilder},
-    embedding::{Embedder, openai::OpenAiEmbedder},
-    language_models::llm::LLM,
-    llm::openai::OpenAI,
-    prompt::HumanMessagePromptTemplate,
-    semantic_router::{Index, MemoryIndex, RouteLayerBuilderError, Router},
-    template_jinja2,
-};
+use langchainx_chain::{LLMChain, LLMChainBuilder};
+use langchainx_chain::language_models::llm::LLM;
+use langchainx_embedding::{Embedder, embedding::openai::OpenAiEmbedder};
+use langchainx_llm::openai::OpenAI;
+use langchainx_prompt::{HumanMessagePromptTemplate, template_jinja2};
+
+use crate::{Index, MemoryIndex, RouteLayerBuilderError, Router};
 
 use super::{AggregationMethod, RouteLayer};
 
@@ -131,7 +129,6 @@ Tool Input:
     }
 
     pub async fn build(mut self) -> Result<RouteLayer, RouteLayerBuilderError> {
-        // Check if any routers lack an embedding and there's no global embedder provided.
         if self.embedder.is_none() {
             return Err(RouteLayerBuilderError::MissingEmbedder);
         }
@@ -145,7 +142,7 @@ Tool Input:
         }
 
         let mut router = RouteLayer {
-            embedder: self.embedder.unwrap(), //it's safe to unwrap here because we checked for None above
+            embedder: self.embedder.unwrap(),
             index: self.index.unwrap(),
             llm: self.llm.unwrap(),
             threshold: self.threshold.unwrap_or(0.82),
@@ -176,7 +173,6 @@ Tool Input:
             route.embedding = Some(embedding);
         }
 
-        // Add routes to the index.
         router.index.add(&self.routes).await?;
 
         Ok(router)
