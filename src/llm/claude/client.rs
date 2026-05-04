@@ -75,9 +75,7 @@ impl Claude {
 
     async fn generate(&self, messages: &[Message]) -> Result<GenerateResult, LLMError> {
         let client = Client::new();
-        let is_stream = self.options.streaming_func.is_some();
-
-        let payload = self.build_payload(messages, is_stream);
+        let payload = self.build_payload(messages, false);
         let res = client
             .post("https://api.anthropic.com/v1/messages")
             .header("x-api-key", &self.api_key)
@@ -148,26 +146,7 @@ impl Claude {
 #[async_trait]
 impl LLM for Claude {
     async fn generate(&self, messages: &[Message]) -> Result<GenerateResult, LLMError> {
-        match &self.options.streaming_func {
-            Some(func) => {
-                let mut complete_response = String::new();
-                let mut stream = self.stream(messages).await?;
-                while let Some(data) = stream.next().await {
-                    match data {
-                        Ok(value) => {
-                            let mut func = func.lock().await;
-                            complete_response.push_str(&value.content);
-                            let _ = func(value.content).await;
-                        }
-                        Err(e) => return Err(e),
-                    }
-                }
-                let mut generate_result = GenerateResult::default();
-                generate_result.generation = complete_response;
-                Ok(generate_result)
-            }
-            None => self.generate(messages).await,
-        }
+        self.generate(messages).await
     }
     async fn stream(
         &self,

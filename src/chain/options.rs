@@ -1,15 +1,9 @@
-use futures::Future;
-use std::pin::Pin;
-
 use crate::language_models::options::CallOptions;
 
 pub struct ChainCallOptions {
     pub max_tokens: Option<u32>,
     pub temperature: Option<f32>,
     pub stop_words: Option<Vec<String>>,
-    pub streaming_func: Option<
-        Box<dyn FnMut(String) -> Pin<Box<dyn Future<Output = Result<(), ()>> + Send>> + Send>,
-    >,
     pub top_k: Option<usize>,
     pub top_p: Option<f32>,
     pub seed: Option<usize>,
@@ -30,7 +24,6 @@ impl ChainCallOptions {
             max_tokens: None,
             temperature: None,
             stop_words: None,
-            streaming_func: None,
             top_k: None,
             top_p: None,
             seed: None,
@@ -69,10 +62,6 @@ impl ChainCallOptions {
         if let Some(repetition_penalty) = options.repetition_penalty {
             llm_option = llm_option.with_repetition_penalty(repetition_penalty);
         }
-
-        if let Some(streaming_func) = options.streaming_func {
-            llm_option = llm_option.with_streaming_func(streaming_func)
-        }
         llm_option
     }
 
@@ -88,16 +77,6 @@ impl ChainCallOptions {
 
     pub fn with_stop_words(mut self, stop_words: Vec<String>) -> Self {
         self.stop_words = Some(stop_words);
-        self
-    }
-
-    //TODO:Check if this should be a &str instead of a String
-    pub fn with_streaming_func<F, Fut>(mut self, mut func: F) -> Self
-    where
-        F: FnMut(String) -> Fut + Send + 'static,
-        Fut: Future<Output = Result<(), ()>> + Send + 'static,
-    {
-        self.streaming_func = Some(Box::new(move |s: String| Box::pin(func(s))));
         self
     }
 

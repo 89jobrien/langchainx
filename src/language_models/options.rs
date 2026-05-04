@@ -1,7 +1,3 @@
-use futures::Future;
-use std::{pin::Pin, sync::Arc};
-use tokio::sync::Mutex;
-
 use crate::schemas::{FunctionCallBehavior, FunctionDefinition, ResponseFormat};
 
 #[derive(Clone)]
@@ -10,11 +6,6 @@ pub struct CallOptions {
     pub max_tokens: Option<u32>,
     pub temperature: Option<f32>,
     pub stop_words: Option<Vec<String>>,
-    pub streaming_func: Option<
-        Arc<
-            Mutex<dyn FnMut(String) -> Pin<Box<dyn Future<Output = Result<(), ()>> + Send>> + Send>,
-        >,
-    >,
     pub top_k: Option<usize>,
     pub top_p: Option<f32>,
     pub seed: Option<usize>,
@@ -42,7 +33,6 @@ impl CallOptions {
             max_tokens: None,
             temperature: None,
             stop_words: None,
-            streaming_func: None,
             top_k: None,
             top_p: None,
             seed: None,
@@ -77,22 +67,6 @@ impl CallOptions {
 
     pub fn with_stop_words(mut self, stop_words: Vec<String>) -> Self {
         self.stop_words = Some(stop_words);
-        self
-    }
-
-    //TODO:Check if this should be a &str instead of a String
-    pub fn with_streaming_func<F, Fut>(mut self, mut func: F) -> Self
-    where
-        F: FnMut(String) -> Fut + Send + 'static,
-        Fut: Future<Output = Result<(), ()>> + Send + 'static,
-    {
-        let func = Arc::new(Mutex::new(
-            move |s: String| -> Pin<Box<dyn Future<Output = Result<(), ()>> + Send>> {
-                Box::pin(func(s))
-            },
-        ));
-
-        self.streaming_func = Some(func);
         self
     }
 
@@ -204,11 +178,5 @@ impl CallOptions {
                 self.functions = Some(incoming_functions);
             }
         }
-
-        // `streaming_func` requires a judgment call on how you want to handle merging.
-        // Here, the incoming option simply replaces the existing one if it's Some.
-        self.streaming_func = incoming_options
-            .streaming_func
-            .or_else(|| self.streaming_func.clone());
     }
 }
