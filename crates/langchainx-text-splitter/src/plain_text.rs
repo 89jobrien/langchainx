@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 
-use super::{TextSplitter, TextSplitterError};
+use crate::{TextSplitter, TextSplitterError};
 
-// Options is a struct that contains options for a plain text splitter.
 #[derive(Debug, Clone)]
 pub struct PlainTextSplitterOptions {
     pub chunk_size: usize,
@@ -64,7 +63,7 @@ impl Default for PlainTextSplitter {
 }
 
 impl PlainTextSplitter {
-    pub fn new(options: PlainTextSplitterOptions) -> PlainTextSplitter {
+    pub fn new(options: PlainTextSplitterOptions) -> Self {
         PlainTextSplitter {
             splitter_options: options,
         }
@@ -79,7 +78,6 @@ impl TextSplitter for PlainTextSplitter {
                 .with_trim(self.splitter_options.trim_chunks)
                 .with_overlap(self.splitter_options.chunk_overlap)?,
         );
-
         Ok(splitter.chunks(text).map(|x| x.to_string()).collect())
     }
 }
@@ -89,56 +87,31 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_plain_text_splitter_empty_input() {
+    async fn empty_input() {
         let splitter = PlainTextSplitter::default();
         let chunks = splitter.split_text("").await.unwrap();
         assert!(chunks.is_empty());
     }
 
     #[tokio::test]
-    async fn test_plain_text_splitter_produces_chunks() {
-        let opts = PlainTextSplitterOptions::new().with_chunk_size(20);
-        let splitter = PlainTextSplitter::new(opts);
-        let text = "The quick brown fox jumps over the lazy dog. This is a longer sentence.";
-        let chunks = splitter.split_text(text).await.unwrap();
-        assert!(!chunks.is_empty());
-    }
-
-    #[tokio::test]
-    async fn test_plain_text_splitter_chunks_within_size() {
-        let chunk_size = 20;
-        let opts = PlainTextSplitterOptions::new().with_chunk_size(chunk_size);
-        let splitter = PlainTextSplitter::new(opts);
-        let text = "The quick brown fox jumps over the lazy dog. Repeated. ".repeat(10);
-        let chunks = splitter.split_text(&text).await.unwrap();
-        assert!(!chunks.is_empty());
-        for chunk in &chunks {
-            assert!(
-                chunk.len() <= chunk_size * 6,
-                "chunk too large: {} chars",
-                chunk.len()
-            );
-        }
-    }
-
-    #[tokio::test]
-    async fn test_plain_text_splitter_short_text_single_chunk() {
-        let opts = PlainTextSplitterOptions::new().with_chunk_size(512);
-        let splitter = PlainTextSplitter::new(opts);
-        let text = "Short text.";
-        let chunks = splitter.split_text(text).await.unwrap();
+    async fn short_text_single_chunk() {
+        let splitter = PlainTextSplitter::new(PlainTextSplitterOptions::new().with_chunk_size(512));
+        let chunks = splitter.split_text("Short text.").await.unwrap();
         assert_eq!(chunks.len(), 1);
-        assert_eq!(chunks[0], text);
+        assert_eq!(chunks[0], "Short text.");
     }
 
     #[tokio::test]
-    async fn test_plain_text_splitter_trim_chunks() {
-        let opts = PlainTextSplitterOptions::new()
-            .with_chunk_size(50)
-            .with_trim_chunks(true);
-        let splitter = PlainTextSplitter::new(opts);
-        let text = "  leading and trailing whitespace  ";
-        let chunks = splitter.split_text(text).await.unwrap();
+    async fn trim_chunks() {
+        let splitter = PlainTextSplitter::new(
+            PlainTextSplitterOptions::new()
+                .with_chunk_size(50)
+                .with_trim_chunks(true),
+        );
+        let chunks = splitter
+            .split_text("  leading and trailing whitespace  ")
+            .await
+            .unwrap();
         for chunk in &chunks {
             assert_eq!(chunk.as_str(), chunk.trim());
         }

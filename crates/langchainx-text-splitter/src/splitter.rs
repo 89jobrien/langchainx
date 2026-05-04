@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 
 use async_trait::async_trait;
+use langchainx_core::schemas::Document;
 use serde_json::Value;
 
-use crate::schemas::Document;
-
-use super::TextSplitterError;
+use crate::TextSplitterError;
 
 #[async_trait]
 pub trait TextSplitter: Send + Sync {
@@ -21,7 +20,6 @@ pub trait TextSplitter: Send + Sync {
             texts.push(d.page_content.clone());
             metadatas.push(d.metadata.clone());
         });
-
         self.create_documents(&texts, &metadatas).await
     }
 
@@ -34,11 +32,9 @@ pub trait TextSplitter: Send + Sync {
         if metadatas.is_empty() {
             metadatas = vec![HashMap::new(); text.len()];
         }
-
         if text.len() != metadatas.len() {
             return Err(TextSplitterError::MetadataTextMismatch);
         }
-
         let mut documents: Vec<Document> = Vec::new();
         for i in 0..text.len() {
             let chunks = self.split_text(&text[i]).await?;
@@ -47,7 +43,6 @@ pub trait TextSplitter: Send + Sync {
                 documents.push(document);
             }
         }
-
         Ok(documents)
     }
 }

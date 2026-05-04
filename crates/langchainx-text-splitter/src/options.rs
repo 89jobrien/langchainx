@@ -1,9 +1,8 @@
 use text_splitter::ChunkConfig;
-use tiktoken_rs::{get_bpe_from_model, get_bpe_from_tokenizer, tokenizer::Tokenizer, CoreBPE};
+use tiktoken_rs::{CoreBPE, get_bpe_from_model, get_bpe_from_tokenizer, tokenizer::Tokenizer};
 
-use super::TextSplitterError;
+use crate::TextSplitterError;
 
-// Options is a struct that contains options for a text splitter.
 #[derive(Debug, Clone)]
 pub struct SplitterOptions {
     pub chunk_size: usize,
@@ -29,10 +28,7 @@ impl SplitterOptions {
             trim_chunks: false,
         }
     }
-}
 
-// Builder pattern for Options struct
-impl SplitterOptions {
     pub fn with_chunk_size(mut self, chunk_size: usize) -> Self {
         self.chunk_size = chunk_size;
         self
@@ -77,7 +73,6 @@ impl TryFrom<&SplitterOptions> for ChunkConfig<CoreBPE> {
         let tk = if !options.encoding_name.is_empty() {
             let tokenizer = SplitterOptions::get_tokenizer_from_str(&options.encoding_name)
                 .ok_or(TextSplitterError::TokenizerNotFound)?;
-
             get_bpe_from_tokenizer(tokenizer).map_err(|_| TextSplitterError::InvalidTokenizer)?
         } else {
             get_bpe_from_model(&options.model_name).map_err(|_| TextSplitterError::InvalidModel)?
