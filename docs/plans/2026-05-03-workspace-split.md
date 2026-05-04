@@ -1,7 +1,7 @@
 # Workspace Split: Cargo Workspace + `crates/` Migration
 
 **Date**: 2026-05-03
-**Status**: Design approved, not yet implemented
+**Status**: Waves 0–3 complete; Wave 4 in progress
 
 ## Goal
 
@@ -17,85 +17,107 @@ Convert the single `langchainx` crate into a Cargo workspace with per-concern cr
 
 ## Crate Map
 
-| Crate | Source | Depends on |
-|---|---|---|
-| `langchainx-core` | `src/schemas/`, `src/errors.rs`, `src/language_models/` | `serde`, `thiserror`, `async-trait`, `tokio` |
-| `langchainx-prompt` | `src/prompt/`, `src/output_parsers/` | `core` |
-| `langchainx-memory` | `src/memory/` | `core` |
-| `langchainx-llm` | `src/llm/` | `core` (feature-flagged backends) |
-| `langchainx-embedding` | `src/embedding/` | `core` (feature-flagged backends) |
-| `langchainx-chain` | `src/chain/` | `core`, `prompt`, `memory`, `llm` |
-| `langchainx-vectorstore` | `src/vectorstore/` | `core`, `embedding` (feature-flagged backends) |
-| `langchainx-loaders` | `src/document_loaders/`, `src/text_splitter/` | `core` (feature-flagged) |
-| `langchainx-tools` | `src/tools/` | `core`, `llm` |
-| `langchainx-router` | `src/semantic_router/` | `core`, `embedding` |
-| `langchainx-agent` | `src/agent/` | `core`, `chain`, `tools` |
-| `langchainx` | facade `lib.rs` (re-exports) | all crates, `default-features = false` |
+| Crate                    | Source                                                  | Depends on                               |
+|--------------------------|---------------------------------------------------------|------------------------------------------|
+| `langchainx-types`       | `src/schemas/`                                          | `serde`, `serde_json`, `thiserror`       |
+| `langchainx-core`        | `src/errors.rs`, `src/language_models/`                 | `types`, `async-trait`, `tokio`, `thiserror` |
+| `langchainx-prompt`      | `src/prompt/`, `src/output_parsers/`                    | `types`, `core`, `serde`, `serde_json`, `regex` |
+| `langchainx-memory`      | `src/memory/`                                           | `types`, `core`                          |
+| `langchainx-llm`         | `src/llm/`                                              | `types`, `core` (feature-flagged backends) |
+| `langchainx-embedding`   | `src/embedding/`                                        | `types`, `core` (feature-flagged backends) |
+| `langchainx-splitters`   | `src/text_splitter/`                                    | `types`, `core`, `text-splitter`, `tiktoken-rs` |
+| `langchainx-testsuite`   | `src/test_utils/`                                       | `types`, `core`, `llm` (`test-utils` feature) |
+| `langchainx-chain`       | `src/chain/`                                            | `types`, `core`, `prompt`, `memory`, `llm` |
+| `langchainx-vectorstore` | `src/vectorstore/`                                      | `types`, `core`, `embedding` (feature-flagged) |
+| `langchainx-loaders`     | `src/document_loaders/`                                 | `types`, `core`, `splitters` (feature-flagged) |
+| `langchainx-tools`       | `src/tools/`                                            | `types`, `core`, `llm`                   |
+| `langchainx-router`      | `src/semantic_router/`                                  | `types`, `core`, `embedding`             |
+| `langchainx-agent`       | `src/agent/`                                            | `types`, `core`, `chain`, `tools`        |
+| `langchainx`             | facade `lib.rs` (re-exports)                            | all crates, `default-features = false`   |
+
+Note: `langchainx-prompt` contains all `macro_rules!` macros (`prompt_args!`, `template_fstring!`,
+`template_jinja2!`, `fmt_message!`, `fmt_template!`, `fmt_placeholder!`, `message_formatter!`).
+These expand to `$crate::prompt::*` paths so they must live in `langchainx-prompt` — no separate
+macros crate is needed or possible.
 
 ## Dependency DAG
 
 ```
-core
-├── prompt        (core)
-├── memory        (core)
-├── llm           (core)
-├── embedding     (core)
-├── chain         (core, prompt, memory, llm)
-├── vectorstore   (core, embedding)
-├── loaders       (core)
-├── tools         (core, llm)
-├── router        (core, embedding)
-└── agent         (core, chain, tools)
+types
+└── core                   (types)
+    ├── prompt             (types, core)         [includes all macro_rules! macros]
+    ├── memory             (types, core)
+    ├── llm                (types, core)
+    ├── embedding          (types, core)
+    ├── splitters          (types, core)
+    ├── testsuite          (types, core, llm)    [test-utils feature only, not in facade]
+    ├── chain              (types, core, prompt, memory, llm)
+    ├── vectorstore        (types, core, embedding)
+    ├── loaders            (types, core, splitters)
+    ├── tools              (types, core, llm)
+    ├── router             (types, core, embedding)
+    └── agent              (types, core, chain, tools)
 
 langchainx (facade)
-└── all of the above
+└── all of the above except testsuite
 ```
 
-No cycles. `chain` is the unit of work — it does not depend on `agent`, `vectorstore`, or
-`loaders`. Those compose _into_ chains at the application layer.
+No cycles. `chain` does not depend on `agent`, `vectorstore`, or `loaders` — those compose into
+chains at the application layer.
+
+`langchainx-testsuite` is a workspace member but is NOT re-exported from the facade. It is used
+as a direct dev-dependency in crates that need test helpers, gated behind
+`cfg(any(test, feature = "test-utils"))`.
 
 ## Directory Layout
 
 ```
 langchainx/
-  Cargo.toml                  # workspace manifest
+  Cargo.toml                    # workspace manifest
   crates/
-    langchainx-core/
+    langchainx-types/
       Cargo.toml
       src/
+    langchainx-core/
     langchainx-prompt/
     langchainx-memory/
     langchainx-llm/
     langchainx-embedding/
+    langchainx-splitters/
+    langchainx-testsuite/
     langchainx-chain/
     langchainx-vectorstore/
     langchainx-loaders/
     langchainx-tools/
     langchainx-router/
     langchainx-agent/
-    langchainx/               # facade
+    langchainx/                 # facade
   examples/
-  tests/                      # integration / e2e tests (keep at workspace root)
+  tests/                        # integration / e2e tests (keep at workspace root)
 ```
 
 ## Feature Flags
 
 Feature flags move to each leaf crate's `Cargo.toml`. The facade `langchainx` re-exports
 everything and passes feature flags through via `dep:` syntax. Users enabling
-`langchainx/postgres` transitively enable `langchainx-vectorstore/postgres`.
+`langchainx/postgres` transitively enable both `langchainx-chain/postgres` (SqlDatabase) and
+`langchainx-vectorstore/postgres` (pgvector).
+
+The `test-utils` feature on the facade activates `langchainx-testsuite` as an optional dep.
 
 ## Migration Strategy
 
-1. Create `Cargo.toml` workspace manifest at root; move current `[package]` into
-   `crates/langchainx-core/Cargo.toml` as the first crate.
-2. Extract crates bottom-up following the DAG (core → prompt/memory/llm/embedding →
-   chain → vectorstore/loaders/tools/router → agent → facade).
-3. After each crate extraction: `cargo build --all-features` and `cargo test --all-features`
+1. Create `Cargo.toml` workspace manifest at root.
+2. Extract `langchainx-types` first — pure data types, no async deps.
+3. Extract `langchainx-core` next — traits + errors, depends on `types`.
+4. Extract remaining crates bottom-up following the DAG (prompt/memory/llm/embedding/splitters/
+   testsuite → chain → vectorstore/loaders/tools/router → agent → facade).
+5. After each crate extraction: `cargo build --all-features` and `cargo test --all-features`
    must pass before moving to the next.
-4. The facade `langchainx` crate is written last; its `lib.rs` is `pub use` re-exports only.
-5. Update `examples/` imports — they should only need to change `langchainx::` to stay as-is
-   if the facade re-exports are complete.
-6. Bump to `0.4.0` on publish (breaking change in crate structure, even if API is preserved).
+6. The facade `langchainx` crate is written last; its `lib.rs` is `pub use` re-exports only.
+7. Update `examples/` imports — they should only need `langchainx::` to stay as-is if facade
+   re-exports are complete.
+8. Bump to `0.4.0` on publish (breaking change in crate structure, even if API is preserved).
 
 ## Out of Scope
 
