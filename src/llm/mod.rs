@@ -1,15 +1,8 @@
-pub mod openai;
-pub use openai::*;
+pub use langchainx_llm::claude;
+pub use langchainx_llm::deepseek;
+pub use langchainx_llm::openai;
+pub use langchainx_llm::qwen;
+pub use langchainx_llm::*;
 
-pub mod claude;
-pub use claude::*;
-
-pub mod ollama;
 #[cfg(feature = "ollama")]
-pub use ollama::*;
-
-pub mod qwen;
-pub use qwen::*;
-
-pub mod deepseek;
-pub use deepseek::*;
+pub use langchainx_llm::ollama;
