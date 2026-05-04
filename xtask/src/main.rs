@@ -11,6 +11,7 @@ use xshell::Shell;
 
 mod bump;
 mod gates;
+pub(crate) mod trace;
 
 fn main() -> Result<()> {
     let task = env::args().nth(1);
