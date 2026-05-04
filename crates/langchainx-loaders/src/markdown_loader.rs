@@ -6,36 +6,7 @@ use futures::{Stream, stream};
 use langchainx_core::schemas::Document;
 use langchainx_text_splitter::TextSplitter;
 
-use crate::{Loader, LoaderError, process_doc_stream};
-
-/// Splits YAML frontmatter (delimited by `---`) from body content.
-/// Returns `(metadata_lines, body)`.
-fn parse_frontmatter(content: &str) -> (Vec<(String, String)>, String) {
-    let mut lines = content.lines();
-    let first = lines.next().unwrap_or("");
-    if first.trim() != "---" {
-        return (vec![], content.to_string());
-    }
-    let mut meta_lines: Vec<(String, String)> = vec![];
-    let mut rest_lines: Vec<&str> = vec![];
-    let mut in_front = true;
-    for line in lines {
-        if in_front {
-            if line.trim() == "---" {
-                in_front = false;
-            } else if let Some((k, v)) = line.split_once(':') {
-                meta_lines.push((k.trim().to_string(), v.trim().to_string()));
-            } else {
-                // key with no colon — key present, empty value
-                meta_lines.push((line.trim().to_string(), String::new()));
-            }
-        } else {
-            rest_lines.push(line);
-        }
-    }
-    let body = rest_lines.join("\n");
-    (meta_lines, body)
-}
+use crate::{Loader, LoaderError, markdown_serializer::parse_frontmatter, process_doc_stream};
 
 /// Loads markdown content, strips YAML frontmatter into metadata.
 #[derive(Debug, Clone)]
@@ -59,11 +30,9 @@ impl Loader for MarkdownLoader {
         Pin<Box<dyn Stream<Item = Result<Document, LoaderError>> + Send + 'static>>,
         LoaderError,
     > {
-        let (meta_pairs, body) = parse_frontmatter(&self.content);
+        let (meta, body) = parse_frontmatter(&self.content);
         let mut doc = Document::new(body);
-        for (k, v) in meta_pairs {
-            doc.metadata.insert(k, serde_json::Value::String(v));
-        }
+        doc.metadata = meta;
         let stream = stream::iter(vec![Ok(doc)]);
         Ok(Box::pin(stream))
     }
