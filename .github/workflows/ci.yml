@@ -51,21 +51,8 @@ jobs:
           override: true
           profile: minimal
           components: rustfmt, clippy
-      - name: Rust fmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-      - name: Build release
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --verbose --all --release --all-features
-      - name: Run Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --release --all-features
+      - name: Run CI gates
+        run: cargo xtask ci
 
   publish_crate:
     if: startsWith(github.ref, 'refs/tags/')

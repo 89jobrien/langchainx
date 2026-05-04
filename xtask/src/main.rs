@@ -43,7 +43,7 @@ fn main() -> Result<()> {
             eprintln!("  build        cargo build --release --all-features");
             eprintln!("  test         cargo test --release --all-features");
             eprintln!("  pre-commit   fmt-check + clippy (fast local gate)");
-            eprintln!("  bump         bump workspace version (patch|minor|major)");
+            eprintln!("  bump         bump workspace version (patch|minor|major|X.Y.Z)");
             Ok(())
         }
     }

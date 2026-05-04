@@ -1,6 +1,6 @@
 //! bump — bump the workspace version in the root Cargo.toml.
 //!
-//! Usage: cargo xtask bump <patch|minor|major>
+//! Usage: cargo xtask bump <patch|minor|major|X.Y.Z>
 
 use anyhow::{Result, bail};
 use std::fs;
@@ -14,12 +14,20 @@ pub fn bump(root: &Path, level: &str) -> Result<()> {
         anyhow::anyhow!("could not find [workspace.package] version in Cargo.toml")
     })?;
 
-    let (major, minor, patch) = parse_semver(&current)?;
-    let next = match level {
-        "patch" => format!("{major}.{minor}.{}", patch + 1),
-        "minor" => format!("{major}.{}.0", minor + 1),
-        "major" => format!("{}.0.0", major + 1),
-        other => bail!("unknown bump level: {other} (expected patch, minor, or major)"),
+    let next = if level.contains('.') {
+        // exact version passed (e.g. "1.2.3")
+        parse_semver(level).map_err(|_| {
+            anyhow::anyhow!("'{level}' is not a valid semver (expected X.Y.Z or patch|minor|major)")
+        })?;
+        level.to_string()
+    } else {
+        let (major, minor, patch) = parse_semver(&current)?;
+        match level {
+            "patch" => format!("{major}.{minor}.{}", patch + 1),
+            "minor" => format!("{major}.{}.0", minor + 1),
+            "major" => format!("{}.0.0", major + 1),
+            other => bail!("unknown bump level: {other} (expected patch, minor, major, or X.Y.Z)"),
+        }
     };
 
     let updated = content.replacen(
@@ -108,6 +116,15 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let root = make_toml(&tmp, "0.4.5");
         bump(&root, "major").unwrap();
+        let content = fs::read_to_string(root.join("Cargo.toml")).unwrap();
+        assert!(content.contains("version = \"1.0.0\""));
+    }
+
+    #[test]
+    fn exact_version() {
+        let tmp = TempDir::new().unwrap();
+        let root = make_toml(&tmp, "0.4.5");
+        bump(&root, "1.0.0").unwrap();
         let content = fs::read_to_string(root.join("Cargo.toml")).unwrap();
         assert!(content.contains("version = \"1.0.0\""));
     }
