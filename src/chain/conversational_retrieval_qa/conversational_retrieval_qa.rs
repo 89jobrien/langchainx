@@ -1,15 +1,15 @@
 use futures::Stream;
-use futures_util::{pin_mut, StreamExt};
+use futures_util::{StreamExt, pin_mut};
 use std::{collections::HashMap, pin::Pin, sync::Arc};
 
 use async_stream::stream;
 use async_trait::async_trait;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tokio::sync::Mutex;
 
 use crate::{
     chain::{
-        Chain, ChainError, CondenseQuestionPromptBuilder, StuffQAPromptBuilder, DEFAULT_RESULT_KEY,
+        Chain, ChainError, CondenseQuestionPromptBuilder, DEFAULT_RESULT_KEY, StuffQAPromptBuilder,
     },
     language_models::{GenerateResult, TokenUsage},
     prompt::PromptArgs,

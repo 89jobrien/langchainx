@@ -45,8 +45,6 @@ impl FunctionDefinition {
             parameters,
         }
     }
-
-
 }
 
 impl TryOpenAiFromLangchain<FunctionDefinition> for ChatCompletionTool {

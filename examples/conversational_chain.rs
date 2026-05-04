@@ -1,8 +1,8 @@
-use std::io::{stdout, Write};
+use std::io::{Write, stdout};
 
 use futures_util::StreamExt;
 use langchainx::{
-    chain::{builder::ConversationalChainBuilder, Chain},
+    chain::{Chain, builder::ConversationalChainBuilder},
     // fmt_message, fmt_template,
     llm::openai::OpenAI,
     memory::SimpleMemory,

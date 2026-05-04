@@ -10,9 +10,9 @@ use crate::{
     fmt_message, fmt_placeholder, fmt_template, message_formatter,
     prompt::{HumanMessagePromptTemplate, MessageFormatterStruct, PromptArgs},
     schemas::{
+        FunctionCallResponse,
         agent::{AgentAction, AgentEvent, AgentFinish, LogTools},
         messages::Message,
-        FunctionCallResponse,
     },
     template_jinja2,
     tools::Tool,

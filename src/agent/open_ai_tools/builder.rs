@@ -2,13 +2,13 @@ use std::sync::Arc;
 
 use crate::{
     agent::AgentError,
-    chain::{options::ChainCallOptions, LLMChainBuilder},
+    chain::{LLMChainBuilder, options::ChainCallOptions},
     language_models::{llm::LLM, options::CallOptions},
     schemas::FunctionDefinition,
     tools::Tool,
 };
 
-use super::{prompt::PREFIX, OpenAiToolAgent};
+use super::{OpenAiToolAgent, prompt::PREFIX};
 
 pub struct OpenAiToolAgentBuilder {
     tools: Option<Vec<Arc<dyn Tool>>>,

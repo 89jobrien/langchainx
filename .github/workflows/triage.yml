@@ -1,0 +1,51 @@
+name: triage
+
+# Assigns a P-tag label to every newly opened or reopened issue based on
+# title/body keyword heuristics. Existing P-tags are not overwritten.
+
+on:
+  issues:
+    types: [opened, reopened]
+
+permissions:
+  issues: write
+
+concurrency:
+  group: triage-issue-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  assign-priority:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip if P-tag already present
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          labels=$(gh issue view "$ISSUE" --repo "$GITHUB_REPOSITORY" --json labels -q '.labels[].name')
+          if echo "$labels" | grep -qE '^P[123]$'; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Assign P-tag
+        if: steps.check.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+          TITLE: ${{ github.event.issue.title }}
+          BODY: ${{ github.event.issue.body }}
+        run: |
+          text="${TITLE} ${BODY:-}"
+          if echo "$text" | grep -qiE 'bug|broken|panic|regression|security|crash|vuln'; then
+            priority="P1"
+          elif echo "$text" | grep -qiE 'refactor|extract|feat|implement|add|improve|perf'; then
+            priority="P2"
+          else
+            priority="P3"
+          fi
+          gh issue edit "$ISSUE" --repo "$GITHUB_REPOSITORY" --add-label "$priority"
+          echo "Assigned $priority to issue #$ISSUE"

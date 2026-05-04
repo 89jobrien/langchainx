@@ -9,6 +9,7 @@ members = [
     "crates/langchainx-embedding",
     "crates/langchainx-chain",
     "examples/vector_store_surrealdb",
+    "xtask",
 ]
 
 [workspace.package]
@@ -30,6 +31,7 @@ documentation = "https://github.com/89jobrien/langchainx"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+langchainx-core = { path = "crates/langchainx-core" }
 scraper = "0.21"
 serde = { version = "1.0", features = ["derive"] }
 async-trait = "0.1.80"

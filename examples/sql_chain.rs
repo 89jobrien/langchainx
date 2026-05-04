@@ -2,9 +2,9 @@
 
 #[cfg(feature = "postgres")]
 use langchainx::{
-    chain::{options::ChainCallOptions, Chain, SQLDatabaseChainBuilder},
+    chain::{Chain, SQLDatabaseChainBuilder, options::ChainCallOptions},
     llm::openai::OpenAI,
-    tools::{postgres::PostgreSQLEngine, SQLDatabaseBuilder},
+    tools::{SQLDatabaseBuilder, postgres::PostgreSQLEngine},
 };
 
 #[cfg(feature = "postgres")]

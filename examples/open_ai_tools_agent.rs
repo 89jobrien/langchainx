@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use langchainx::{
     agent::{AgentExecutor, OpenAiToolAgentBuilder},
-    chain::{options::ChainCallOptions, Chain},
+    chain::{Chain, options::ChainCallOptions},
     llm::openai::OpenAI,
     memory::SimpleMemory,
     prompt_args,

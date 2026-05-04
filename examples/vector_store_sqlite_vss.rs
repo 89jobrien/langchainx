@@ -8,7 +8,7 @@
 use langchainx::{
     embedding::openai::openai_embedder::OpenAiEmbedder,
     schemas::Document,
-    vectorstore::{sqlite_vss::StoreBuilder, VecStoreOptions, VectorStore},
+    vectorstore::{VecStoreOptions, VectorStore, sqlite_vss::StoreBuilder},
 };
 #[cfg(feature = "sqlite-vss")]
 use std::io::Write;
@@ -39,10 +39,10 @@ async fn main() {
         "langchainx is a port of the langchain python library to rust and was written in 2024.",
     );
     let doc2 = Document::new(
-        "langchaingo is a port of the langchain python library to go language and was written in 2023."
+        "langchaingo is a port of the langchain python library to go language and was written in 2023.",
     );
     let doc3 = Document::new(
-        "Capital of United States of America (USA) is Washington D.C. and the capital of France is Paris."
+        "Capital of United States of America (USA) is Washington D.C. and the capital of France is Paris.",
     );
     let doc4 = Document::new("Capital of France is Paris.");
 

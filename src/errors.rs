@@ -1,37 +1,71 @@
-use thiserror::Error;
+// LangChainError is defined in langchainx-core. Re-exported here for backwards
+// compatibility. The From impls below convert typed module errors into the
+// string-variant aggregate until all modules are extracted into crates.
+
+pub use langchainx_core::errors::LangChainError;
 
 use crate::{
-    agent::AgentError, chain::ChainError, document_loaders::LoaderError, embedding::EmbedderError,
-    language_models::LLMError, output_parsers::OutputParserError, prompt::PromptError,
-    text_splitter::TextSplitterError, vectorstore::VectorStoreError,
+    agent::AgentError,
+    chain::ChainError,
+    document_loaders::LoaderError,
+    embedding::EmbedderError,
+    language_models::LLMError,
+    output_parsers::OutputParserError,
+    prompt::PromptError,
+    text_splitter::TextSplitterError,
+    vectorstore::VectorStoreError,
 };
 
-#[derive(Error, Debug)]
-pub enum LangChainError {
-    #[error("LLM error: {0}")]
-    LLM(#[from] LLMError),
+impl From<LLMError> for LangChainError {
+    fn from(e: LLMError) -> Self {
+        LangChainError::LLM(e.to_string())
+    }
+}
 
-    #[error("Chain error: {0}")]
-    Chain(#[from] ChainError),
+impl From<ChainError> for LangChainError {
+    fn from(e: ChainError) -> Self {
+        LangChainError::Chain(e.to_string())
+    }
+}
 
-    #[error("Agent error: {0}")]
-    Agent(#[from] AgentError),
+impl From<AgentError> for LangChainError {
+    fn from(e: AgentError) -> Self {
+        LangChainError::Agent(e.to_string())
+    }
+}
 
-    #[error("Prompt error: {0}")]
-    Prompt(#[from] PromptError),
+impl From<PromptError> for LangChainError {
+    fn from(e: PromptError) -> Self {
+        LangChainError::Prompt(e.to_string())
+    }
+}
 
-    #[error("Output parser error: {0}")]
-    OutputParser(#[from] OutputParserError),
+impl From<OutputParserError> for LangChainError {
+    fn from(e: OutputParserError) -> Self {
+        LangChainError::OutputParser(e.to_string())
+    }
+}
 
-    #[error("Document loader error: {0}")]
-    Loader(#[from] LoaderError),
+impl From<LoaderError> for LangChainError {
+    fn from(e: LoaderError) -> Self {
+        LangChainError::Loader(e.to_string())
+    }
+}
 
-    #[error("Text splitter error: {0}")]
-    TextSplitter(#[from] TextSplitterError),
+impl From<TextSplitterError> for LangChainError {
+    fn from(e: TextSplitterError) -> Self {
+        LangChainError::TextSplitter(e.to_string())
+    }
+}
 
-    #[error("Embedder error: {0}")]
-    Embedder(#[from] EmbedderError),
+impl From<EmbedderError> for LangChainError {
+    fn from(e: EmbedderError) -> Self {
+        LangChainError::Embedder(e.to_string())
+    }
+}
 
-    #[error("Vector store error: {0}")]
-    VectorStore(#[from] VectorStoreError),
+impl From<VectorStoreError> for LangChainError {
+    fn from(e: VectorStoreError) -> Self {
+        LangChainError::VectorStore(e.to_string())
+    }
 }
