@@ -83,3 +83,40 @@ impl TextSplitter for PlainTextSplitter {
         Ok(splitter.chunks(text).map(|x| x.to_string()).collect())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_split_produces_chunks_in_range() {
+        // 1000-char text split into 100-char chunks → expect ~10 chunks
+        let text = "a".repeat(1000);
+        let opts = PlainTextSplitterOptions::new().with_chunk_size(100);
+        let splitter = PlainTextSplitter::new(opts);
+        let chunks = splitter.split_text(&text).await.unwrap();
+        assert!(!chunks.is_empty());
+        assert!(chunks.len() >= 9 && chunks.len() <= 11);
+    }
+
+    #[tokio::test]
+    async fn test_split_no_empty_chunks() {
+        let text = "hello world this is a test ".repeat(50);
+        let opts = PlainTextSplitterOptions::new().with_chunk_size(50);
+        let splitter = PlainTextSplitter::new(opts);
+        let chunks = splitter.split_text(&text).await.unwrap();
+        for chunk in &chunks {
+            assert!(!chunk.is_empty());
+        }
+    }
+
+    #[tokio::test]
+    async fn test_split_short_text_single_chunk() {
+        let text = "short";
+        let opts = PlainTextSplitterOptions::new().with_chunk_size(512);
+        let splitter = PlainTextSplitter::new(opts);
+        let chunks = splitter.split_text(text).await.unwrap();
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(chunks[0], "short");
+    }
+}

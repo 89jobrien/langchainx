@@ -82,3 +82,55 @@ impl Index for MemoryIndex {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::semantic_router::Router;
+
+    #[tokio::test]
+    async fn test_add_and_query_router() {
+        let mut index = MemoryIndex::new();
+        // Route pointing along the x-axis
+        let router = Router::new("x_route", &["hello"])
+            .with_embedding(vec![vec![1.0, 0.0]]);
+        index.add(&[router]).await.unwrap();
+
+        // Query with the same direction → similarity = 1.0
+        let results = index.query(&[1.0, 0.0], 1).await.unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].0, "x_route");
+        assert!((results[0].1 - 1.0).abs() < 1e-9);
+    }
+
+    #[tokio::test]
+    async fn test_add_without_embedding_returns_error() {
+        let mut index = MemoryIndex::new();
+        let router = Router::new("no_embed", &["hello"]);
+        let err = index.add(&[router]).await.unwrap_err();
+        assert!(matches!(err, IndexError::MissingEmbedding(_)));
+    }
+
+    #[tokio::test]
+    async fn test_query_returns_top_k() {
+        let mut index = MemoryIndex::new();
+        let r1 = Router::new("x_route", &["a"]).with_embedding(vec![vec![1.0, 0.0]]);
+        let r2 = Router::new("y_route", &["b"]).with_embedding(vec![vec![0.0, 1.0]]);
+        index.add(&[r1, r2]).await.unwrap();
+
+        // Query along x → x_route should score higher
+        let results = index.query(&[1.0, 0.0], 2).await.unwrap();
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].0, "x_route");
+    }
+
+    #[tokio::test]
+    async fn test_delete_router() {
+        let mut index = MemoryIndex::new();
+        let router = Router::new("to_delete", &["x"]).with_embedding(vec![vec![1.0, 0.0]]);
+        index.add(&[router]).await.unwrap();
+        index.delete("to_delete").await.unwrap();
+        let routers = index.get_routers().await.unwrap();
+        assert!(routers.is_empty());
+    }
+}

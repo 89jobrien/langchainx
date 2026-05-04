@@ -213,6 +213,138 @@ mod tests {
 
     use super::*;
 
+    #[test]
+    fn test_aggregation_mean() {
+        let values = vec![1.0, 2.0, 3.0];
+        assert!((AggregationMethod::Mean.aggregate(&values) - 2.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn test_aggregation_max() {
+        let values = vec![1.0, 2.0, 3.0];
+        assert!((AggregationMethod::Max.aggregate(&values) - 3.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn test_aggregation_sum() {
+        let values = vec![1.0, 2.0, 3.0];
+        assert!((AggregationMethod::Sum.aggregate(&values) - 6.0).abs() < 1e-9);
+    }
+
+    #[tokio::test]
+    async fn test_call_embedding_selects_correct_route() {
+        use crate::{
+            llm::openai::OpenAI,
+            semantic_router::{MemoryIndex, Router},
+        };
+        use std::sync::Arc;
+        use crate::chain::LLMChainBuilder;
+        use crate::prompt::HumanMessagePromptTemplate;
+        use crate::template_jinja2;
+
+        let prompt = HumanMessagePromptTemplate::new(template_jinja2!(
+            "{{query}}",
+            "query"
+        ));
+        let llm_chain = LLMChainBuilder::new()
+            .prompt(prompt)
+            .llm(OpenAI::default())
+            .build()
+            .unwrap();
+
+        // x_route has embedding pointing along [1, 0]
+        // y_route has embedding pointing along [0, 1]
+        let x_router = Router::new("x_route", &["a"])
+            .with_embedding(vec![vec![1.0, 0.0]]);
+        let y_router = Router::new("y_route", &["b"])
+            .with_embedding(vec![vec![0.0, 1.0]]);
+
+        // Use a FakeEmbedder that just returns the stored vectors
+        struct FixedEmbedder;
+        use async_trait::async_trait;
+        use crate::embedding::Embedder;
+        #[async_trait]
+        impl Embedder for FixedEmbedder {
+            async fn embed_documents(&self, texts: &[String]) -> Result<Vec<Vec<f64>>, crate::embedding::EmbedderError> {
+                Ok(texts.iter().map(|_| vec![1.0, 0.0]).collect())
+            }
+            async fn embed_query(&self, _text: &str) -> Result<Vec<f64>, crate::embedding::EmbedderError> {
+                Ok(vec![1.0, 0.0])
+            }
+        }
+
+        let mut index = MemoryIndex::new();
+        index.add(&[x_router, y_router]).await.unwrap();
+
+        let route_layer = RouteLayer {
+            embedder: Arc::new(FixedEmbedder),
+            index: Box::new(index),
+            threshold: 0.5,
+            llm: llm_chain,
+            top_k: 5,
+            aggregation_method: AggregationMethod::Sum,
+        };
+
+        // Query along [1, 0] → should select x_route
+        let result = route_layer.call_embedding(&[1.0, 0.0]).await.unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().route, "x_route");
+    }
+
+    #[tokio::test]
+    async fn test_call_embedding_below_threshold_returns_none() {
+        use crate::{
+            llm::openai::OpenAI,
+            semantic_router::{MemoryIndex, Router},
+        };
+        use std::sync::Arc;
+        use crate::chain::LLMChainBuilder;
+        use crate::prompt::HumanMessagePromptTemplate;
+        use crate::template_jinja2;
+
+        let prompt = HumanMessagePromptTemplate::new(template_jinja2!(
+            "{{query}}",
+            "query"
+        ));
+        let llm_chain = LLMChainBuilder::new()
+            .prompt(prompt)
+            .llm(OpenAI::default())
+            .build()
+            .unwrap();
+
+        struct FixedEmbedder;
+        use async_trait::async_trait;
+        use crate::embedding::Embedder;
+        #[async_trait]
+        impl Embedder for FixedEmbedder {
+            async fn embed_documents(&self, texts: &[String]) -> Result<Vec<Vec<f64>>, crate::embedding::EmbedderError> {
+                Ok(texts.iter().map(|_| vec![1.0, 0.0]).collect())
+            }
+            async fn embed_query(&self, _text: &str) -> Result<Vec<f64>, crate::embedding::EmbedderError> {
+                Ok(vec![1.0, 0.0])
+            }
+        }
+
+        let x_router = Router::new("x_route", &["a"])
+            .with_embedding(vec![vec![1.0, 0.0]]);
+
+        let mut index = MemoryIndex::new();
+        index.add(&[x_router]).await.unwrap();
+
+        // Threshold is impossibly high → always returns None
+        let route_layer = RouteLayer {
+            embedder: Arc::new(FixedEmbedder),
+            index: Box::new(index),
+            threshold: 2.0,
+            llm: llm_chain,
+            top_k: 5,
+            aggregation_method: AggregationMethod::Sum,
+        };
+
+        let result = route_layer.call_embedding(&[1.0, 0.0]).await.unwrap();
+        assert!(result.is_none());
+    }
+
     #[tokio::test]
     #[ignore]
     async fn test_route_layer_builder() {
