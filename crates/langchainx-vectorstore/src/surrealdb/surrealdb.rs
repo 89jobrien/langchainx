@@ -185,7 +185,7 @@ impl<C: Connection> VectorStore for Store<C> {
             .db
             .query(format!(
                 r#"
-        SELECT record::id(id) as id, text, metadata,
+        SELECT text, metadata,
         vector::similarity::cosine(embedding, $embedding) as similarity
         FROM {collection_table_name}
         WHERE vector::similarity::cosine(embedding, $embedding) >= $score_threshold {collection_predicate}
@@ -217,7 +217,6 @@ impl<C: Connection> VectorStore for Store<C> {
 
 #[derive(Deserialize, Debug)]
 struct Row {
-    id: String,
     text: String,
     metadata: HashMap<String, Value>,
     similarity: f64,

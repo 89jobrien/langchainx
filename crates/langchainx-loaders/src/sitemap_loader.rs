@@ -47,7 +47,7 @@ impl SitemapLoader {
             .map_err(|e| LoaderError::OtherError(e.to_string()))
     }
 
-    fn extract_locs(xml: &str, tag: &str) -> Vec<String> {
+    fn extract_locs(xml: &str, tag: &str) -> Result<Vec<String>, LoaderError> {
         use quick_xml::Reader;
         use quick_xml::events::Event;
 
@@ -63,20 +63,25 @@ impl SitemapLoader {
                     in_loc = true;
                 }
                 Ok(Event::Text(e)) if in_loc => {
-                    urls.push(e.unescape().unwrap_or_default().into_owned());
+                    let loc = e.unescape().map_err(|e| {
+                        LoaderError::OtherError(format!("Invalid {tag} <loc> text: {e}"))
+                    })?;
+                    urls.push(loc.into_owned());
                     in_loc = false;
                 }
                 Ok(Event::End(e)) if e.name().as_ref() == b"loc" => {
                     in_loc = false;
                 }
                 Ok(Event::Eof) => break,
-                Err(_) => break,
+                Err(e) => {
+                    return Err(LoaderError::OtherError(format!(
+                        "Invalid {tag} XML while reading sitemap locations: {e}"
+                    )));
+                }
                 _ => {}
             }
         }
-
-        let _ = tag; // tag used for caller context only
-        urls
+        Ok(urls)
     }
 
     fn is_sitemap_index(xml: &str) -> bool {
@@ -88,16 +93,16 @@ impl SitemapLoader {
 
         let loc_urls: Vec<String> = if Self::is_sitemap_index(&root_xml) {
             // recurse one level: fetch each child sitemap and collect its locs
-            let child_sitemaps = Self::extract_locs(&root_xml, "sitemapindex");
+            let child_sitemaps = Self::extract_locs(&root_xml, "sitemapindex")?;
             let mut all_locs = Vec::new();
             for sitemap_url in child_sitemaps {
                 let child_xml = self.fetch_text(&sitemap_url).await?;
-                let locs = Self::extract_locs(&child_xml, "urlset");
+                let locs = Self::extract_locs(&child_xml, "urlset")?;
                 all_locs.extend(locs);
             }
             all_locs
         } else {
-            Self::extract_locs(&root_xml, "urlset")
+            Self::extract_locs(&root_xml, "urlset")?
         };
 
         let mut docs = Vec::new();
@@ -247,5 +252,15 @@ mod tests {
 
         let result = loader.load().await;
         assert!(result.is_err(), "expected Err for 404");
+    }
+
+    #[test]
+    fn extract_locs_returns_error_for_malformed_xml() {
+        let result = SitemapLoader::extract_locs(
+            "<urlset><url><loc>https://example.com/?a=1&b=2</loc></url></urlset>",
+            "urlset",
+        );
+
+        assert!(result.is_err());
     }
 }

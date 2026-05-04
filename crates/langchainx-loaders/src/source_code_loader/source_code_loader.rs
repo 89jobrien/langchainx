@@ -30,6 +30,35 @@ impl SourceCodeLoader {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use futures_util::StreamExt;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn load_yields_error_for_unsupported_file_extension() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let file_path = temp_dir.path().join("notes.unsupported");
+        std::fs::write(&file_path, "not source code").unwrap();
+
+        let mut stream = SourceCodeLoader::from_path(temp_dir.path().to_string_lossy().to_string())
+            .load()
+            .await
+            .unwrap();
+
+        let result = stream.next().await.unwrap();
+
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Unsupported source language")
+        );
+    }
+}
+
 impl SourceCodeLoader {
     pub fn from_path<S: Into<String>>(path: S) -> Self {
         Self {
@@ -77,8 +106,17 @@ impl Loader for SourceCodeLoader {
                         }
                     };
                     let mut content = String::new();
-                    file.read_to_string(&mut content).unwrap();
-                    let language = get_language_by_filename(&filename);
+                    if let Err(e) = file.read_to_string(&mut content) {
+                        yield Err(LoaderError::OtherError(format!("Error reading file {filename}: {e}")));
+                        continue;
+                    }
+                    let language = match get_language_by_filename(&filename) {
+                        Ok(language) => language,
+                        Err(e) => {
+                            yield Err(e);
+                            continue;
+                        }
+                    };
                     let mut parser = LanguageParser::from_language(language).with_parser_option(self.parser_option.clone());
                     let docs = parser.parse_code(&content);
                     for doc in docs {

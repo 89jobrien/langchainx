@@ -25,6 +25,30 @@ impl GitCommitLoader {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn load_empty_git_repo_returns_error_instead_of_panicking() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let status = std::process::Command::new("git")
+            .arg("init")
+            .arg(temp_dir.path())
+            .status()
+            .unwrap();
+        assert!(status.success());
+
+        let loader = GitCommitLoader::from_path(temp_dir.path()).unwrap();
+        let result = loader.load().await;
+
+        match result {
+            Ok(_) => panic!("expected empty git repository to return an error"),
+            Err(error) => assert!(error.to_string().contains("Failed to read git HEAD")),
+        }
+    }
+}
+
 #[async_trait]
 impl Loader for GitCommitLoader {
     async fn load(
@@ -34,33 +58,59 @@ impl Loader for GitCommitLoader {
         LoaderError,
     > {
         let repo = self.repo.to_thread_local();
+        let head_id = repo
+            .head_id()
+            .map_err(|e| LoaderError::OtherError(format!("Failed to read git HEAD: {e}")))?
+            .detach();
 
         // Since commits_iter can't be shared across thread safely, use channels as a workaround.
         let (tx, rx) = flume::bounded(1);
 
         tokio::spawn(async move {
-            let commits_iter = repo
-                .rev_walk(Some(repo.head_id().unwrap().detach()))
-                .all()
-                .unwrap()
-                .filter_map(Result::ok)
-                .map(|oid| {
-                    let commit = oid.object().unwrap();
-                    let commit_id = commit.id;
-                    let author = commit.author().unwrap();
-                    let email = author.email.to_string();
-                    let name = author.name.to_string();
-                    let message = format!("{}", commit.message().unwrap().title);
+            let commits = match repo.rev_walk(Some(head_id)).all() {
+                Ok(commits) => commits,
+                Err(e) => {
+                    let _ = tx.send(Err(LoaderError::OtherError(format!(
+                        "Failed to walk git commits: {e}"
+                    ))));
+                    return;
+                }
+            };
 
-                    let mut document = Document::new(format!(
-                        "commit {commit_id}\nAuthor: {name} <{email}>\n\n    {message}"
-                    ));
-                    let mut metadata = HashMap::new();
-                    metadata.insert("commit".to_string(), Value::from(commit_id.to_string()));
+            let commits_iter = commits.map(|oid| {
+                let oid = oid.map_err(|e| {
+                    LoaderError::OtherError(format!("Failed to read git object id: {e}"))
+                })?;
+                let commit = oid.object().map_err(|e| {
+                    LoaderError::OtherError(format!("Failed to load git commit object: {e}"))
+                })?;
+                let commit_id = commit.id;
+                let author = commit.author().map_err(|e| {
+                    LoaderError::OtherError(format!("Failed to read git commit author: {e}"))
+                })?;
+                let email = author.email.to_string();
+                let name = author.name.to_string();
+                let message = format!(
+                    "{}",
+                    commit
+                        .message()
+                        .map_err(|e| {
+                            LoaderError::OtherError(format!(
+                                "Failed to read git commit message: {e}"
+                            ))
+                        })?
+                        .title
+                );
 
-                    document.metadata = metadata;
-                    Ok(document)
-                });
+                let mut document = Document::new(format!(
+                    "commit {commit_id}\nAuthor: {name} <{email}>\n\n    {message}"
+                ));
+                let mut metadata = HashMap::new();
+                metadata.insert("commit".to_string(), Value::from(commit_id.to_string()));
+
+                document.metadata = metadata;
+                Ok(document)
+            });
 
             for document in commits_iter {
                 if tx.send(document).is_err() {

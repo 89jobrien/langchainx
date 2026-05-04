@@ -1,3 +1,4 @@
+use crate::LoaderError;
 use langchainx_core::schemas::Document;
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -73,21 +74,25 @@ impl Clone for LanguageParser {
     }
 }
 
-pub fn get_language_by_filename(name: &String) -> Language {
-    let extension = name.split('.').last().unwrap();
+pub fn get_language_by_filename(name: &str) -> Result<Language, LoaderError> {
+    let extension = name.rsplit('.').next().ok_or_else(|| {
+        LoaderError::OtherError(format!("Unable to determine source language for {name}"))
+    })?;
     match extension.to_lowercase().as_str() {
-        "c" => Language::C,
-        "cs" => Language::CSharp,
-        "cc" | "cpp" | ".h" | "hpp" => Language::Cpp,
-        "go" => Language::Go,
-        "java" => Language::Java,
-        "js" => Language::Javascript,
-        "kt" => Language::Kotlin,
-        "py" => Language::Python,
-        "rs" => Language::Rust,
-        "scala" | "sc" => Language::Scala,
-        "ts" | "tsx" => Language::Typescript,
-        _ => panic!("Unsupported language"),
+        "c" => Ok(Language::C),
+        "cs" => Ok(Language::CSharp),
+        "cc" | "cpp" | "h" | "hpp" => Ok(Language::Cpp),
+        "go" => Ok(Language::Go),
+        "java" => Ok(Language::Java),
+        "js" => Ok(Language::Javascript),
+        "kt" => Ok(Language::Kotlin),
+        "py" => Ok(Language::Python),
+        "rs" => Ok(Language::Rust),
+        "scala" | "sc" => Ok(Language::Scala),
+        "ts" | "tsx" => Ok(Language::Typescript),
+        _ => Err(LoaderError::OtherError(format!(
+            "Unsupported source language for file: {name}"
+        ))),
     }
 }
 

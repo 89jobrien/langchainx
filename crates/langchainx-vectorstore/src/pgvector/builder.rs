@@ -25,7 +25,6 @@ pub struct StoreBuilder<F> {
     pre_delete_collection: bool,
     embedder_table_name: String,
     collection_name: String,
-    collection_uuid: String,
     collection_table_name: String,
     collection_metadata: HashMap<String, Value>,
     vstore_options: VecStoreOptions<F>,
@@ -39,7 +38,6 @@ impl StoreBuilder<PgFilter> {
             pool: None,
             embedder: None,
             connection_url: None,
-            collection_uuid: Default::default(),
             vector_dimensions: 0,
             pre_delete_collection: DEFAULT_PRE_DELETE_COLLECTION,
             embedder_table_name: DEFAULT_EMBEDDING_STORE_TABLE_NAME.into(),
@@ -96,8 +94,8 @@ impl StoreBuilder<PgFilter> {
         self
     }
 
-    fn collection_metadata(mut self, collecion_metadata: HashMap<String, Value>) -> Self {
-        self.collection_metadata = collecion_metadata;
+    pub fn collection_metadata(mut self, collection_metadata: HashMap<String, Value>) -> Self {
+        self.collection_metadata = collection_metadata;
         self
     }
 
@@ -129,14 +127,9 @@ impl StoreBuilder<PgFilter> {
             pool,
             embedder: self.embedder.unwrap(),
             collection_name: self.collection_name,
-            pre_delete_collection: self.pre_delete_collection,
             collection_uuid,
             collection_table_name: self.collection_table_name,
-            collection_metadata: self.collection_metadata,
             embedder_table_name: self.embedder_table_name,
-            vector_dimensions: self.vector_dimensions,
-            vstore_options: self.vstore_options,
-            hns_index: self.hns_index,
         })
     }
 

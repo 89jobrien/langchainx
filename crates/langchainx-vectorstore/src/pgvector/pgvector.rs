@@ -17,12 +17,7 @@ pub struct Store {
     pub(crate) collection_name: String,
     pub(crate) collection_table_name: String,
     pub(crate) collection_uuid: String,
-    pub(crate) collection_metadata: HashMap<String, Value>,
     pub(crate) embedder_table_name: String,
-    pub(crate) pre_delete_collection: bool,
-    pub(crate) vector_dimensions: i32,
-    pub(crate) hns_index: Option<HNSWIndex>,
-    pub(crate) vstore_options: PgOptions,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -121,46 +116,6 @@ impl Store {
             Some(name_space) => name_space.clone(),
             None => self.collection_name.clone(),
         }
-    }
-
-    fn get_score_threshold(&self, opt: &PgOptions) -> Result<f32, VectorStoreError> {
-        match &opt.score_threshold {
-            Some(score_threshold) => {
-                if *score_threshold < 0.0 || *score_threshold > 1.0 {
-                    return Err(VectorStoreError::OtherError(
-                        "Invalid score threshold".to_string(),
-                    ));
-                }
-                Ok(*score_threshold)
-            }
-            None => Ok(0.0),
-        }
-    }
-
-    async fn drop_tables(&self) -> Result<(), VectorStoreError> {
-        sqlx::query(&format!(
-            r#"DROP TABLE IF EXISTS {}"#,
-            self.embedder_table_name
-        ))
-        .execute(&self.pool)
-        .await?;
-
-        sqlx::query(&format!(
-            r#"DROP TABLE IF EXISTS {}"#,
-            self.collection_table_name
-        ))
-        .execute(&self.pool)
-        .await?;
-
-        Ok(())
-    }
-
-    async fn remove_collection(&self) -> Result<(), VectorStoreError> {
-        sqlx::query(r#"DELETE FROM collection WHERE uuid = $1"#)
-            .bind(&self.collection_uuid)
-            .execute(&self.pool)
-            .await?;
-        Ok(())
     }
 }
 

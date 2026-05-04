@@ -88,7 +88,7 @@ impl<C: Config + Send + Sync> Tool for Text2SpeechOpenAI<C> {
         let input = input
             .as_str()
             .ok_or_else(|| ToolError::InvalidInput("input must be a string".to_string()))?;
-        let client = Client::new();
+        let client = Client::with_config(self.config.clone());
         let response_format: SpeechResponseFormat = self.response_format;
 
         let request = CreateSpeechRequestArgs::default()
@@ -125,6 +125,12 @@ impl<C: Config + Send + Sync> Tool for Text2SpeechOpenAI<C> {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
+    use async_trait::async_trait;
+    use tokio::sync::Mutex;
+
+    use crate::SpeechStorage;
     use crate::{Text2SpeechOpenAI, Tool};
 
     #[tokio::test]
@@ -133,5 +139,55 @@ mod tests {
         let openai = Text2SpeechOpenAI::default();
         let s = openai.call("Hola como estas").await.unwrap();
         println!("{}", s);
+    }
+
+    #[derive(Clone, Default)]
+    struct CapturingStorage {
+        saved: Arc<Mutex<Vec<(String, Vec<u8>)>>>,
+    }
+
+    #[async_trait]
+    impl SpeechStorage for CapturingStorage {
+        async fn save(&self, key: &str, data: &[u8]) -> Result<String, Box<dyn std::error::Error>> {
+            self.saved
+                .lock()
+                .await
+                .push((key.to_string(), data.to_vec()));
+            Ok(key.to_string())
+        }
+    }
+
+    #[tokio::test]
+    async fn run_uses_configured_openai_client() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("POST", "/audio/speech")
+            .match_header("authorization", "Bearer test-key")
+            .with_status(200)
+            .with_header("content-type", "audio/mpeg")
+            .with_body("audio-bytes")
+            .create_async()
+            .await;
+
+        let storage = CapturingStorage::default();
+        let saved = storage.saved.clone();
+        let config = async_openai::config::OpenAIConfig::default()
+            .with_api_base(server.url())
+            .with_api_key("test-key");
+        let openai = Text2SpeechOpenAI::new(config)
+            .with_storage(storage)
+            .with_path("speech.mp3");
+
+        let path = openai
+            .run(serde_json::Value::String("hello".to_string()))
+            .await
+            .unwrap();
+
+        assert_eq!(path, "speech.mp3");
+        assert_eq!(
+            saved.lock().await.as_slice(),
+            &[("speech.mp3".to_string(), b"audio-bytes".to_vec())]
+        );
+        mock.assert_async().await;
     }
 }
