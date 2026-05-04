@@ -52,8 +52,8 @@ pub async fn list_files_in_path(
             dir_path
         )));
     }
-    let mut reader = fs::read_dir(dir_path).await.unwrap();
-    while let Some(entry) = reader.next_entry().await.unwrap() {
+    let mut reader = fs::read_dir(dir_path).await?;
+    while let Some(entry) = reader.next_entry().await? {
         let path = entry.path();
         if path.is_file() {
             files.push(path.to_string_lossy().to_string());
@@ -66,21 +66,21 @@ pub async fn list_files_in_path(
                 continue;
             }
 
-            list_files_in_path(&path, files, opts).await.unwrap();
+            list_files_in_path(&path, files, opts).await?;
         }
     }
     Ok(Box::pin(()))
 }
 
 /// Find files in a directory that match the given options
-pub async fn find_files_with_extension(folder_path: &str, opts: &DirLoaderOptions) -> Vec<String> {
+pub async fn find_files_with_extension(
+    folder_path: &str,
+    opts: &DirLoaderOptions,
+) -> Result<Vec<String>, LoaderError> {
     let mut matching_files = Vec::new();
     let folder_path = Path::new(folder_path);
     let mut all_files: Vec<String> = Vec::new();
-
-    list_files_in_path(folder_path, &mut all_files, &opts.clone())
-        .await
-        .unwrap();
+    list_files_in_path(folder_path, &mut all_files, &opts.clone()).await?;
 
     for file_name in all_files {
         let path_str = file_name.clone();
@@ -109,7 +109,9 @@ pub async fn find_files_with_extension(folder_path: &str, opts: &DirLoaderOption
 
         // check if the file matches the glob pattern
         if let Some(glob_pattern) = &opts.glob {
-            let glob = glob::Pattern::new(glob_pattern).unwrap();
+            let glob = glob::Pattern::new(glob_pattern).map_err(|e| {
+                LoaderError::OtherError(format!("Invalid glob pattern {glob_pattern:?}: {e}"))
+            })?;
             if !glob.matches(&path_str) {
                 continue;
             }
@@ -117,8 +119,7 @@ pub async fn find_files_with_extension(folder_path: &str, opts: &DirLoaderOption
 
         matching_files.push(path_str);
     }
-
-    matching_files
+    Ok(matching_files)
 }
 
 #[cfg(test)]
@@ -164,6 +165,7 @@ mod tests {
             },
         )
         .await
+        .expect("find files should succeed")
         .into_iter()
         .collect::<Vec<_>>();
 
@@ -181,5 +183,55 @@ mod tests {
         fs::remove_dir_all(&temp_dir)
             .await
             .expect("Failed to remove temporary directory");
+    }
+
+    #[tokio::test]
+    async fn test_find_files_with_extension_missing_path_returns_error() {
+        let missing_path = env::temp_dir().join("dir_loader_missing_path");
+        if missing_path.exists() {
+            fs::remove_dir_all(&missing_path)
+                .await
+                .expect("Failed to remove existing directory");
+        }
+
+        let result =
+            find_files_with_extension(missing_path.to_str().unwrap(), &DirLoaderOptions::default())
+                .await;
+
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_find_files_with_extension_invalid_glob_returns_error() {
+        let temp_dir = env::temp_dir().join("dir_loader_invalid_glob_test_dir");
+
+        if temp_dir.exists() {
+            fs::remove_dir_all(&temp_dir)
+                .await
+                .expect("Failed to remove existing directory");
+        }
+
+        fs::create_dir(&temp_dir)
+            .await
+            .expect("Failed to create temporary directory");
+
+        let file_path = temp_dir.join("file.txt");
+        std::fs::write(&file_path, "Hello, world!").expect("Failed to write file");
+
+        let result = find_files_with_extension(
+            temp_dir.to_str().unwrap(),
+            &DirLoaderOptions {
+                glob: Some("[".to_string()),
+                suffixes: None,
+                path_filter: None,
+            },
+        )
+        .await;
+
+        fs::remove_dir_all(&temp_dir)
+            .await
+            .expect("Failed to remove temporary directory");
+
+        assert!(result.is_err());
     }
 }

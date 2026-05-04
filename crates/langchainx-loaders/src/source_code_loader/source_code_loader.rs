@@ -66,7 +66,7 @@ impl Loader for SourceCodeLoader {
 
         if let Some(file_path) = file_path {
             let files =
-                find_files_with_extension(file_path.as_str(), &self.dir_loader_options).await;
+                find_files_with_extension(file_path.as_str(), &self.dir_loader_options).await?;
             let stream = stream! {
                 for filename in files {
                     let mut file = match File::open(&filename) {
