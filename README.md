@@ -18,15 +18,15 @@ This is the Rust language implementation of [LangChain](https://github.com/langc
 The library is organized as a Cargo workspace. The root `langchainx` crate re-exports everything
 for convenience; individual crates can be used directly for smaller dependency footprints.
 
-| Crate                      | Contents                                              |
-| -------------------------- | ----------------------------------------------------- |
-| `langchainx-core`          | Shared schemas, document types, error primitives      |
-| `langchainx-llm`           | LLM backends (OpenAI, Claude, DeepSeek, Qwen, Ollama) |
-| `langchainx-prompt`        | Prompt templates and formatting macros                |
-| `langchainx-memory`        | Conversation memory backends                          |
-| `langchainx-embedding`     | Embedding backends (OpenAI, Ollama, FastEmbed, etc.)  |
-| `langchainx-output-parsers`| Output parsers and structured extraction              |
-| `langchainx-chain`         | Chain types (LLMChain, ConversationalChain, etc.)     |
+| Crate                       | Contents                                              |
+| --------------------------- | ----------------------------------------------------- |
+| `langchainx-core`           | Shared schemas, document types, error primitives      |
+| `langchainx-llm`            | LLM backends (OpenAI, Claude, DeepSeek, Qwen, Ollama) |
+| `langchainx-prompt`         | Prompt templates and formatting macros                |
+| `langchainx-memory`         | Conversation memory backends                          |
+| `langchainx-embedding`      | Embedding backends (OpenAI, Ollama, FastEmbed, etc.)  |
+| `langchainx-output-parsers` | Output parsers and structured extraction              |
+| `langchainx-chain`          | Chain types (LLMChain, ConversationalChain, etc.)     |
 
 ## Current Features
 
@@ -36,11 +36,11 @@ for convenience; individual crates can be used directly for smaller dependency f
     - [x] [Ollama](https://github.com/89jobrien/langchainx/blob/main/examples/llm_ollama.rs)
     - [x] [Anthropic Claude](https://github.com/89jobrien/langchainx/blob/main/examples/llm_anthropic_claude.rs)
     - [x] [DeepSeek](https://github.com/89jobrien/langchainx/blob/main/examples/llm_deepseek.rs)
-      (OpenAI-compatible, streaming + reasoning_content support;
-      [advanced](https://github.com/89jobrien/langchainx/blob/main/examples/llm_deepseek_advanced.rs))
+          (OpenAI-compatible, streaming + reasoning_content support;
+          [advanced](https://github.com/89jobrien/langchainx/blob/main/examples/llm_deepseek_advanced.rs))
     - [x] [Qwen / Alibaba Cloud](https://github.com/89jobrien/langchainx/blob/main/examples/llm_alibaba_qwen.rs)
-      (OpenAI-compatible;
-      [advanced](https://github.com/89jobrien/langchainx/blob/main/examples/llm_qwen_advanced.rs))
+          (OpenAI-compatible;
+          [advanced](https://github.com/89jobrien/langchainx/blob/main/examples/llm_qwen_advanced.rs))
     - [x] [Vision / multimodal LLM chain](https://github.com/89jobrien/langchainx/blob/main/examples/vision_llm_chain.rs)
 
 - Embeddings
@@ -75,7 +75,7 @@ for convenience; individual crates can be used directly for smaller dependency f
     - [x] [Chat Agent with Tools](https://github.com/89jobrien/langchainx/blob/main/examples/agent.rs)
     - [x] [OpenAI Tools Agent](https://github.com/89jobrien/langchainx/blob/main/examples/open_ai_tools_agent.rs)
     - [x] [AI Commit Message Generator](https://github.com/89jobrien/langchainx/blob/main/examples/rcommiter.rs)
-      — reads `git diff --staged` and generates a conventional commit message
+          — reads `git diff --staged` and generates a conventional commit message
 
 - Tools
     - [x] Serpapi/Google

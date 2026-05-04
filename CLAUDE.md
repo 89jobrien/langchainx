@@ -65,6 +65,12 @@ variables are passed as `HashMap<String, Value>` (`PromptArgs`).
 **Semantic routing** (`src/semantic_router/`): Routes inputs to handlers based on embedding
 similarity. Static (fixed routes) and dynamic (LLM-backed) variants.
 
+## Local-Only Files
+
+`.ctx/private/` is gitignored and read-only — meeting transcripts, parsed JSON, summaries,
+scratch data. Never commit or import from it. See godmode skill `private-ctx` for the full
+convention.
+
 ## Feature Flags
 
 Most integrations are opt-in. Key flags: `postgres`, `qdrant`, `surrealdb`, `opensearch`,

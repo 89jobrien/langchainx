@@ -24,3 +24,4 @@ Cargo.lock
 # handoff-end
 .worktrees/
 .claude/skills
+.ctx/private/
