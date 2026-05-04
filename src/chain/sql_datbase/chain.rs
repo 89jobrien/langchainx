@@ -87,6 +87,11 @@ impl SQLDatabaseChain {
         SqlChainPromptBuilder::new()
     }
 
+    /// Returns the "query" input key name used by this chain.
+    pub fn query_input_key() -> &'static str {
+        SQL_CHAIN_DEFAULT_INPUT_KEY_QUERY
+    }
+
     async fn call_builder_chains(
         &self,
         input_variables: &PromptArgs,
@@ -196,5 +201,55 @@ impl Chain for SQLDatabaseChain {
         let (llm_inputs, _) = self.call_builder_chains(&input_variables).await?;
 
         self.llmchain.stream(llm_inputs).await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ---------------------------------------------------------------------------
+    // SqlChainPromptBuilder — no DB required
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn prompt_builder_sets_query_key() {
+        let args = SqlChainPromptBuilder::new()
+            .query("How many users are there?")
+            .build();
+        assert_eq!(
+            args.get(SQL_CHAIN_DEFAULT_INPUT_KEY_QUERY)
+                .and_then(|v| v.as_str()),
+            Some("How many users are there?")
+        );
+    }
+
+    #[test]
+    fn prompt_builder_empty_query() {
+        let args = SqlChainPromptBuilder::new().build();
+        assert_eq!(
+            args.get(SQL_CHAIN_DEFAULT_INPUT_KEY_QUERY)
+                .and_then(|v| v.as_str()),
+            Some("")
+        );
+    }
+
+    #[test]
+    fn query_input_key_is_query() {
+        assert_eq!(SQLDatabaseChain::query_input_key(), "query");
+    }
+
+    // ---------------------------------------------------------------------------
+    // Constants sanity-checks
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn stop_word_is_sql_result() {
+        assert_eq!(STOP_WORD, "\nSQLResult:");
+    }
+
+    #[test]
+    fn query_prefix_with_is_sql_query() {
+        assert_eq!(QUERY_PREFIX_WITH, "\nSQLQuery:");
     }
 }

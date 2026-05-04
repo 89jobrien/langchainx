@@ -168,3 +168,86 @@ impl Chain for StuffDocument {
         vec![self.input_key.clone()]
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        chain::{Chain, ChainError, LLMChainBuilder},
+        prompt_args,
+        schemas::Document,
+        template_jinja2,
+        test_utils::FakeLLM,
+    };
+
+    fn build_chain(responses: Vec<&str>) -> StuffDocument {
+        let prompt = template_jinja2!("Context: {{context}} Q: {{question}}", "context", "question");
+        let llm_chain = LLMChainBuilder::new()
+            .llm(FakeLLM::new(
+                responses.into_iter().map(String::from).collect(),
+            ))
+            .prompt(prompt)
+            .build()
+            .unwrap();
+        StuffDocument::new(llm_chain)
+    }
+
+    #[tokio::test]
+    async fn documents_are_joined_with_double_newline() {
+        let chain = build_chain(vec!["answer"]);
+        let docs = vec![
+            Document::new("first"),
+            Document::new("second"),
+            Document::new("third"),
+        ];
+        let input = prompt_args! {
+            "input_documents" => docs,
+            "question" => "q"
+        };
+        // The chain should succeed — joining is internal; we verify it doesn't error.
+        let result = chain.invoke(input).await.expect("invoke failed");
+        assert_eq!(result, "answer");
+    }
+
+    #[tokio::test]
+    async fn empty_document_list_produces_empty_context() {
+        let chain = build_chain(vec!["nothing"]);
+        let input = prompt_args! {
+            "input_documents" => Vec::<Document>::new(),
+            "question" => "q"
+        };
+        let result = chain.invoke(input).await.expect("invoke failed");
+        assert_eq!(result, "nothing");
+    }
+
+    #[tokio::test]
+    async fn missing_input_documents_key_returns_error() {
+        let chain = build_chain(vec![]);
+        // Omit "input_documents" entirely.
+        let input = prompt_args! { "question" => "q" };
+        let err = chain.call(input).await.unwrap_err();
+        assert!(
+            matches!(err, ChainError::MissingInputVariable(ref k) if k == "input_documents"),
+            "expected MissingInputVariable(input_documents), got {err:?}"
+        );
+    }
+
+    #[test]
+    fn join_documents_uses_double_newline_separator() {
+        let chain = build_chain(vec![]);
+        let docs = vec![Document::new("a"), Document::new("b"), Document::new("c")];
+        assert_eq!(chain.join_documents(docs), "a\n\nb\n\nc");
+    }
+
+    #[test]
+    fn join_documents_empty_list_returns_empty_string() {
+        let chain = build_chain(vec![]);
+        assert_eq!(chain.join_documents(vec![]), "");
+    }
+
+    #[test]
+    fn get_input_keys_returns_input_documents() {
+        let chain = build_chain(vec![]);
+        assert_eq!(chain.get_input_keys(), vec!["input_documents"]);
+    }
+}
