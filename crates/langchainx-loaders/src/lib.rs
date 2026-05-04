@@ -42,6 +42,9 @@ pub use dir_loader::*;
 mod markdown_loader;
 pub use markdown_loader::*;
 
+mod obsidian_loader;
+pub use obsidian_loader::*;
+
 mod markdown_serializer;
 pub use markdown_serializer::*;
 
