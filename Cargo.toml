@@ -9,6 +9,7 @@ members = [
     "crates/langchainx-embedding",
     "crates/langchainx-chain",
     "examples/vector_store_surrealdb",
+    "xtask",
 ]
 
 [workspace.package]
