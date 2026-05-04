@@ -3,6 +3,7 @@
 //! `Gate` represents a single named check. `GateRunner` sequences gates and
 //! reports results, stopping on first failure unless configured otherwise.
 
+use crate::trace;
 use anyhow::Result;
 use xshell::Shell;
 
@@ -19,7 +20,17 @@ impl Gate {
 
     pub fn run(&self, sh: &Shell) -> Result<()> {
         eprintln!("[ gate ] {}", self.name);
-        (self.run)(sh)
+        let id = trace::trace_gate_start(self.name);
+        match (self.run)(sh) {
+            Ok(()) => {
+                trace::trace_gate_end(id);
+                Ok(())
+            }
+            Err(e) => {
+                trace::trace_gate_error(id, &format!("{e:#}"));
+                Err(e)
+            }
+        }
     }
 }
 
