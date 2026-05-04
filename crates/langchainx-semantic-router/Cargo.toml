@@ -1,0 +1,25 @@
+[package]
+name = "langchainx-semantic-router"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Semantic routing for langchainx"
+
+[dependencies]
+langchainx-core      = { path = "../langchainx-core" }
+langchainx-embedding = { path = "../langchainx-embedding" }
+langchainx-chain     = { path = "../langchainx-chain" }
+langchainx-llm       = { path = "../langchainx-llm" }
+langchainx-prompt    = { path = "../langchainx-prompt" }
+
+async-trait   = "0.1.80"
+futures-util  = "0.3.30"
+serde_json    = "1.0"
+thiserror     = "2.0.0"
+log           = "0.4.21"
+tokio         = { version = "1", features = ["full"] }
+
+[dev-dependencies]
+tokio             = { version = "1", features = ["full"] }
+langchainx-chain  = { path = "../langchainx-chain", features = ["test-utils"] }

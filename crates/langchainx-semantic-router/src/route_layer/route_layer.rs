@@ -2,12 +2,10 @@ use std::{collections::HashMap, sync::Arc};
 
 use serde_json::Value;
 
-use crate::{
-    chain::{Chain, LLMChain},
-    embedding::Embedder,
-    prompt_args,
-    semantic_router::{Index, RouteLayerError, Router},
-};
+use langchainx_chain::{Chain, LLMChain, prompt_args};
+use langchainx_embedding::Embedder;
+
+use crate::{Index, RouteLayerError, Router};
 
 pub enum AggregationMethod {
     Mean,
@@ -119,8 +117,8 @@ impl RouteLayer {
         (top_route, top_scores)
     }
 
-    /// Call the route layer with a query and return the best route choise
-    /// If route has a tool description, it will also return the tool input
+    /// Call the route layer with a query and return the best route choise.
+    /// If route has a tool description, it will also return the tool input.
     pub async fn call<S: Into<String>>(
         &self,
         query: S,
@@ -153,9 +151,8 @@ impl RouteLayer {
         }))
     }
 
-    /// Call the route layer with a query and return the best route choise
-    /// If route has a tool description, it will not return the tool input,
-    /// this just returns the route
+    /// Call the route layer with an embedding vector and return the best route choise.
+    /// Does not return tool input.
     pub async fn call_embedding(
         &self,
         embedding: &[f64],
@@ -208,24 +205,16 @@ impl RouteLayer {
 
 #[cfg(test)]
 mod tests {
-
     use async_trait::async_trait;
 
-    use crate::{
-        embedding::{EmbedderError, openai::OpenAiEmbedder},
-        semantic_router::{MemoryIndex, RouteLayerBuilder},
-        test_utils::FakeLLM,
-    };
+    use langchainx_chain::test_utils::FakeLLM;
+    use langchainx_embedding::EmbedderError;
+
+    use crate::{MemoryIndex, RouteLayerBuilder};
 
     use super::*;
 
-    // ---------------------------------------------------------------------------
-    // Inline fake embedder — deterministic, offline, no API keys needed.
-    // Encodes each text as a fixed unit-vector chosen by index in the call order.
-    // ---------------------------------------------------------------------------
     struct FakeEmbedder {
-        /// Each call to embed_query returns the next vector in this list (cycling).
-        /// embed_documents returns one vector per document.
         query_vec: Vec<f64>,
     }
 
@@ -236,12 +225,11 @@ mod tests {
     }
 
     #[async_trait]
-    impl crate::embedding::Embedder for FakeEmbedder {
+    impl langchainx_embedding::Embedder for FakeEmbedder {
         async fn embed_documents(
             &self,
             documents: &[String],
         ) -> Result<Vec<Vec<f64>>, EmbedderError> {
-            // Return the same query_vec for every document
             Ok(documents.iter().map(|_| self.query_vec.clone()).collect())
         }
 
@@ -250,11 +238,7 @@ mod tests {
         }
     }
 
-    // Build a RouteLayer with two routes (greet, weather) using a FakeEmbedder
-    // that returns orthogonal unit vectors, so cosine similarity is deterministic.
     async fn build_test_layer(query_vec: Vec<f64>) -> RouteLayer {
-        // greet utterances embed to [1,0,0]; weather utterances embed to [0,0,1]
-        // We pre-assign embeddings so the embedder is only used for query embedding.
         let greet = Router::new("greet", &["hello", "hi"])
             .with_embedding(vec![vec![1.0, 0.0, 0.0], vec![1.0, 0.0, 0.0]]);
         let weather = Router::new("weather", &["rain", "sun"])
@@ -275,7 +259,6 @@ mod tests {
     #[tokio::test]
     async fn test_call_embedding_routes_to_greet() {
         let layer = build_test_layer(vec![1.0, 0.0, 0.0]).await;
-        // Query vector aligns with "greet"
         let result = layer.call_embedding(&[1.0, 0.0, 0.0]).await.unwrap();
         assert!(result.is_some());
         assert_eq!(result.unwrap().route, "greet");
@@ -292,7 +275,6 @@ mod tests {
     #[tokio::test]
     async fn test_call_embedding_below_threshold_returns_none() {
         let layer = build_test_layer(vec![0.0, 1.0, 0.0]).await;
-        // [0,1,0] is orthogonal to both routes — cosine similarity == 0 < threshold 0.5
         let result = layer.call_embedding(&[0.0, 1.0, 0.0]).await.unwrap();
         assert!(result.is_none());
     }
@@ -305,13 +287,15 @@ mod tests {
             .await
             .unwrap()
             .unwrap();
-        // Exact match → similarity should be 1.0
         assert!((result.similarity_score - 1.0).abs() < 1e-9);
     }
 
     #[tokio::test]
     #[ignore]
     async fn test_route_layer_builder() {
+        use langchainx_embedding::embedding::openai::OpenAiEmbedder;
+        use langchainx_llm::openai::OpenAI;
+
         let captial_route = Router::new(
             "captial",
             &[
