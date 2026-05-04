@@ -172,3 +172,167 @@ where
         Ok(result.generation)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use async_trait::async_trait;
+    use serde_json::Value;
+
+    use super::*;
+    use crate::{
+        chain::Chain,
+        prompt_args,
+        schemas::agent::{AgentAction, AgentEvent, AgentFinish},
+        tools::ToolError,
+    };
+
+    // --- FakeAgent ---
+
+    /// An agent that emits a fixed sequence of `AgentEvent`s.
+    struct FakeAgent {
+        events: Arc<Mutex<Vec<AgentEvent>>>,
+        tools: Vec<Arc<dyn Tool>>,
+    }
+
+    impl FakeAgent {
+        fn new(events: Vec<AgentEvent>) -> Self {
+            Self {
+                events: Arc::new(Mutex::new(events)),
+                tools: vec![],
+            }
+        }
+
+        fn with_tools(mut self, tools: Vec<Arc<dyn Tool>>) -> Self {
+            self.tools = tools;
+            self
+        }
+    }
+
+    #[async_trait]
+    impl Agent for FakeAgent {
+        async fn plan(
+            &self,
+            _steps: &[(AgentAction, String)],
+            _inputs: PromptArgs,
+        ) -> Result<AgentEvent, AgentError> {
+            let mut events = self.events.lock().await;
+            if events.is_empty() {
+                // Default: return a finish so the loop terminates.
+                Ok(AgentEvent::Finish(AgentFinish {
+                    output: "done".into(),
+                }))
+            } else {
+                Ok(events.remove(0))
+            }
+        }
+
+        fn get_tools(&self) -> Vec<Arc<dyn Tool>> {
+            self.tools.clone()
+        }
+    }
+
+    // --- FakeTool ---
+
+    struct FakeTool {
+        name: String,
+        response: String,
+    }
+
+    impl FakeTool {
+        fn new(name: &str, response: &str) -> Arc<Self> {
+            Arc::new(Self {
+                name: name.into(),
+                response: response.into(),
+            })
+        }
+    }
+
+    #[async_trait]
+    impl Tool for FakeTool {
+        fn name(&self) -> String {
+            self.name.clone()
+        }
+        fn description(&self) -> String {
+            "fake tool".into()
+        }
+        async fn run(&self, _input: Value) -> Result<String, ToolError> {
+            Ok(self.response.clone())
+        }
+    }
+
+    // --- tests ---
+
+    #[tokio::test]
+    async fn executor_finish_on_first_plan() {
+        let agent = FakeAgent::new(vec![AgentEvent::Finish(AgentFinish {
+            output: "42".into(),
+        })]);
+        let executor = AgentExecutor::from_agent(agent);
+        let result = executor
+            .invoke(prompt_args! { "input" => "what is 6x7" })
+            .await
+            .expect("executor failed");
+        assert_eq!(result, "42");
+    }
+
+    #[tokio::test]
+    async fn executor_calls_tool_then_finishes() {
+        let tool = FakeTool::new("calculator", "result_of_tool");
+        let agent = FakeAgent::new(vec![
+            AgentEvent::Action(vec![AgentAction {
+                tool: "calculator".into(),
+                tool_input: "2+2".into(),
+                log: "".into(),
+            }]),
+            AgentEvent::Finish(AgentFinish {
+                output: "used tool".into(),
+            }),
+        ])
+        .with_tools(vec![tool]);
+
+        let executor = AgentExecutor::from_agent(agent);
+        let result = executor
+            .invoke(prompt_args! { "input" => "calculate" })
+            .await
+            .expect("executor failed");
+        assert_eq!(result, "used tool");
+    }
+
+    #[tokio::test]
+    async fn executor_unknown_tool_returns_error() {
+        let agent = FakeAgent::new(vec![AgentEvent::Action(vec![AgentAction {
+            tool: "nonexistent".into(),
+            tool_input: "x".into(),
+            log: "".into(),
+        }])]);
+        let executor = AgentExecutor::from_agent(agent);
+        let result = executor.invoke(prompt_args! { "input" => "go" }).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn executor_respects_max_iterations() {
+        // Agent always returns an action — never finishes.
+        // With max_iterations=2 it should stop and return the sentinel message.
+        let tool = FakeTool::new("loop_tool", "observation");
+        let events: Vec<AgentEvent> = (0..10)
+            .map(|_| {
+                AgentEvent::Action(vec![AgentAction {
+                    tool: "loop_tool".into(),
+                    tool_input: "x".into(),
+                    log: "".into(),
+                }])
+            })
+            .collect();
+        let agent = FakeAgent::new(events).with_tools(vec![tool]);
+
+        let executor = AgentExecutor::from_agent(agent).with_max_iterations(2);
+        let result = executor
+            .invoke(prompt_args! { "input" => "loop" })
+            .await
+            .expect("executor failed");
+        assert_eq!(result, "Max iterations reached");
+    }
+}

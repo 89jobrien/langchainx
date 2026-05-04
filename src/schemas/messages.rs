@@ -154,3 +154,81 @@ impl Message {
             .join("\n")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn human_message_type_and_content() {
+        let m = Message::new_human_message("hello");
+        assert_eq!(m.content, "hello");
+        assert_eq!(m.message_type, MessageType::HumanMessage);
+        assert!(m.id.is_none());
+    }
+
+    #[test]
+    fn system_message_type_and_content() {
+        let m = Message::new_system_message("sys");
+        assert_eq!(m.message_type, MessageType::SystemMessage);
+    }
+
+    #[test]
+    fn ai_message_type_and_content() {
+        let m = Message::new_ai_message("response");
+        assert_eq!(m.message_type, MessageType::AIMessage);
+        assert_eq!(m.content, "response");
+    }
+
+    #[test]
+    fn tool_message_has_id() {
+        let m = Message::new_tool_message("result", "call-42");
+        assert_eq!(m.message_type, MessageType::ToolMessage);
+        assert_eq!(m.id.as_deref(), Some("call-42"));
+    }
+
+    #[test]
+    fn with_tool_calls_sets_field() {
+        let m = Message::new_ai_message("").with_tool_calls(json!({"fn": "foo"}));
+        assert!(m.tool_calls.is_some());
+    }
+
+    #[test]
+    fn messages_to_string_joins_with_newline() {
+        let msgs = vec![
+            Message::new_human_message("hi"),
+            Message::new_ai_message("hello"),
+        ];
+        let s = Message::messages_to_string(&msgs);
+        assert!(s.contains("hi"));
+        assert!(s.contains("hello"));
+        assert!(s.contains('\n'));
+    }
+
+    #[test]
+    fn messages_from_value_round_trip() {
+        let msgs = vec![Message::new_human_message("ping")];
+        let v = serde_json::to_value(&msgs).unwrap();
+        let restored = Message::messages_from_value(&v).unwrap();
+        assert_eq!(restored.len(), 1);
+        assert_eq!(restored[0].content, "ping");
+        assert_eq!(restored[0].message_type, MessageType::HumanMessage);
+    }
+
+    #[test]
+    fn message_type_to_string() {
+        assert_eq!(MessageType::HumanMessage.to_string(), "human");
+        assert_eq!(MessageType::AIMessage.to_string(), "ai");
+        assert_eq!(MessageType::SystemMessage.to_string(), "system");
+        assert_eq!(MessageType::ToolMessage.to_string(), "tool");
+    }
+
+    #[test]
+    fn message_type_serde_round_trip() {
+        let original = MessageType::ToolMessage;
+        let json = serde_json::to_string(&original).unwrap();
+        let restored: MessageType = serde_json::from_str(&json).unwrap();
+        assert_eq!(restored, original);
+    }
+}

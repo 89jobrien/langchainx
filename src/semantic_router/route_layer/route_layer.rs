@@ -209,9 +209,105 @@ impl RouteLayer {
 #[cfg(test)]
 mod tests {
 
-    use crate::{embedding::openai::OpenAiEmbedder, semantic_router::RouteLayerBuilder};
+    use async_trait::async_trait;
+
+    use crate::{
+        embedding::{openai::OpenAiEmbedder, EmbedderError},
+        semantic_router::{MemoryIndex, RouteLayerBuilder},
+        test_utils::FakeLLM,
+    };
 
     use super::*;
+
+    // ---------------------------------------------------------------------------
+    // Inline fake embedder — deterministic, offline, no API keys needed.
+    // Encodes each text as a fixed unit-vector chosen by index in the call order.
+    // ---------------------------------------------------------------------------
+    struct FakeEmbedder {
+        /// Each call to embed_query returns the next vector in this list (cycling).
+        /// embed_documents returns one vector per document.
+        query_vec: Vec<f64>,
+    }
+
+    impl FakeEmbedder {
+        fn new(query_vec: Vec<f64>) -> Self {
+            Self { query_vec }
+        }
+    }
+
+    #[async_trait]
+    impl crate::embedding::Embedder for FakeEmbedder {
+        async fn embed_documents(
+            &self,
+            documents: &[String],
+        ) -> Result<Vec<Vec<f64>>, EmbedderError> {
+            // Return the same query_vec for every document
+            Ok(documents.iter().map(|_| self.query_vec.clone()).collect())
+        }
+
+        async fn embed_query(&self, _text: &str) -> Result<Vec<f64>, EmbedderError> {
+            Ok(self.query_vec.clone())
+        }
+    }
+
+    // Build a RouteLayer with two routes (greet, weather) using a FakeEmbedder
+    // that returns orthogonal unit vectors, so cosine similarity is deterministic.
+    async fn build_test_layer(query_vec: Vec<f64>) -> RouteLayer {
+        // greet utterances embed to [1,0,0]; weather utterances embed to [0,0,1]
+        // We pre-assign embeddings so the embedder is only used for query embedding.
+        let greet = Router::new("greet", &["hello", "hi"])
+            .with_embedding(vec![vec![1.0, 0.0, 0.0], vec![1.0, 0.0, 0.0]]);
+        let weather = Router::new("weather", &["rain", "sun"])
+            .with_embedding(vec![vec![0.0, 0.0, 1.0], vec![0.0, 0.0, 1.0]]);
+
+        RouteLayerBuilder::new()
+            .embedder(FakeEmbedder::new(query_vec))
+            .llm(FakeLLM::new(vec![]))
+            .index(MemoryIndex::new())
+            .threshold(0.5)
+            .add_route(greet)
+            .add_route(weather)
+            .build()
+            .await
+            .unwrap()
+    }
+
+    #[tokio::test]
+    async fn test_call_embedding_routes_to_greet() {
+        let layer = build_test_layer(vec![1.0, 0.0, 0.0]).await;
+        // Query vector aligns with "greet"
+        let result = layer.call_embedding(&[1.0, 0.0, 0.0]).await.unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().route, "greet");
+    }
+
+    #[tokio::test]
+    async fn test_call_embedding_routes_to_weather() {
+        let layer = build_test_layer(vec![0.0, 0.0, 1.0]).await;
+        let result = layer.call_embedding(&[0.0, 0.0, 1.0]).await.unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().route, "weather");
+    }
+
+    #[tokio::test]
+    async fn test_call_embedding_below_threshold_returns_none() {
+        let layer = build_test_layer(vec![0.0, 1.0, 0.0]).await;
+        // [0,1,0] is orthogonal to both routes — cosine similarity == 0 < threshold 0.5
+        let result = layer.call_embedding(&[0.0, 1.0, 0.0]).await.unwrap();
+        assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_route_layer_similarity_score_is_reasonable() {
+        let layer = build_test_layer(vec![1.0, 0.0, 0.0]).await;
+        let result = layer
+            .call_embedding(&[1.0, 0.0, 0.0])
+            .await
+            .unwrap()
+            .unwrap();
+        // Exact match → similarity should be 1.0
+        assert!((result.similarity_score - 1.0).abs() < 1e-9);
+    }
 
     #[tokio::test]
     #[ignore]

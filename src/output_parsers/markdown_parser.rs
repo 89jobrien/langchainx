@@ -55,6 +55,31 @@ mod tests {
     use super::*;
 
     #[tokio::test]
+    async fn test_markdown_parser_no_code_block_returns_error() {
+        let parser = MarkdownParser::new();
+        let result = parser.parse("no code block here").await;
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            OutputParserError::ParsingError(msg) => assert!(msg.contains("No code block")),
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_markdown_parser_trim_code_block() {
+        let parser = MarkdownParser::new().with_trim(true);
+        let result = parser.parse("```\n  hello  \n```").await.unwrap();
+        assert_eq!(result, "hello");
+    }
+
+    #[tokio::test]
+    async fn test_markdown_parser_unnamed_fence() {
+        let parser = MarkdownParser::new();
+        let result = parser.parse("```\nplain text\n```").await.unwrap();
+        assert_eq!(result, "plain text");
+    }
+
+    #[tokio::test]
     async fn test_markdown_parser_finds_code_block() {
         let parser = MarkdownParser::new();
         let markdown_content = r#"

@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# .githooks/commit-msg — conventional commit enforcement
+#
+# Allowed types: feat, fix, chore, docs, style, refactor, perf, test, build, ci, revert, merge
+# Format: <type>[(<scope>)][!]: <description>
+# Merge commits and bot version-bump commits are always allowed.
+
+set -euo pipefail
+
+RED='\033[0;31m'
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+MSG_FILE="$1"
+MSG=$(cat "$MSG_FILE")
+
+# ── Allow merge commits ───────────────────────────────────────────────────────
+if echo "$MSG" | grep -qE '^Merge '; then
+    exit 0
+fi
+
+# ── Allow revert commits ──────────────────────────────────────────────────────
+if echo "$MSG" | grep -qE '^Revert '; then
+    exit 0
+fi
+
+# ── Allow bot version-bump commits ───────────────────────────────────────────
+if echo "$MSG" | grep -qE '^chore\(version\): bump'; then
+    exit 0
+fi
+
+# ── Allow gitflow merge commits from workflows ────────────────────────────────
+if echo "$MSG" | grep -qE '^merge\(gitflow\):'; then
+    exit 0
+fi
+
+# ── Enforce conventional commit format ───────────────────────────────────────
+TYPES='feat|fix|chore|docs|style|refactor|perf|test|build|ci|revert|merge|release'
+PATTERN="^(${TYPES})(\([a-zA-Z0-9_/-]+\))?(!)?: .{1,100}"
+
+if ! echo "$MSG" | grep -qE "$PATTERN"; then
+    echo -e "${RED}✗ BLOCKED: Commit message does not follow Conventional Commits format.${NC}"
+    echo -e "${CYAN}  Format:  <type>[(<scope>)][!]: <description>${NC}"
+    echo -e "${CYAN}  Types:   feat fix chore docs style refactor perf test build ci revert merge release${NC}"
+    echo -e "${CYAN}  Examples:${NC}"
+    echo -e "${CYAN}    feat(chain): add required_keys validation${NC}"
+    echo -e "${CYAN}    fix: handle shared Arc<dyn LLM> gracefully${NC}"
+    echo -e "${CYAN}    chore(deps): bump serde to 1.0.200${NC}"
+    echo -e "${CYAN}    feat!: remove streaming_func from CallOptions (breaking)${NC}"
+    echo ""
+    echo -e "${CYAN}  Your message: ${MSG}${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✓ Commit message format valid${NC}"
+exit 0

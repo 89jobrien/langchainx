@@ -5,13 +5,18 @@ on:
   pull_request:
     branches:
       - main
+      - develop
   push:
     branches:
       - main
+      - develop
+      - "feature/**"
+      - "release/**"
+      - "hotfix/**"
     tags:
-      - "v0.[0-9]+.[0-9]+"
-      - "v0.[0-9]+.[0-9]+-beta.[0-9]+"
-      - "v0.[0-9]+.[0-9]+-alpha.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+"
     paths-ignore:
       - "renovate.json"
 
@@ -19,7 +24,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      # emit backtraces on panics.
       RUST_BACKTRACE: 1
     steps:
       - uses: actions/checkout@v4
@@ -47,7 +51,6 @@ jobs:
           override: true
           profile: minimal
           components: rustfmt, clippy
-      # - uses: swatinem/rust-cache@v2.7.3
       - name: Rust fmt
         uses: actions-rs/cargo@v1
         with:

@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# .githooks/pre-push — gitflow push enforcement
+#
+# Rules:
+#   - Force-push to main or develop is always blocked
+#   - feature/* branches must not be pushed directly to main or develop
+#     (GHA feature-finish workflow handles merges)
+#   - hotfix/* branches must originate from main
+#   - release/* branches must originate from develop
+
+set -euo pipefail
+
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+REMOTE="$1"
+# $2 is the remote URL
+
+BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+
+# ── Read push refs from stdin ─────────────────────────────────────────────────
+while read -r LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
+    REMOTE_BRANCH="${REMOTE_REF#refs/heads/}"
+
+    # ── Block force-push to main or develop ──────────────────────────────────
+    if [[ "$REMOTE_BRANCH" == "main" || "$REMOTE_BRANCH" == "develop" ]]; then
+        # Detect force-push: local SHA is not a descendant of remote SHA
+        if [ "$REMOTE_SHA" != "0000000000000000000000000000000000000000" ]; then
+            if ! git merge-base --is-ancestor "$REMOTE_SHA" "$LOCAL_SHA" 2>/dev/null; then
+                echo -e "${RED}✗ BLOCKED: Force-push to '${REMOTE_BRANCH}' is not allowed.${NC}"
+                echo -e "${CYAN}  Protected branches: main, develop.${NC}"
+                exit 1
+            fi
+        fi
+    fi
+
+    # ── Block pushing feature branches directly to main or develop ────────────
+    if echo "$BRANCH" | grep -qE '^feature/' && \
+       [[ "$REMOTE_BRANCH" == "main" || "$REMOTE_BRANCH" == "develop" ]]; then
+        echo -e "${RED}✗ BLOCKED: Cannot push feature branch '${BRANCH}' directly to '${REMOTE_BRANCH}'.${NC}"
+        echo -e "${CYAN}  Gitflow: push to origin/${BRANCH} and let CI + feature-finish workflow merge it.${NC}"
+        echo -e "${CYAN}  Command: git push origin ${BRANCH}${NC}"
+        exit 1
+    fi
+
+    # ── Warn if hotfix branch doesn't originate from main ────────────────────
+    if echo "$BRANCH" | grep -qE '^hotfix/'; then
+        MAIN_SHA=$(git rev-parse origin/main 2>/dev/null || echo "")
+        if [ -n "$MAIN_SHA" ]; then
+            if ! git merge-base --is-ancestor \
+                "$(git merge-base HEAD origin/main 2>/dev/null || echo "$MAIN_SHA")" \
+                "$MAIN_SHA" 2>/dev/null; then
+                echo -e "${YELLOW}⚠ WARNING: Hotfix branch '${BRANCH}' may not have been cut from main.${NC}"
+                echo -e "${YELLOW}  Gitflow: hotfix branches should originate from main.${NC}"
+            fi
+        fi
+    fi
+
+    # ── Warn if release branch doesn't originate from develop ────────────────
+    if echo "$BRANCH" | grep -qE '^release/'; then
+        DEV_SHA=$(git rev-parse origin/develop 2>/dev/null || echo "")
+        if [ -n "$DEV_SHA" ]; then
+            MERGE_BASE=$(git merge-base HEAD origin/develop 2>/dev/null || echo "")
+            if [ -z "$MERGE_BASE" ] || [ "$MERGE_BASE" = "$DEV_SHA" ]; then
+                : # ok
+            else
+                echo -e "${YELLOW}⚠ WARNING: Release branch '${BRANCH}' may not have been cut from develop.${NC}"
+                echo -e "${YELLOW}  Gitflow: use the release-cut workflow to create release branches.${NC}"
+            fi
+        fi
+    fi
+
+done
+
+echo -e "${GREEN}✓ Push checks passed${NC}"
+exit 0

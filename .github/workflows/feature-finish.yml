@@ -1,0 +1,74 @@
+name: feature-finish
+
+# Merges a feature branch into develop and deletes the feature branch.
+# Triggered automatically when CI passes on a feature/* branch,
+# or manually via workflow_dispatch.
+#
+# Claude workflow: push to feature/*, CI passes, this merges → develop automatically.
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches:
+      - "feature/**"
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Feature branch to finish (e.g. feature/my-feature)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  finish:
+    runs-on: ubuntu-latest
+    # For workflow_run: only proceed if CI passed
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve feature branch name
+        id: branch
+        env:
+          DISPATCH_BRANCH: ${{ inputs.branch }}
+          RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          if [ -n "$DISPATCH_BRANCH" ]; then
+            echo "name=$DISPATCH_BRANCH" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=$RUN_BRANCH" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate branch is a feature branch
+        env:
+          BRANCH: ${{ steps.branch.outputs.name }}
+        run: |
+          if ! echo "$BRANCH" | grep -qE '^feature/'; then
+            echo "Error: '$BRANCH' is not a feature/* branch"
+            exit 1
+          fi
+
+      - name: Merge feature → develop
+        env:
+          BRANCH: ${{ steps.branch.outputs.name }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin
+          git checkout develop
+          git merge --no-ff "origin/${BRANCH}" \
+            -m "merge(gitflow): ${BRANCH} → develop"
+          git push origin develop
+
+      - name: Delete feature branch
+        env:
+          BRANCH: ${{ steps.branch.outputs.name }}
+        run: git push origin --delete "$BRANCH"

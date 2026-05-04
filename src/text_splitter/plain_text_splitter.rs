@@ -83,3 +83,64 @@ impl TextSplitter for PlainTextSplitter {
         Ok(splitter.chunks(text).map(|x| x.to_string()).collect())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_plain_text_splitter_empty_input() {
+        let splitter = PlainTextSplitter::default();
+        let chunks = splitter.split_text("").await.unwrap();
+        assert!(chunks.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_plain_text_splitter_produces_chunks() {
+        let opts = PlainTextSplitterOptions::new().with_chunk_size(20);
+        let splitter = PlainTextSplitter::new(opts);
+        let text = "The quick brown fox jumps over the lazy dog. This is a longer sentence.";
+        let chunks = splitter.split_text(text).await.unwrap();
+        assert!(!chunks.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_plain_text_splitter_chunks_within_size() {
+        let chunk_size = 20;
+        let opts = PlainTextSplitterOptions::new().with_chunk_size(chunk_size);
+        let splitter = PlainTextSplitter::new(opts);
+        let text = "The quick brown fox jumps over the lazy dog. Repeated. ".repeat(10);
+        let chunks = splitter.split_text(&text).await.unwrap();
+        assert!(!chunks.is_empty());
+        for chunk in &chunks {
+            assert!(
+                chunk.len() <= chunk_size * 6,
+                "chunk too large: {} chars",
+                chunk.len()
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_plain_text_splitter_short_text_single_chunk() {
+        let opts = PlainTextSplitterOptions::new().with_chunk_size(512);
+        let splitter = PlainTextSplitter::new(opts);
+        let text = "Short text.";
+        let chunks = splitter.split_text(text).await.unwrap();
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(chunks[0], text);
+    }
+
+    #[tokio::test]
+    async fn test_plain_text_splitter_trim_chunks() {
+        let opts = PlainTextSplitterOptions::new()
+            .with_chunk_size(50)
+            .with_trim_chunks(true);
+        let splitter = PlainTextSplitter::new(opts);
+        let text = "  leading and trailing whitespace  ";
+        let chunks = splitter.split_text(text).await.unwrap();
+        for chunk in &chunks {
+            assert_eq!(chunk.as_str(), chunk.trim());
+        }
+    }
+}

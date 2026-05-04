@@ -58,3 +58,50 @@ impl Default for Document {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn new_sets_page_content() {
+        let d = Document::new("hello world");
+        assert_eq!(d.page_content, "hello world");
+        assert!(d.metadata.is_empty());
+        assert_eq!(d.score, 0.0);
+    }
+
+    #[test]
+    fn with_metadata_sets_metadata() {
+        let mut meta = HashMap::new();
+        meta.insert("author".to_string(), json!("Alice"));
+        let d = Document::new("content").with_metadata(meta);
+        assert_eq!(d.metadata["author"], json!("Alice"));
+    }
+
+    #[test]
+    fn with_score_sets_score() {
+        let d = Document::new("x").with_score(0.85);
+        assert!((d.score - 0.85).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn default_has_empty_content() {
+        let d = Document::default();
+        assert_eq!(d.page_content, "");
+        assert_eq!(d.score, 0.0);
+    }
+
+    #[test]
+    fn serde_round_trip() {
+        let mut meta = HashMap::new();
+        meta.insert("k".to_string(), json!("v"));
+        let d = Document::new("text").with_metadata(meta).with_score(0.5);
+        let json = serde_json::to_string(&d).unwrap();
+        let restored: Document = serde_json::from_str(&json).unwrap();
+        assert_eq!(restored.page_content, "text");
+        assert_eq!(restored.metadata["k"], json!("v"));
+        assert!((restored.score - 0.5).abs() < f64::EPSILON);
+    }
+}

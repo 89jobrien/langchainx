@@ -82,3 +82,80 @@ impl Index for MemoryIndex {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_router(name: &str, vecs: Vec<Vec<f64>>) -> Router {
+        Router::new(name, &["utterance"]).with_embedding(vecs)
+    }
+
+    #[tokio::test]
+    async fn test_add_and_get_router() {
+        let mut index = MemoryIndex::new();
+        let router = make_router("greet", vec![vec![1.0, 0.0, 0.0]]);
+        index.add(&[router]).await.unwrap();
+
+        let retrieved = index.get_router("greet").await.unwrap();
+        assert_eq!(retrieved.name, "greet");
+    }
+
+    #[tokio::test]
+    async fn test_add_missing_embedding_errors() {
+        let mut index = MemoryIndex::new();
+        let router = Router::new("bare", &["utterance"]); // no embedding
+        let result = index.add(&[router]).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_delete_router() {
+        let mut index = MemoryIndex::new();
+        let router = make_router("greet", vec![vec![1.0, 0.0, 0.0]]);
+        index.add(&[router]).await.unwrap();
+        index.delete("greet").await.unwrap();
+        let result = index.get_router("greet").await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_query_returns_most_similar() {
+        let mut index = MemoryIndex::new();
+        // "greet" aligns with [1,0,0]; "weather" aligns with [0,0,1]
+        let greet = make_router("greet", vec![vec![1.0, 0.0, 0.0]]);
+        let weather = make_router("weather", vec![vec![0.0, 0.0, 1.0]]);
+        index.add(&[greet, weather]).await.unwrap();
+
+        let results = index.query(&[1.0, 0.0, 0.0], 2).await.unwrap();
+        assert!(!results.is_empty());
+        assert_eq!(results[0].0, "greet");
+    }
+
+    #[tokio::test]
+    async fn test_get_routers_all() {
+        let mut index = MemoryIndex::new();
+        index
+            .add(&[make_router("a", vec![vec![1.0, 0.0]])])
+            .await
+            .unwrap();
+        index
+            .add(&[make_router("b", vec![vec![0.0, 1.0]])])
+            .await
+            .unwrap();
+        let all = index.get_routers().await.unwrap();
+        assert_eq!(all.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_delete_index_clears_all() {
+        let mut index = MemoryIndex::new();
+        index
+            .add(&[make_router("a", vec![vec![1.0, 0.0]])])
+            .await
+            .unwrap();
+        index.delete_index().await.unwrap();
+        let all = index.get_routers().await.unwrap();
+        assert!(all.is_empty());
+    }
+}

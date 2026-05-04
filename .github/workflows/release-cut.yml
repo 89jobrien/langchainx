@@ -1,0 +1,61 @@
+name: release-cut
+
+# Branches release/x.y.z from develop, bumps Cargo.toml to that version,
+# and pushes the release branch. CI runs on it; when ready, release-finish
+# merges it to main + develop and tags.
+#
+# Claude workflow: dispatch this when develop is release-ready.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 0.3.0 — no leading v)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  cut:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate semver input
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Error: '$VERSION' is not a valid semver (expected MAJOR.MINOR.PATCH)"
+            exit 1
+          fi
+
+      - name: Ensure release branch does not already exist
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          git fetch origin
+          if git ls-remote --heads origin "release/${VERSION}" | grep -q .; then
+            echo "Error: branch release/${VERSION} already exists on origin"
+            exit 1
+          fi
+
+      - name: Create release branch and bump version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "release/${VERSION}"
+          CURRENT=$(grep -m1 '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          sed -i "s/^version = \"${CURRENT}\"/version = \"${VERSION}\"/" Cargo.toml
+          grep -m1 '^version = ' Cargo.toml
+          git add Cargo.toml
+          git commit -m "chore(version): bump ${CURRENT} -> ${VERSION} for release"
+          git push origin "release/${VERSION}"

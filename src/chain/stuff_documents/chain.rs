@@ -168,3 +168,77 @@ impl Chain for StuffDocument {
         vec![self.input_key.clone()]
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        chain::{Chain, ChainError, LLMChainBuilder},
+        message_formatter,
+        prompt::{HumanMessagePromptTemplate, MessageOrTemplate},
+        prompt_args,
+        schemas::Document,
+        template_fstring,
+        test_utils::FakeLLM,
+    };
+
+    fn make_stuff_chain(responses: Vec<String>) -> StuffDocument {
+        // Prompt expects {context} — matches COMBINE_DOCUMENTS_DEFAULT_DOCUMENT_VARIABLE_NAME
+        let prompt = message_formatter![MessageOrTemplate::Template(
+            HumanMessagePromptTemplate::new(template_fstring!("{context}", "context")).into()
+        )];
+        let llm_chain = LLMChainBuilder::new()
+            .prompt(prompt)
+            .llm(FakeLLM::new(responses))
+            .build()
+            .expect("failed to build LLMChain");
+        StuffDocument::new(llm_chain)
+    }
+
+    #[tokio::test]
+    async fn documents_are_joined_and_llm_response_returned() {
+        let chain = make_stuff_chain(vec!["combined answer".into()]);
+        let docs = vec![Document::new("first doc"), Document::new("second doc")];
+        let input = prompt_args! {
+            "input_documents" => docs
+        };
+        let result = chain.invoke(input).await.expect("invoke failed");
+        assert_eq!(result, "combined answer");
+    }
+
+    #[tokio::test]
+    async fn empty_document_list_still_calls_llm() {
+        let llm = FakeLLM::new(vec!["empty response".into()]);
+        let call_count = llm.call_count.clone();
+        // Recreate with a tracked FakeLLM (make_stuff_chain doesn't expose call_count).
+        let prompt = message_formatter![MessageOrTemplate::Template(
+            HumanMessagePromptTemplate::new(template_fstring!("{context}", "context")).into()
+        )];
+        let llm_chain = LLMChainBuilder::new()
+            .prompt(prompt)
+            .llm(llm)
+            .build()
+            .unwrap();
+        let chain = StuffDocument::new(llm_chain);
+        let input = prompt_args! { "input_documents" => Vec::<Document>::new() };
+        let result = chain
+            .invoke(input)
+            .await
+            .expect("invoke with empty docs failed");
+        assert_eq!(result, "empty response");
+        assert_eq!(call_count.load(std::sync::atomic::Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn missing_input_documents_key_returns_error() {
+        let chain = make_stuff_chain(vec!["x".into()]);
+        // Provide wrong key — "input_documents" is missing
+        let input = prompt_args! { "wrong_key" => "value" };
+        let result = chain.call(input).await;
+        assert!(
+            matches!(result, Err(ChainError::MissingInputVariable(ref k)) if k == "input_documents"),
+            "expected MissingInputVariable error, got: {:?}",
+            result
+        );
+    }
+}

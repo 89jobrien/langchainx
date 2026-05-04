@@ -1,0 +1,110 @@
+name: hotfix-finish
+
+# Merges a hotfix branch into both main and develop, applies a patch bump,
+# tags main, and deletes the hotfix branch.
+# Triggered when CI passes on a hotfix/* branch, or manually.
+#
+# Claude workflow: create hotfix/* from main, push fix, CI passes, this fires.
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches:
+      - "hotfix/**"
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Hotfix branch to finish (e.g. hotfix/fix-panic)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  finish:
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve hotfix branch name
+        id: branch
+        env:
+          DISPATCH_BRANCH: ${{ inputs.branch }}
+          RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          if [ -n "$DISPATCH_BRANCH" ]; then
+            echo "name=$DISPATCH_BRANCH" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=$RUN_BRANCH" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate branch is a hotfix branch
+        env:
+          BRANCH: ${{ steps.branch.outputs.name }}
+        run: |
+          if ! echo "$BRANCH" | grep -qE '^hotfix/'; then
+            echo "Error: '$BRANCH' is not a hotfix/* branch"
+            exit 1
+          fi
+
+      - name: Configure git
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin
+
+      - name: Read current version and compute patch bump
+        id: ver
+        run: |
+          git checkout main
+          CURRENT=$(grep -m1 '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          NEXT="${MAJOR}.${MINOR}.$((PATCH + 1))"
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+          echo "next=$NEXT"       >> "$GITHUB_OUTPUT"
+
+      - name: Merge hotfix → main
+        env:
+          BRANCH: ${{ steps.branch.outputs.name }}
+          CURRENT_VERSION: ${{ steps.ver.outputs.current }}
+          NEXT_VERSION: ${{ steps.ver.outputs.next }}
+        run: |
+          git checkout main
+          git merge --no-ff "origin/${BRANCH}" \
+            -m "merge(gitflow): ${BRANCH} → main"
+          sed -i \
+            "s/^version = \"${CURRENT_VERSION}\"/version = \"${NEXT_VERSION}\"/" \
+            Cargo.toml
+          git add Cargo.toml
+          git commit -m "chore(version): bump ${CURRENT_VERSION} -> ${NEXT_VERSION} (hotfix)"
+          git push origin main
+
+      - name: Tag hotfix on main
+        env:
+          NEXT_VERSION: ${{ steps.ver.outputs.next }}
+        run: |
+          git tag -a "v${NEXT_VERSION}" -m "Hotfix release v${NEXT_VERSION}"
+          git push origin "v${NEXT_VERSION}"
+
+      - name: Merge hotfix → develop
+        env:
+          BRANCH: ${{ steps.branch.outputs.name }}
+          NEXT_VERSION: ${{ steps.ver.outputs.next }}
+        run: |
+          git checkout develop
+          git merge --no-ff "origin/${BRANCH}" \
+            -m "merge(gitflow): ${BRANCH} → develop (v${NEXT_VERSION})"
+          git push origin develop
+
+      - name: Delete hotfix branch
+        env:
+          BRANCH: ${{ steps.branch.outputs.name }}
+        run: git push origin --delete "$BRANCH"

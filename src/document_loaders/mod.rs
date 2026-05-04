@@ -28,13 +28,27 @@ mod html_to_markdown_loader;
 #[cfg(feature = "html-to-markdown")]
 pub use html_to_markdown_loader::*;
 
+mod json_loader;
+pub use json_loader::*;
+
 mod error;
 pub use error::*;
 
 mod dir_loader;
 pub use dir_loader::*;
 
+mod markdown_loader;
+pub use markdown_loader::*;
+
+#[cfg(feature = "sitemap")]
+pub mod sitemap_loader;
+#[cfg(feature = "sitemap")]
+pub use sitemap_loader::*;
+
 #[cfg(feature = "tree-sitter")]
 mod source_code_loader;
 #[cfg(feature = "tree-sitter")]
 pub use source_code_loader::*;
+
+#[cfg(feature = "rss")]
+pub mod rss_loader;

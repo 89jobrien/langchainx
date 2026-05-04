@@ -198,3 +198,40 @@ impl Chain for SQLDatabaseChain {
         self.llmchain.stream(llm_inputs).await
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // SqlChainPromptBuilder is pure data — no DB or LLM required.
+
+    #[test]
+    fn prompt_builder_sets_query() {
+        let args = SqlChainPromptBuilder::new()
+            .query("how many users are there?")
+            .build();
+        let val = args
+            .get(SQL_CHAIN_DEFAULT_INPUT_KEY_QUERY)
+            .expect("query key missing");
+        assert_eq!(val.as_str().unwrap(), "how many users are there?");
+    }
+
+    #[test]
+    fn prompt_builder_empty_query_by_default() {
+        let args = SqlChainPromptBuilder::new().build();
+        let val = args
+            .get(SQL_CHAIN_DEFAULT_INPUT_KEY_QUERY)
+            .expect("query key missing");
+        assert_eq!(val.as_str().unwrap(), "");
+    }
+
+    #[test]
+    fn prompt_builder_does_not_include_table_names_key() {
+        // table_names_to_use is optional and should NOT be set by the builder
+        let args = SqlChainPromptBuilder::new().query("select 1").build();
+        assert!(
+            args.get(SQL_CHAIN_DEFAULT_INPUT_KEY_TABLE_NAMES).is_none(),
+            "table_names_to_use should not be present in default builder output"
+        );
+    }
+}
