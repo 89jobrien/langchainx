@@ -6,7 +6,7 @@ use async_openai::types::{ChatCompletionToolChoiceOption, ResponseFormat};
 use async_openai::{
     error::OpenAIError,
     types::{
-        ChatChoiceStream, ChatCompletionMessageToolCall, ChatCompletionRequestAssistantMessageArgs,
+        ChatCompletionMessageToolCall, ChatCompletionRequestAssistantMessageArgs,
         ChatCompletionRequestMessage, ChatCompletionRequestMessageContentPartImageArgs,
         ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestToolMessageArgs,
         ChatCompletionRequestUserMessageArgs, ChatCompletionRequestUserMessageContent,
@@ -96,67 +96,28 @@ impl Default for OpenAI<OpenAIConfig> {
 impl<C: Config + Send + Sync + 'static> LLM for OpenAI<C> {
     async fn generate(&self, prompt: &[Message]) -> Result<GenerateResult, LLMError> {
         let client = Client::with_config(self.config.clone());
-        let request = self.generate_request(prompt, self.options.streaming_func.is_some())?;
-        match &self.options.streaming_func {
-            Some(func) => {
-                let mut stream = client.chat().create_stream(request).await?;
-                let mut generate_result = GenerateResult::default();
-                while let Some(result) = stream.next().await {
-                    match result {
-                        Ok(response) => {
-                            if let Some(usage) = response.usage {
-                                generate_result.tokens = Some(TokenUsage {
-                                    prompt_tokens: usage.prompt_tokens,
-                                    completion_tokens: usage.completion_tokens,
-                                    total_tokens: usage.total_tokens,
-                                });
-                            }
-                            for chat_choice in response.choices.iter() {
-                                let chat_choice: ChatChoiceStream = chat_choice.clone();
-                                {
-                                    let mut func = func.lock().await;
-                                    let _ = func(
-                                        serde_json::to_string(&chat_choice).unwrap_or("".into()),
-                                    )
-                                    .await;
-                                }
-                                if let Some(content) = chat_choice.delta.content {
-                                    generate_result.generation.push_str(&content);
-                                }
-                            }
-                        }
-                        Err(err) => {
-                            eprintln!("Error from streaming response: {:?}", err);
-                        }
-                    }
-                }
-                Ok(generate_result)
-            }
-            None => {
-                let response = client.chat().create(request).await?;
-                let mut generate_result = GenerateResult::default();
+        let request = self.generate_request(prompt)?;
+        let response = client.chat().create(request).await?;
+        let mut generate_result = GenerateResult::default();
 
-                if let Some(usage) = response.usage {
-                    generate_result.tokens = Some(TokenUsage {
-                        prompt_tokens: usage.prompt_tokens,
-                        completion_tokens: usage.completion_tokens,
-                        total_tokens: usage.total_tokens,
-                    });
-                }
-
-                if let Some(choice) = &response.choices.first() {
-                    generate_result.generation = choice.message.content.clone().unwrap_or_default();
-                    if let Some(function) = &choice.message.tool_calls {
-                        generate_result.generation =
-                            serde_json::to_string(&function).unwrap_or_default();
-                    }
-                } else {
-                    generate_result.generation = "".to_string();
-                }
-
-                Ok(generate_result)
-            }
+        if let Some(usage) = response.usage {
+            generate_result.tokens = Some(TokenUsage {
+                prompt_tokens: usage.prompt_tokens,
+                completion_tokens: usage.completion_tokens,
+                total_tokens: usage.total_tokens,
+            });
         }
+
+        if let Some(choice) = &response.choices.first() {
+            generate_result.generation = choice.message.content.clone().unwrap_or_default();
+            if let Some(function) = &choice.message.tool_calls {
+                generate_result.generation = serde_json::to_string(&function).unwrap_or_default();
+            }
+        } else {
+            generate_result.generation = "".to_string();
+        }
+
+        Ok(generate_result)
     }
 
     async fn invoke(&self, prompt: &str) -> Result<String, LLMError> {
@@ -170,7 +131,10 @@ impl<C: Config + Send + Sync + 'static> LLM for OpenAI<C> {
         messages: &[Message],
     ) -> Result<Pin<Box<dyn Stream<Item = Result<StreamData, LLMError>> + Send>>, LLMError> {
         let client = Client::with_config(self.config.clone());
-        let request = self.generate_request(messages, true)?;
+        let mut request = self.generate_request(messages)?;
+        if let Some(include_usage) = self.options.stream_usage {
+            request.stream_options = Some(ChatCompletionStreamOptions { include_usage });
+        }
 
         let original_stream = client.chat().create_stream(request).await?;
 
@@ -281,7 +245,6 @@ impl<C: Config> OpenAI<C> {
     fn generate_request(
         &self,
         messages: &[Message],
-        stream: bool,
     ) -> Result<CreateChatCompletionRequest, LLMError> {
         let messages: Vec<ChatCompletionRequestMessage> = self.to_openai_messages(messages)?;
         let mut request_builder = CreateChatCompletionRequestArgs::default();
@@ -290,11 +253,6 @@ impl<C: Config> OpenAI<C> {
         }
         if let Some(max_tokens) = self.options.max_tokens {
             request_builder.max_tokens(max_tokens);
-        }
-        if stream {
-            if let Some(include_usage) = self.options.stream_usage {
-                request_builder.stream_options(ChatCompletionStreamOptions { include_usage });
-            }
         }
         request_builder.model(self.model.to_string());
         if let Some(stop_words) = &self.options.stop_words {
@@ -332,95 +290,28 @@ mod tests {
 
     use base64::prelude::*;
     use serde_json::json;
-    use std::sync::Arc;
-    use tokio::sync::Mutex;
     use tokio::test;
 
     #[test]
     #[ignore]
     async fn test_invoke() {
-        let message_complete = Arc::new(Mutex::new(String::new()));
-
-        // Define the streaming function
-        // This function will append the content received from the stream to `message_complete`
-        let streaming_func = {
-            let message_complete = message_complete.clone();
-            move |content: String| {
-                let message_complete = message_complete.clone();
-                async move {
-                    let mut message_complete_lock = message_complete.lock().await;
-                    println!("Content: {:?}", content);
-                    message_complete_lock.push_str(&content);
-                    Ok(())
-                }
-            }
-        };
-        let options = CallOptions::new().with_streaming_func(streaming_func);
-        // Setup the OpenAI client with the necessary options
-        let open_ai = OpenAI::new(OpenAIConfig::default())
-            .with_model(OpenAIModel::Gpt35.to_string()) // You can change the model as needed
-            .with_options(options);
-
-        // Define a set of messages to send to the generate function
-
-        // Call the generate function
+        let open_ai =
+            OpenAI::new(OpenAIConfig::default()).with_model(OpenAIModel::Gpt35.to_string());
         match open_ai.invoke("hola").await {
-            Ok(result) => {
-                // Print the response from the generate function
-                println!("Generate Result: {:?}", result);
-                println!("Message Complete: {:?}", message_complete.lock().await);
-            }
-            Err(e) => {
-                // Handle any errors
-                eprintln!("Error calling generate: {:?}", e);
-            }
+            Ok(result) => println!("Generate Result: {:?}", result),
+            Err(e) => eprintln!("Error calling generate: {:?}", e),
         }
     }
 
     #[test]
     #[ignore]
     async fn test_generate_function() {
-        let message_complete = Arc::new(Mutex::new(String::new()));
-
-        // Define the streaming function
-        // This function will append the content received from the stream to `message_complete`
-        let streaming_func = {
-            let message_complete = message_complete.clone();
-            move |content: String| {
-                let message_complete = message_complete.clone();
-                async move {
-                    let content = serde_json::from_str::<ChatChoiceStream>(&content).unwrap();
-                    if content.finish_reason.is_some() {
-                        return Ok(());
-                    }
-                    let mut message_complete_lock = message_complete.lock().await;
-                    println!("Content: {:?}", content);
-                    message_complete_lock.push_str(&content.delta.content.unwrap());
-                    Ok(())
-                }
-            }
-        };
-        // Define the streaming function as an async block without capturing external references directly
-        let options = CallOptions::new().with_streaming_func(streaming_func);
-        // Setup the OpenAI client with the necessary options
-        let open_ai = OpenAI::new(OpenAIConfig::default())
-            .with_model(OpenAIModel::Gpt35.to_string()) // You can change the model as needed
-            .with_options(options);
-
-        // Define a set of messages to send to the generate function
+        let open_ai =
+            OpenAI::new(OpenAIConfig::default()).with_model(OpenAIModel::Gpt35.to_string());
         let messages = vec![Message::new_human_message("Hello, how are you?")];
-
-        // Call the generate function
         match open_ai.generate(&messages).await {
-            Ok(result) => {
-                // Print the response from the generate function
-                println!("Generate Result: {:?}", result);
-                println!("Message Complete: {:?}", message_complete.lock().await);
-            }
-            Err(e) => {
-                // Handle any errors
-                eprintln!("Error calling generate: {:?}", e);
-            }
+            Ok(result) => println!("Generate Result: {:?}", result),
+            Err(e) => eprintln!("Error calling generate: {:?}", e),
         }
     }
 

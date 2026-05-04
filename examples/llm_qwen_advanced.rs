@@ -1,3 +1,4 @@
+use futures::StreamExt;
 use langchainx::{
     language_models::{llm::LLM, options::CallOptions},
     llm::{Qwen, QwenModel},
@@ -37,30 +38,25 @@ async fn main() {
     // Example 2: Streaming response
     println!("=== Example 2: Streaming Response ===");
 
-    // Create a streaming callback function
-    let callback = |content: String| {
-        print!("{}", content);
-        let _ = std::io::stdout().flush();
-        async { Ok(()) }
-    };
-
-    let streaming_options = CallOptions::default()
-        .with_max_tokens(100)
-        .with_streaming_func(callback);
-
     let streaming_qwen = Qwen::new()
         .with_api_key(api_key.clone())
         .with_model(QwenModel::QwenPlus.to_string())
-        .with_options(streaming_options);
+        .with_options(CallOptions::default().with_max_tokens(100));
 
     let stream_messages = vec![Message::new_human_message(
         "Write a short poem about artificial intelligence.",
     )];
 
     println!("Streaming response:");
-    let streaming_response = streaming_qwen.generate(&stream_messages).await.unwrap();
-    println!(
-        "\n\nDone streaming. Total tokens: {:?}",
-        streaming_response.tokens
-    );
+    let mut stream = streaming_qwen.stream(&stream_messages).await.unwrap();
+    while let Some(result) = stream.next().await {
+        match result {
+            Ok(data) => {
+                print!("{}", data.content);
+                let _ = std::io::stdout().flush();
+            }
+            Err(e) => eprintln!("Stream error: {:?}", e),
+        }
+    }
+    println!();
 }

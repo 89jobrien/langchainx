@@ -243,9 +243,7 @@ impl Qwen {
     /// Generates text using the Qwen API
     async fn generate(&self, messages: &[Message]) -> Result<GenerateResult, LLMError> {
         let client = Client::new();
-        let is_stream = self.options.streaming_func.is_some();
-
-        let payload = self.build_payload(messages, is_stream);
+        let payload = self.build_payload(messages, false);
         let res = client
             .post(&self.base_url)
             .header("Authorization", format!("Bearer {}", &self.api_key))
@@ -358,26 +356,7 @@ impl Qwen {
 #[async_trait]
 impl LLM for Qwen {
     async fn generate(&self, messages: &[Message]) -> Result<GenerateResult, LLMError> {
-        match &self.options.streaming_func {
-            Some(func) => {
-                let mut complete_response = String::new();
-                let mut stream = self.stream(messages).await?;
-                while let Some(data) = stream.next().await {
-                    match data {
-                        Ok(value) => {
-                            let mut func = func.lock().await;
-                            complete_response.push_str(&value.content);
-                            let _ = func(value.content).await;
-                        }
-                        Err(e) => return Err(e),
-                    }
-                }
-                let mut generate_result = GenerateResult::default();
-                generate_result.generation = complete_response;
-                Ok(generate_result)
-            }
-            None => self.generate(messages).await,
-        }
+        self.generate(messages).await
     }
 
     async fn stream(
