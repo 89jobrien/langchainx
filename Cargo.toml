@@ -12,14 +12,14 @@ members = [
 ]
 
 [workspace.package]
-version     = "0.4.0"
+version     = "0.4.1"
 edition     = "2024"
 license     = "MIT"
 repository  = "https://github.com/89jobrien/langchainx"
 
 [package]
 name = "langchainx"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2024"
 publish = true
 repository = "https://github.com/89jobrien/langchainx"

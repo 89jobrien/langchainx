@@ -6,208 +6,236 @@ Building applications with LLMs through composability, with Rust!
 > [langchain-rust](https://github.com/Abraxas-365/langchain-rust) by
 > [Ryo Kanazawa (Abraxas-365)](https://github.com/Abraxas-365), used under the MIT License.
 > Changes in this fork include typed error types, a three-tier e2e test suite, smolvm-based
-> container tests, and ongoing architectural improvements tracked in
-> [GitHub Issues](https://github.com/89jobrien/langchainx/issues).
+> container tests, a Cargo workspace split into focused sub-crates, and ongoing architectural
+> improvements tracked in [GitHub Issues](https://github.com/89jobrien/langchainx/issues).
 
 ## What is this?
 
 This is the Rust language implementation of [LangChain](https://github.com/langchain-ai/langchain).
 
+## Workspace Crates
+
+The library is organized as a Cargo workspace. The root `langchainx` crate re-exports everything
+for convenience; individual crates can be used directly for smaller dependency footprints.
+
+| Crate                      | Contents                                              |
+| -------------------------- | ----------------------------------------------------- |
+| `langchainx-core`          | Shared schemas, document types, error primitives      |
+| `langchainx-llm`           | LLM backends (OpenAI, Claude, DeepSeek, Qwen, Ollama) |
+| `langchainx-prompt`        | Prompt templates and formatting macros                |
+| `langchainx-memory`        | Conversation memory backends                          |
+| `langchainx-embedding`     | Embedding backends (OpenAI, Ollama, FastEmbed, etc.)  |
+| `langchainx-output-parsers`| Output parsers and structured extraction              |
+| `langchainx-chain`         | Chain types (LLMChain, ConversationalChain, etc.)     |
+
 ## Current Features
 
 - LLMs
-  - [x] [OpenAi](https://github.com/89jobrien/langchainx/blob/main/examples/llm_openai.rs)
-  - [x] [Azure OpenAi](https://github.com/89jobrien/langchainx/blob/main/examples/llm_azure_open_ai.rs)
-  - [x] [Ollama](https://github.com/89jobrien/langchainx/blob/main/examples/llm_ollama.rs)
-  - [x] [Anthropic Claude](https://github.com/89jobrien/langchainx/blob/main/examples/llm_anthropic_claude.rs)
-  - [x] DeepSeek (OpenAI-compatible, streaming + reasoning_content support)
-  - [x] Qwen / Alibaba Cloud (OpenAI-compatible)
+    - [x] [OpenAI](https://github.com/89jobrien/langchainx/blob/main/examples/llm_openai.rs)
+    - [x] [Azure OpenAI](https://github.com/89jobrien/langchainx/blob/main/examples/llm_azure_open_ai.rs)
+    - [x] [Ollama](https://github.com/89jobrien/langchainx/blob/main/examples/llm_ollama.rs)
+    - [x] [Anthropic Claude](https://github.com/89jobrien/langchainx/blob/main/examples/llm_anthropic_claude.rs)
+    - [x] [DeepSeek](https://github.com/89jobrien/langchainx/blob/main/examples/llm_deepseek.rs)
+      (OpenAI-compatible, streaming + reasoning_content support;
+      [advanced](https://github.com/89jobrien/langchainx/blob/main/examples/llm_deepseek_advanced.rs))
+    - [x] [Qwen / Alibaba Cloud](https://github.com/89jobrien/langchainx/blob/main/examples/llm_alibaba_qwen.rs)
+      (OpenAI-compatible;
+      [advanced](https://github.com/89jobrien/langchainx/blob/main/examples/llm_qwen_advanced.rs))
+    - [x] [Vision / multimodal LLM chain](https://github.com/89jobrien/langchainx/blob/main/examples/vision_llm_chain.rs)
 
 - Embeddings
-  - [x] [OpenAi](https://github.com/89jobrien/langchainx/blob/main/examples/embedding_openai.rs)
-  - [x] [Azure OpenAi](https://github.com/89jobrien/langchainx/blob/main/examples/embedding_azure_open_ai.rs)
-  - [x] [Ollama](https://github.com/89jobrien/langchainx/blob/main/examples/embedding_ollama.rs)
-  - [x] [Local FastEmbed](https://github.com/89jobrien/langchainx/blob/main/examples/embedding_fastembed.rs)
-  - [x] [MistralAI](https://github.com/89jobrien/langchainx/blob/main/examples/embedding_mistralai.rs)
+    - [x] [OpenAI](https://github.com/89jobrien/langchainx/blob/main/examples/embedding_openai.rs)
+    - [x] [Azure OpenAI](https://github.com/89jobrien/langchainx/blob/main/examples/embedding_azure_open_ai.rs)
+    - [x] [Ollama](https://github.com/89jobrien/langchainx/blob/main/examples/embedding_ollama.rs)
+    - [x] [Local FastEmbed](https://github.com/89jobrien/langchainx/blob/main/examples/embedding_fastembed.rs)
+    - [x] [MistralAI](https://github.com/89jobrien/langchainx/blob/main/examples/embedding_mistralai.rs)
 
 - VectorStores
-  - [x] [OpenSearch](https://github.com/89jobrien/langchainx/blob/main/examples/vector_store_opensearch.rs)
-  - [x] [Postgres](https://github.com/89jobrien/langchainx/blob/main/examples/vector_store_postgres.rs)
-  - [x] [Qdrant](https://github.com/89jobrien/langchainx/blob/main/examples/vector_store_qdrant.rs)
-  - [x] [Sqlite](https://github.com/89jobrien/langchainx/blob/main/examples/vector_store_sqlite_vss.rs)
-  - [x] [SurrealDB](https://github.com/89jobrien/langchainx/blob/main/examples/vector_store_surrealdb/src/main.rs)
+    - [x] [OpenSearch](https://github.com/89jobrien/langchainx/blob/main/examples/vector_store_opensearch.rs)
+    - [x] [Postgres](https://github.com/89jobrien/langchainx/blob/main/examples/vector_store_postgres.rs)
+    - [x] [Qdrant](https://github.com/89jobrien/langchainx/blob/main/examples/vector_store_qdrant.rs)
+    - [x] [SQLite (sqlite-vss)](https://github.com/89jobrien/langchainx/blob/main/examples/vector_store_sqlite_vss.rs)
+    - [x] [SQLite (sqlite-vec)](https://github.com/89jobrien/langchainx/blob/main/examples/vector_store_sqlite_vec.rs)
+    - [x] [SurrealDB](https://github.com/89jobrien/langchainx/blob/main/examples/vector_store_surrealdb/src/main.rs)
 
 - Chain
-  - [x] [LLM Chain](https://github.com/89jobrien/langchainx/blob/main/examples/llm_chain.rs)
-  - [x] [Conversational Chain](https://github.com/89jobrien/langchainx/blob/main/examples/conversational_chain.rs)
-  - [x] [Conversational Retriever Simple](https://github.com/89jobrien/langchainx/blob/main/examples/conversational_retriever_simple_chain.rs)
-  - [x] [Conversational Retriever With Vector Store](https://github.com/89jobrien/langchainx/blob/main/examples/conversational_retriever_chain_with_vector_store.rs)
-  - [x] [Sequential Chain](https://github.com/89jobrien/langchainx/blob/main/examples/sequential_chain.rs)
-  - [x] [Q&A Chain](https://github.com/89jobrien/langchainx/blob/main/examples/qa_chain.rs)
-  - [x] [SQL Chain](https://github.com/89jobrien/langchainx/blob/main/examples/sql_chain.rs)
+    - [x] [LLM Chain](https://github.com/89jobrien/langchainx/blob/main/examples/llm_chain.rs)
+    - [x] [Simple Chain](https://github.com/89jobrien/langchainx/blob/main/examples/simple_chain.rs)
+    - [x] [Streaming from Chain](https://github.com/89jobrien/langchainx/blob/main/examples/streaming_from_chain.rs)
+    - [x] [LLM Chain — DeepSeek](https://github.com/89jobrien/langchainx/blob/main/examples/llm_chain_deepseek.rs)
+    - [x] [LLM Chain — Qwen](https://github.com/89jobrien/langchainx/blob/main/examples/llm_chain_qwen.rs)
+    - [x] [Conversational Chain](https://github.com/89jobrien/langchainx/blob/main/examples/conversational_chain.rs)
+    - [x] [Conversational Retriever Simple](https://github.com/89jobrien/langchainx/blob/main/examples/conversational_retriever_simple_chain.rs)
+    - [x] [Conversational Retriever With Vector Store](https://github.com/89jobrien/langchainx/blob/main/examples/conversational_retriever_chain_with_vector_store.rs)
+    - [x] [Sequential Chain](https://github.com/89jobrien/langchainx/blob/main/examples/sequential_chain.rs)
+    - [x] [Q&A Chain](https://github.com/89jobrien/langchainx/blob/main/examples/qa_chain.rs)
+    - [x] [SQL Chain](https://github.com/89jobrien/langchainx/blob/main/examples/sql_chain.rs)
 
 - Agents
-  - [x] [Chat Agent with Tools](https://github.com/89jobrien/langchainx/blob/main/examples/agent.rs)
-  - [x] [Open AI Compatible Tools Agent](https://github.com/89jobrien/langchainx/blob/main/examples/open_ai_tools_agent.rs)
+    - [x] [Chat Agent with Tools](https://github.com/89jobrien/langchainx/blob/main/examples/agent.rs)
+    - [x] [OpenAI Tools Agent](https://github.com/89jobrien/langchainx/blob/main/examples/open_ai_tools_agent.rs)
+    - [x] [AI Commit Message Generator](https://github.com/89jobrien/langchainx/blob/main/examples/rcommiter.rs)
+      — reads `git diff --staged` and generates a conventional commit message
 
 - Tools
-  - [x] Serpapi/Google
-  - [x] DuckDuckGo Search
-  - [x] [Wolfram/Math](https://github.com/89jobrien/langchainx/blob/main/examples/wolfram_tool.rs)
-  - [x] Command line
-  - [x] [Text2Speech](https://github.com/89jobrien/langchainx/blob/main/examples/speech2text_openai.rs)
+    - [x] Serpapi/Google
+    - [x] DuckDuckGo Search
+    - [x] [Wolfram/Math](https://github.com/89jobrien/langchainx/blob/main/examples/wolfram_tool.rs)
+    - [x] Command line
+    - [x] [Text-to-Speech](https://github.com/89jobrien/langchainx/blob/main/examples/text_to_speech.rs)
+    - [x] [Speech-to-Text (OpenAI Whisper)](https://github.com/89jobrien/langchainx/blob/main/examples/speech2text_openai.rs)
 
 - Semantic Routing
-  - [x] [Static Routing](https://github.com/89jobrien/langchainx/blob/main/examples/semantic_routes.rs)
-  - [x] [Dynamic Routing](https://github.com/89jobrien/langchainx/blob/main/examples/dynamic_semantic_routes.rs)
+    - [x] [Static Routing](https://github.com/89jobrien/langchainx/blob/main/examples/semantic_routes.rs)
+    - [x] [Dynamic Routing](https://github.com/89jobrien/langchainx/blob/main/examples/dynamic_semantic_routes.rs)
 
 - Document Loaders
-  - [x] PDF
+    - [x] PDF
 
-    ```rust
-    use futures_util::StreamExt;
+        ```rust
+        use futures_util::StreamExt;
 
-    async fn main() {
-        let path = "./src/document_loaders/test_data/sample.pdf";
+        async fn main() {
+            let path = "./src/document_loaders/test_data/sample.pdf";
 
-        let loader = PdfExtractLoader::from_path(path).expect("Failed to create PdfExtractLoader");
-        // let loader = LoPdfLoader::from_path(path).expect("Failed to create LoPdfLoader");
+            let loader = PdfExtractLoader::from_path(path).expect("Failed to create PdfExtractLoader");
+            // let loader = LoPdfLoader::from_path(path).expect("Failed to create LoPdfLoader");
 
-        let docs = loader
-            .load()
-            .await
-            .unwrap()
-            .map(|d| d.unwrap())
-            .collect::<Vec<_>>()
-            .await;
+            let docs = loader
+                .load()
+                .await
+                .unwrap()
+                .map(|d| d.unwrap())
+                .collect::<Vec<_>>()
+                .await;
 
-    }
-    ```
+        }
+        ```
 
-  - [x] Pandoc
+    - [x] Pandoc
 
-    ```rust
-    use futures_util::StreamExt;
+        ```rust
+        use futures_util::StreamExt;
 
-    async fn main() {
+        async fn main() {
 
-        let path = "./src/document_loaders/test_data/sample.docx";
+            let path = "./src/document_loaders/test_data/sample.docx";
 
-        let loader = PandocLoader::from_path(InputFormat::Docx.to_string(), path)
-            .await
-            .expect("Failed to create PandocLoader");
+            let loader = PandocLoader::from_path(InputFormat::Docx.to_string(), path)
+                .await
+                .expect("Failed to create PandocLoader");
 
-        let docs = loader
-            .load()
-            .await
-            .unwrap()
-            .map(|d| d.unwrap())
-            .collect::<Vec<_>>()
-            .await;
-    }
-    ```
+            let docs = loader
+                .load()
+                .await
+                .unwrap()
+                .map(|d| d.unwrap())
+                .collect::<Vec<_>>()
+                .await;
+        }
+        ```
 
-  - [x] HTML
+    - [x] HTML
 
-    ```rust
-    use futures_util::StreamExt;
-    use url::Url;
+        ```rust
+        use futures_util::StreamExt;
+        use url::Url;
 
-    async fn main() {
-        let path = "./src/document_loaders/test_data/example.html";
-        let html_loader = HtmlLoader::from_path(path, Url::parse("https://example.com/").unwrap())
-            .expect("Failed to create html loader");
+        async fn main() {
+            let path = "./src/document_loaders/test_data/example.html";
+            let html_loader = HtmlLoader::from_path(path, Url::parse("https://example.com/").unwrap())
+                .expect("Failed to create html loader");
 
-        let documents = html_loader
-            .load()
-            .await
-            .unwrap()
-            .map(|x| x.unwrap())
-            .collect::<Vec<_>>()
-            .await;
-    }
-    ```
+            let documents = html_loader
+                .load()
+                .await
+                .unwrap()
+                .map(|x| x.unwrap())
+                .collect::<Vec<_>>()
+                .await;
+        }
+        ```
 
-  - [x] HTML To Markdown
+    - [x] HTML To Markdown
 
-    ```rust
-    use futures_util::StreamExt;
-    use url::Url;
+        ```rust
+        use futures_util::StreamExt;
+        use url::Url;
 
-    async fn main() {
-        let path = "./src/document_loaders/test_data/example.html";
-        let html_to_markdown_loader = HtmlToMarkdownLoader::from_path(path, Url::parse("https://example.com/").unwrap(), HtmlToMarkdownOptions::default().with_skip_tags(vec!["figure".to_string()]))
-            .expect("Failed to create html to markdown loader");
+        async fn main() {
+            let path = "./src/document_loaders/test_data/example.html";
+            let html_to_markdown_loader = HtmlToMarkdownLoader::from_path(path, Url::parse("https://example.com/").unwrap(), HtmlToMarkdownOptions::default().with_skip_tags(vec!["figure".to_string()]))
+                .expect("Failed to create html to markdown loader");
 
-        let documents = html_to_markdown_loader
-            .load()
-            .await
-            .unwrap()
-            .map(|x| x.unwrap())
-            .collect::<Vec<_>>()
-            .await;
-    }
-    ```
+            let documents = html_to_markdown_loader
+                .load()
+                .await
+                .unwrap()
+                .map(|x| x.unwrap())
+                .collect::<Vec<_>>()
+                .await;
+        }
+        ```
 
-  - [x] CSV
+    - [x] CSV
 
-    ```rust
-    use futures_util::StreamExt;
+        ```rust
+        use futures_util::StreamExt;
 
-    async fn main() {
-        let path = "./src/document_loaders/test_data/test.csv";
-        let columns = vec![
-            "name".to_string(),
-            "age".to_string(),
-            "city".to_string(),
-            "country".to_string(),
-        ];
-        let csv_loader = CsvLoader::from_path(path, columns).expect("Failed to create csv loader");
+        async fn main() {
+            let path = "./src/document_loaders/test_data/test.csv";
+            let columns = vec![
+                "name".to_string(),
+                "age".to_string(),
+                "city".to_string(),
+                "country".to_string(),
+            ];
+            let csv_loader = CsvLoader::from_path(path, columns).expect("Failed to create csv loader");
 
-        let documents = csv_loader
-            .load()
-            .await
-            .unwrap()
-            .map(|x| x.unwrap())
-            .collect::<Vec<_>>()
-            .await;
-    }
-    ```
+            let documents = csv_loader
+                .load()
+                .await
+                .unwrap()
+                .map(|x| x.unwrap())
+                .collect::<Vec<_>>()
+                .await;
+        }
+        ```
 
-  - [x] Git commits
+    - [x] [Git commits](https://github.com/89jobrien/langchainx/blob/main/examples/git_commits.rs)
 
-    ```rust
-    use futures_util::StreamExt;
+        ```rust
+        use futures_util::StreamExt;
 
-    async fn main() {
-        let path = "/path/to/git/repo";
-        let git_commit_loader = GitCommitLoader::from_path(path).expect("Failed to create git commit loader");
+        async fn main() {
+            let path = "/path/to/git/repo";
+            let loader = GitCommitLoader::from_path(path).expect("Failed to create GitCommitLoader");
 
-        let documents = csv_loader
-            .load()
-            .await
-            .unwrap()
-            .map(|x| x.unwrap())
-            .collect::<Vec<_>>()
-            .await;
-    }
-    ```
+            let documents = loader
+                .load()
+                .await
+                .unwrap()
+                .map(|x| x.unwrap())
+                .collect::<Vec<_>>()
+                .await;
+        }
+        ```
 
-  - [x] Source code
+    - [x] Source code
 
-    ```rust
+        ```rust
 
-    let loader_with_dir =
-    SourceCodeLoader::from_path("./src/document_loaders/test_data".to_string())
-    .with_dir_loader_options(DirLoaderOptions {
-    glob: None,
-    suffixes: Some(vec!["rs".to_string()]),
-    exclude: None,
-    });
+        let loader_with_dir =
+        SourceCodeLoader::from_path("./src/document_loaders/test_data".to_string())
+        .with_dir_loader_options(DirLoaderOptions {
+        glob: None,
+        suffixes: Some(vec!["rs".to_string()]),
+        exclude: None,
+        });
 
-    let stream = loader_with_dir.load().await.unwrap();
-    let documents = stream.map(|x| x.unwrap()).collect::<Vec<_>>().await;
-    ```
+        let stream = loader_with_dir.load().await.unwrap();
+        let documents = stream.map(|x| x.unwrap()).collect::<Vec<_>>().await;
+        ```
 
 ## Testing
 
@@ -283,7 +311,7 @@ cargo add langchainx --features sqlite-vec
 cargo add langchainx --features postgres
 ```
 
-#### With SurrialDB
+#### With SurrealDB
 
 ```bash
 cargo add langchainx --features surrealdb

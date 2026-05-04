@@ -5,7 +5,7 @@ use futures_util::StreamExt;
 use langchainx::{
     chain::{Chain, ConversationalRetrieverChainBuilder},
     fmt_message, fmt_template,
-    llm::{OpenAI, OpenAIModel},
+    llm::OpenAI,
     memory::SimpleMemory,
     message_formatter,
     prompt::HumanMessagePromptTemplate,
@@ -43,7 +43,7 @@ impl Retriever for RetrieverMock {
 }
 #[tokio::main]
 async fn main() {
-    let llm = OpenAI::default().with_model(OpenAIModel::Gpt35.to_string());
+    let llm = OpenAI::default().with_model("gpt-4o-mini");
     let prompt=message_formatter![
                     fmt_message!(Message::new_system_message("You are a helpful assistant")),
                     fmt_template!(HumanMessagePromptTemplate::new(
