@@ -38,6 +38,7 @@ documentation = "https://github.com/89jobrien/langchainx"
 
 [dependencies]
 langchainx-core          = { path = "crates/langchainx-core" }
+langchainx-chain         = { path = "crates/langchainx-chain" }
 langchainx-embedding     = { path = "crates/langchainx-embedding" }
 langchainx-llm           = { path = "crates/langchainx-llm" }
 langchainx-text-splitter    = { path = "crates/langchainx-text-splitter" }
@@ -133,7 +134,7 @@ lopdf = ["dep:lopdf", "langchainx-loaders/lopdf"]
 pdf-extract = ["dep:lopdf", "dep:pdf-extract", "langchainx-loaders/pdf-extract"]
 ollama = ["ollama-rs", "langchainx-embedding/ollama"]
 opensearch = ["dep:opensearch", "aws-config", "langchainx-vectorstore/opensearch"]
-postgres = ["pgvector", "sqlx", "uuid", "langchainx-vectorstore/postgres"]
+postgres = ["pgvector", "sqlx", "uuid", "langchainx-vectorstore/postgres", "langchainx-chain/postgres"]
 qdrant = ["qdrant-client", "uuid", "langchainx-vectorstore/qdrant"]
 sqlite-vss = ["sqlx", "langchainx-vectorstore/sqlite-vss"]
 sqlite-vec = ["sqlx", "langchainx-vectorstore/sqlite-vec"]
