@@ -46,7 +46,11 @@ impl fmt::Display for PgLit {
             PgLit::LitStr(str) => write!(f, "'{}'", str),
             PgLit::JsonField(path) => write!(f, "cmetadata#>>'{{{}}}'", path.join(",")),
             PgLit::RawJson(value) => {
-                write!(f, "{}", serde_json::to_string(value).unwrap_or_else(|_| "null".to_string()))
+                write!(
+                    f,
+                    "{}",
+                    serde_json::to_string(value).unwrap_or_else(|_| "null".to_string())
+                )
             }
         }
     }
@@ -79,12 +83,20 @@ impl fmt::Display for PgFilter {
             PgFilter::And(pgfilters) => write!(
                 f,
                 "{}",
-                pgfilters.iter().map(|pgf| pgf.to_string()).collect::<Vec<String>>().join(" AND ")
+                pgfilters
+                    .iter()
+                    .map(|pgf| pgf.to_string())
+                    .collect::<Vec<String>>()
+                    .join(" AND ")
             ),
             PgFilter::Or(pgfilters) => write!(
                 f,
                 "{}",
-                pgfilters.iter().map(|pgf| pgf.to_string()).collect::<Vec<String>>().join(" OR ")
+                pgfilters
+                    .iter()
+                    .map(|pgf| pgf.to_string())
+                    .collect::<Vec<String>>()
+                    .join(" OR ")
             ),
         }
     }
@@ -170,8 +182,7 @@ impl VectorStore for Store {
             let id = Uuid::new_v4().to_string();
             ids.push(id.clone());
 
-            let vector_value =
-                Vector::from(vector.iter().map(|x| *x as f32).collect::<Vec<f32>>());
+            let vector_value = Vector::from(vector.iter().map(|x| *x as f32).collect::<Vec<f32>>());
 
             sqlx::query(&format!(
                 r#"INSERT INTO {}

@@ -50,8 +50,7 @@ impl VectorStore for Store {
             });
 
             if let Some(extra_json) = opt.filters.clone()
-                && let (Value::Object(base_map), Value::Object(extra_map)) =
-                    (&mut base, extra_json)
+                && let (Value::Object(base_map), Value::Object(extra_map)) = (&mut base, extra_json)
             {
                 base_map.extend(extra_map);
             }

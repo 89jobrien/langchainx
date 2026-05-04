@@ -250,10 +250,10 @@ impl LLM for Deepseek {
                                     && let Some(delta) = choice.get("delta")
                                 {
                                     // Handle reasoning_content if it exists
-                                    if include_reasoning && is_reasoner
-                                        && let Some(reasoning) = delta
-                                            .get("reasoning_content")
-                                            .and_then(|c| c.as_str())
+                                    if include_reasoning
+                                        && is_reasoner
+                                        && let Some(reasoning) =
+                                            delta.get("reasoning_content").and_then(|c| c.as_str())
                                         && !reasoning.is_empty()
                                     {
                                         let usage = chunk.get("usage").map(|usage| TokenUsage {
@@ -286,30 +286,25 @@ impl LLM for Deepseek {
                                         delta.get("content").and_then(|c| c.as_str())
                                         && !content.is_empty()
                                     {
-                                        let usage =
-                                            chunk.get("usage").map(|usage| TokenUsage {
-                                                prompt_tokens: usage
-                                                    .get("prompt_tokens")
-                                                    .and_then(|t| t.as_u64())
-                                                    .unwrap_or(0)
-                                                    as u32,
-                                                completion_tokens: usage
-                                                    .get("completion_tokens")
-                                                    .and_then(|t| t.as_u64())
-                                                    .unwrap_or(0)
-                                                    as u32,
-                                                total_tokens: usage
-                                                    .get("total_tokens")
-                                                    .and_then(|t| t.as_u64())
-                                                    .unwrap_or(0)
-                                                    as u32,
-                                            });
+                                        let usage = chunk.get("usage").map(|usage| TokenUsage {
+                                            prompt_tokens: usage
+                                                .get("prompt_tokens")
+                                                .and_then(|t| t.as_u64())
+                                                .unwrap_or(0)
+                                                as u32,
+                                            completion_tokens: usage
+                                                .get("completion_tokens")
+                                                .and_then(|t| t.as_u64())
+                                                .unwrap_or(0)
+                                                as u32,
+                                            total_tokens: usage
+                                                .get("total_tokens")
+                                                .and_then(|t| t.as_u64())
+                                                .unwrap_or(0)
+                                                as u32,
+                                        });
 
-                                        return Ok(StreamData::new(
-                                            chunk.clone(),
-                                            usage,
-                                            content,
-                                        ));
+                                        return Ok(StreamData::new(chunk.clone(), usage, content));
                                     }
                                 }
                             }
