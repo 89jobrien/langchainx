@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# .githooks/prepare-commit-msg — auto-prefix commit messages from branch name
+#
+# feature/add-tool-error  →  prepends "feat(add-tool-error): "
+# hotfix/fix-arc-panic    →  prepends "fix(fix-arc-panic): "
+# release/0.3.0           →  prepends "release(0.3.0): "
+# develop / main          →  no prefix added
+#
+# Skips if the message is already non-empty (amend, -m flag, merge, squash).
+
+set -euo pipefail
+
+MSG_FILE="$1"
+MSG_SOURCE="${2:-}"   # "message", "template", "merge", "squash", "commit"
+
+# Don't touch merge, squash, or explicit -m commits
+case "$MSG_SOURCE" in
+    merge|squash|commit) exit 0 ;;
+esac
+
+MSG=$(cat "$MSG_FILE")
+
+# Don't overwrite if user already typed something meaningful
+if [ -n "$MSG" ] && ! echo "$MSG" | grep -qE '^#'; then
+    exit 0
+fi
+
+BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+
+PREFIX=""
+case "$BRANCH" in
+    feature/*)
+        SLUG="${BRANCH#feature/}"
+        PREFIX="feat(${SLUG}): "
+        ;;
+    hotfix/*)
+        SLUG="${BRANCH#hotfix/}"
+        PREFIX="fix(${SLUG}): "
+        ;;
+    release/*)
+        VER="${BRANCH#release/}"
+        PREFIX="release(${VER}): "
+        ;;
+    develop|main|"")
+        exit 0
+        ;;
+    *)
+        exit 0
+        ;;
+esac
+
+# Prepend prefix then existing content (comments etc.)
+printf '%s\n%s' "$PREFIX" "$MSG" > "$MSG_FILE"
+exit 0
