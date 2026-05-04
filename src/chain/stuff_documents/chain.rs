@@ -8,7 +8,10 @@ use crate::{
     chain::{
         load_stuff_qa, options::ChainCallOptions, Chain, ChainError, LLMChain, StuffQAPromptBuilder,
     },
-    language_models::{llm::LLM, GenerateResult},
+    language_models::{
+        llm::{IntoArcLLM, LLM},
+        GenerateResult,
+    },
     prompt::PromptArgs,
     schemas::{Document, StreamData},
 };
@@ -76,7 +79,7 @@ impl StuffDocument {
     /// println!("{}", ouput);
     /// ```
     ///
-    pub fn load_stuff_qa<L: Into<Box<dyn LLM>>>(llm: L) -> Self {
+    pub fn load_stuff_qa<L: IntoArcLLM>(llm: L) -> Self {
         load_stuff_qa(llm, None)
     }
 

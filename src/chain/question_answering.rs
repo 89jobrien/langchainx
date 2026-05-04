@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use futures::Stream;
 
 use crate::{
-    language_models::{llm::LLM, GenerateResult},
+    language_models::{llm::IntoArcLLM, GenerateResult},
     prompt::PromptArgs,
     prompt_args,
     schemas::{messages::Message, Document, StreamData},
@@ -57,7 +57,7 @@ pub struct CondenseQuestionGeneratorChain {
 }
 
 impl CondenseQuestionGeneratorChain {
-    pub fn new<L: Into<Box<dyn LLM>>>(llm: L) -> Self {
+    pub fn new<L: IntoArcLLM>(llm: L) -> Self {
         let condense_question_prompt_template =
             template_jinja2!(DEFAULTCONDENSEQUESTIONTEMPLATE, "chat_history", "question");
 
@@ -129,7 +129,7 @@ impl<'a> StuffQAPromptBuilder<'a> {
     }
 }
 
-pub(crate) fn load_stuff_qa<L: Into<Box<dyn LLM>>>(
+pub(crate) fn load_stuff_qa<L: IntoArcLLM>(
     llm: L,
     options: Option<ChainCallOptions>,
 ) -> StuffDocument {

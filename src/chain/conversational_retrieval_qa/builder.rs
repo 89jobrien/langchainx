@@ -5,7 +5,7 @@ use crate::{
     chain::{
         Chain, ChainError, CondenseQuestionGeneratorChain, StuffDocumentBuilder, DEFAULT_OUTPUT_KEY,
     },
-    language_models::llm::LLM,
+    language_models::llm::{IntoArcLLM, LLM},
     memory::SimpleMemory,
     prompt::FormatPrompter,
     schemas::{BaseMemory, Retriever},
@@ -31,9 +31,9 @@ const CONVERSATIONAL_RETRIEVAL_QA_DEFAULT_INPUT_KEY: &str = "question";
 /// ## Custom way
 /// ```rust,ignore
 ///
-/// let llm = Box::new(OpenAI::default().with_model(OpenAIModel::Gpt35.to_string()));
-/// let combine_documents_chain = StuffDocument::load_stuff_qa(llm.clone_box());
-//  let condense_question_chain = CondenseQuestionGeneratorChain::new(llm.clone_box());
+/// let llm = Arc::new(OpenAI::default().with_model(OpenAIModel::Gpt35.to_string()));
+/// let combine_documents_chain = StuffDocument::load_stuff_qa(llm.clone());
+//  let condense_question_chain = CondenseQuestionGeneratorChain::new(llm.clone());
 /// let chain = ConversationalRetrieverChainBuilder::new()
 ///     .rephrase_question(true)
 ///     .combine_documents_chain(Box::new(combine_documents_chain))
@@ -45,7 +45,7 @@ const CONVERSATIONAL_RETRIEVAL_QA_DEFAULT_INPUT_KEY: &str = "question";
 /// ```
 ///
 pub struct ConversationalRetrieverChainBuilder {
-    llm: Option<Box<dyn LLM>>,
+    llm: Option<Arc<dyn LLM>>,
     retriever: Option<Box<dyn Retriever>>,
     memory: Option<Arc<Mutex<dyn BaseMemory>>>,
     combine_documents_chain: Option<Box<dyn Chain>>,
@@ -93,8 +93,8 @@ impl ConversationalRetrieverChainBuilder {
         self
     }
 
-    pub fn llm<L: Into<Box<dyn LLM>>>(mut self, llm: L) -> Self {
-        self.llm = Some(llm.into());
+    pub fn llm<L: IntoArcLLM>(mut self, llm: L) -> Self {
+        self.llm = Some(llm.into_arc_llm());
         self
     }
 
@@ -129,13 +129,13 @@ impl ConversationalRetrieverChainBuilder {
     pub fn build(mut self) -> Result<ConversationalRetrieverChain, ChainError> {
         if let Some(llm) = self.llm {
             let combine_documents_chain = {
-                let mut builder = StuffDocumentBuilder::new().llm(llm.clone_box());
+                let mut builder = StuffDocumentBuilder::new().llm(llm.clone());
                 if let Some(prompt) = self.prompt {
                     builder = builder.prompt(prompt);
                 }
                 builder.build()?
             };
-            let condense_question_chain = CondenseQuestionGeneratorChain::new(llm.clone_box());
+            let condense_question_chain = CondenseQuestionGeneratorChain::new(llm.clone());
             self.combine_documents_chain = Some(Box::new(combine_documents_chain));
             self.condense_question_chain = Some(Box::new(condense_question_chain));
         }
