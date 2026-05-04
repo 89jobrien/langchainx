@@ -34,6 +34,11 @@ pub use error::*;
 mod dir_loader;
 pub use dir_loader::*;
 
+#[cfg(feature = "sitemap")]
+pub mod sitemap_loader;
+#[cfg(feature = "sitemap")]
+pub use sitemap_loader::*;
+
 #[cfg(feature = "tree-sitter")]
 mod source_code_loader;
 #[cfg(feature = "tree-sitter")]

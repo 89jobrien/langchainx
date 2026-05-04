@@ -84,6 +84,8 @@ ollama-rs = { version = "0.2.0", optional = true, features = [
     "chat-history",
 ] }
 mistralai-client = { version = "0.14.0", optional = true }
+rss = { version = "2", optional = true }
+quick-xml = { version = "0.36", optional = true }
 
 
 [features]
@@ -101,6 +103,8 @@ postgres = ["pgvector", "sqlx", "uuid"]
 qdrant = ["qdrant-client", "uuid"]
 sqlite-vss = ["sqlx"]
 sqlite-vec = ["sqlx"]
+rss = ["dep:rss"]
+sitemap = ["dep:quick-xml"]
 surrealdb = ["dep:surrealdb"]
 tree-sitter = [
     "cc",
