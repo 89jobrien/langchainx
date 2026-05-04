@@ -1,7 +1,7 @@
 //! gates — quality gates that mirror CI steps exactly.
 //!
-//! Each submodule owns one gate. `ci` composes the full pipeline in the same
-//! order as `.github/workflows/ci.yml`. `pre_commit` is the fast local subset.
+//! Each submodule owns one leaf gate. `gate` provides the composition
+//! primitives. `ci` and `pre_commit` are named pipelines built from gates.
 //!
 //! | Gate         | Command                                      |
 //! |--------------|----------------------------------------------|
@@ -16,11 +16,13 @@ mod build;
 mod clippy;
 mod fmt;
 mod test;
+pub mod gate;
 
 pub use build::build;
 pub use clippy::clippy;
 pub use fmt::fmt_check;
 pub use test::test;
+pub use gate::{Gate, run_gates};
 
 use anyhow::Result;
 use xshell::Shell;
@@ -30,10 +32,12 @@ use xshell::Shell;
 /// Identical to what `.github/workflows/ci.yml` runs. Use this locally before
 /// pushing to guarantee CI will pass.
 pub fn ci(sh: &Shell) -> Result<()> {
-    fmt_check(sh)?;
-    clippy(sh)?;
-    build(sh)?;
-    test(sh)?;
+    run_gates(sh, &[
+        Gate::new("fmt-check", fmt_check),
+        Gate::new("clippy",    clippy),
+        Gate::new("build",     build),
+        Gate::new("test",      test),
+    ])?;
     eprintln!("ci passed");
     Ok(())
 }
@@ -42,8 +46,10 @@ pub fn ci(sh: &Shell) -> Result<()> {
 ///
 /// Fast subset — no build or test. Run before every commit.
 pub fn pre_commit(sh: &Shell) -> Result<()> {
-    fmt_check(sh)?;
-    clippy(sh)?;
+    run_gates(sh, &[
+        Gate::new("fmt-check", fmt_check),
+        Gate::new("clippy",    clippy),
+    ])?;
     eprintln!("pre-commit checks passed");
     Ok(())
 }
