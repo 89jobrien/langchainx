@@ -1,10 +1,8 @@
-use std::error::Error;
-
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use crate::tools::Tool;
+use crate::tools::{Tool, ToolError};
 
 pub struct CommandExecutor {
     platform: String,
@@ -127,15 +125,18 @@ impl Tool for CommandExecutor {
         }
     }
 
-    async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-        let commands: Vec<CommandInput> = serde_json::from_value(input)?;
+    async fn run(&self, input: Value) -> Result<String, ToolError> {
+        let commands: Vec<CommandInput> =
+            serde_json::from_value(input).map_err(|e| ToolError::InvalidInput(e.to_string()))?;
         let mut result = String::new();
 
         for command in commands {
             let mut command_to_execute = std::process::Command::new(&command.cmd);
             command_to_execute.args(&command.args);
 
-            let output = command_to_execute.output()?;
+            let output = command_to_execute
+                .output()
+                .map_err(|e| ToolError::ExecutionFailed(e.to_string()))?;
 
             result.push_str(&format!(
                 "Command: {}\nOutput: {}",
@@ -144,12 +145,9 @@ impl Tool for CommandExecutor {
             ));
 
             if !output.status.success() {
-                return Err(Box::new(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!(
-                        "Command {} failed with status: {}",
-                        command.cmd, output.status
-                    ),
+                return Err(ToolError::ExecutionFailed(format!(
+                    "Command {} failed with status: {}",
+                    command.cmd, output.status
                 )));
             }
         }

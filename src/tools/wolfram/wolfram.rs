@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 use serde_json::Value;
 
-use crate::tools::Tool;
-use std::error::Error;
+use crate::tools::{Tool, ToolError};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 struct WolframError {
@@ -127,8 +126,10 @@ impl Tool for Wolfram {
             interpret.",
         )
     }
-    async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-        let input = input.as_str().ok_or("Invalid input")?;
+    async fn run(&self, input: Value) -> Result<String, ToolError> {
+        let input = input
+            .as_str()
+            .ok_or_else(|| ToolError::InvalidInput("input must be a string".to_string()))?;
         let mut url = format!(
             "https://api.wolframalpha.com/v2/query?appid={}&input={}&output=JSON&format=plaintext&podstate=Result__Step-by-step+solution",
             &self.app_id,
@@ -139,18 +140,25 @@ impl Tool for Wolfram {
             url += &format!("&excludepodid={}", self.exclude_pods.join(","));
         }
 
-        let response: WolframResponse = self.client.get(&url).send().await?.json().await?;
+        let response: WolframResponse = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| ToolError::ExecutionFailed(e.to_string()))?
+            .json()
+            .await
+            .map_err(|e| ToolError::ExecutionFailed(e.to_string()))?;
 
         if let WolframErrorStatus::Error(error) = response.queryresult.error {
-            return Err(Box::new(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("Wolfram Error {}: {}", error.code, error.msg),
+            return Err(ToolError::ExecutionFailed(format!(
+                "Wolfram Error {}: {}",
+                error.code, error.msg
             )));
         } else if !response.queryresult.success {
-            return Err(Box::new(std::io::Error::new(
-                std::io::ErrorKind::Other,
+            return Err(ToolError::ExecutionFailed(
                 "Wolfram Error invalid query input: The query requested can not be processed by Wolfram".to_string(),
-            )));
+            ));
         }
 
         let pods_str: Vec<String> = response

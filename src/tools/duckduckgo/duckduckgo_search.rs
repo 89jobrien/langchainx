@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use url::Url;
 
-use crate::tools::Tool;
+use crate::tools::{Tool, ToolError};
 
 pub struct DuckDuckGoSearchResults {
     url: String,
@@ -108,9 +108,13 @@ impl Tool for DuckDuckGoSearchResults {
         )
     }
 
-    async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-        let input = input.as_str().ok_or("Input should be a string")?;
-        self.search(input).await
+    async fn run(&self, input: Value) -> Result<String, ToolError> {
+        let input = input
+            .as_str()
+            .ok_or_else(|| ToolError::InvalidInput("input must be a string".to_string()))?;
+        self.search(input)
+            .await
+            .map_err(|e| ToolError::ExecutionFailed(e.to_string()))
     }
 
     fn parameters(&self) -> Value {

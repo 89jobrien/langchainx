@@ -106,7 +106,7 @@ impl Agent for ConversationalAgent {
 
 #[cfg(test)]
 mod tests {
-    use std::{error::Error, sync::Arc};
+    use std::sync::Arc;
 
     use async_trait::async_trait;
     use serde_json::Value;
@@ -117,7 +117,7 @@ mod tests {
         llm::openai::{OpenAI, OpenAIModel},
         memory::SimpleMemory,
         prompt_args,
-        tools::Tool,
+        tools::{Tool, ToolError},
     };
 
     struct Calc {}
@@ -130,7 +130,7 @@ mod tests {
         fn description(&self) -> String {
             "Usefull to make calculations".to_string()
         }
-        async fn run(&self, _input: Value) -> Result<String, Box<dyn Error>> {
+        async fn run(&self, _input: Value) -> Result<String, ToolError> {
             Ok("25".to_string())
         }
     }

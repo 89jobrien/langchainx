@@ -3,7 +3,7 @@ use std::error::Error;
 use async_trait::async_trait;
 use serde_json::Value;
 
-use crate::tools::Tool;
+use crate::tools::{Tool, ToolError};
 
 pub struct SerpApi {
     api_key: String,
@@ -161,9 +161,13 @@ impl Tool for SerpApi {
         )
     }
 
-    async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-        let input = input.as_str().ok_or("Input should be a string")?;
-        self.simple_search(input).await
+    async fn run(&self, input: Value) -> Result<String, ToolError> {
+        let input = input
+            .as_str()
+            .ok_or_else(|| ToolError::InvalidInput("input must be a string".to_string()))?;
+        self.simple_search(input)
+            .await
+            .map_err(|e| ToolError::ExecutionFailed(e.to_string()))
     }
 }
 
