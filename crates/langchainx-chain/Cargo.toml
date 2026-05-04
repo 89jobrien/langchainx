@@ -1,0 +1,44 @@
+[package]
+name = "langchainx-chain"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Chain abstractions and implementations for langchainx"
+
+[dependencies]
+langchainx-core           = { path = "../langchainx-core" }
+langchainx-llm            = { path = "../langchainx-llm" }
+langchainx-prompt         = { path = "../langchainx-prompt" }
+langchainx-memory         = { path = "../langchainx-memory" }
+langchainx-output-parsers = { path = "../langchainx-output-parsers" }
+
+async-trait    = "0.1.80"
+tokio          = { version = "1", features = ["full"] }
+futures        = "0.3"
+futures-util   = "0.3.30"
+async-stream   = "0.3.5"
+serde          = { version = "1.0", features = ["derive"] }
+serde_json     = "1.0"
+thiserror      = "2.0.0"
+log            = "0.4.21"
+async-recursion = "1.1.0"
+
+sqlx = { version = "0.8.0", default-features = false, features = [
+    "postgres",
+    "sqlite",
+    "runtime-tokio-native-tls",
+    "json",
+    "uuid",
+], optional = true }
+uuid = { version = "1.8.0", features = ["v4"], optional = true }
+
+[features]
+default    = []
+test-utils = []
+postgres   = ["sqlx", "uuid"]
+sqlite-vss = ["sqlx"]
+sqlite-vec = ["sqlx"]
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
