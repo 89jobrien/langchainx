@@ -42,6 +42,9 @@ pub use dir_loader::*;
 mod markdown_loader;
 pub use markdown_loader::*;
 
+mod markdown_serializer;
+pub use markdown_serializer::*;
+
 #[cfg(feature = "sitemap")]
 pub mod sitemap_loader;
 #[cfg(feature = "sitemap")]
