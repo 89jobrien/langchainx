@@ -105,8 +105,7 @@ impl<C: Config + Send + Sync> Tool for Text2SpeechOpenAI<C> {
             .await
             .map_err(|e| ToolError::ExecutionFailed(e.to_string()))?;
 
-        if self.storage.is_some() {
-            let storage = self.storage.as_ref().unwrap(); //safe to unwrap
+        if let Some(storage) = self.storage.as_ref() {
             let data = response.bytes;
             return storage
                 .save(&self.path, &data)

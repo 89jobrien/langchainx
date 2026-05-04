@@ -142,9 +142,10 @@ impl<C: Config + Send + Sync + 'static> LLM for OpenAI<C> {
         let new_stream = original_stream.map(|result| match result {
             Ok(completion) => {
                 let value_completion = serde_json::to_value(completion).map_err(LLMError::from)?;
-                let usage = value_completion.pointer("/usage");
-                if usage.is_some() && !usage.unwrap().is_null() {
-                    let usage = serde_json::from_value::<TokenUsage>(usage.unwrap().clone())
+                if let Some(usage) = value_completion.pointer("/usage")
+                    && !usage.is_null()
+                {
+                    let usage = serde_json::from_value::<TokenUsage>(usage.clone())
                         .map_err(LLMError::from)?;
                     return Ok(StreamData::new(value_completion, Some(usage), ""));
                 }
