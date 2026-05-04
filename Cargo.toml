@@ -19,8 +19,8 @@ repository  = "https://github.com/89jobrien/langchainx"
 
 [package]
 name = "langchainx"
-version = "0.4.1"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
 publish = true
 repository = "https://github.com/89jobrien/langchainx"
 license = "MIT"
