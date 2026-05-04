@@ -25,3 +25,28 @@ impl BaseMemory for DummyMemory {
     fn add_message(&mut self, _message: Message) {}
     fn clear(&mut self) {}
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn messages_always_empty() {
+        let mem = DummyMemory::new();
+        assert!(mem.messages().is_empty());
+    }
+
+    #[test]
+    fn add_message_is_noop() {
+        let mut mem = DummyMemory::new();
+        mem.add_user_message(&"hello");
+        assert!(mem.messages().is_empty());
+    }
+
+    #[test]
+    fn clear_is_noop() {
+        let mut mem = DummyMemory::new();
+        mem.clear();
+        assert!(mem.messages().is_empty());
+    }
+}

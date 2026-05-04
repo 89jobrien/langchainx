@@ -33,3 +33,27 @@ impl BaseMemory for SimpleMemory {
         self.messages.clear();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn add_messages_returns_them_in_order() {
+        let mut mem = SimpleMemory::new();
+        mem.add_user_message(&"hello");
+        mem.add_ai_message(&"world");
+        let msgs = mem.messages();
+        assert_eq!(msgs.len(), 2);
+        assert_eq!(msgs[0].content, "hello");
+        assert_eq!(msgs[1].content, "world");
+    }
+
+    #[test]
+    fn clear_empties_messages() {
+        let mut mem = SimpleMemory::new();
+        mem.add_user_message(&"hello");
+        mem.clear();
+        assert!(mem.messages().is_empty());
+    }
+}
