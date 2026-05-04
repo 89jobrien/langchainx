@@ -1,4 +1,4 @@
-use std::{error::Error, sync::Arc};
+use std::sync::Arc;
 
 use async_trait::async_trait;
 use langchainx::{
@@ -7,7 +7,7 @@ use langchainx::{
     llm::openai::OpenAI,
     memory::SimpleMemory,
     prompt_args,
-    tools::{CommandExecutor, DuckDuckGoSearchResults, SerpApi, Tool},
+    tools::{CommandExecutor, DuckDuckGoSearchResults, SerpApi, Tool, ToolError},
 };
 
 use serde_json::Value;
@@ -21,7 +21,7 @@ impl Tool for Date {
     fn description(&self) -> String {
         "Useful when you need to get the date,input is  a query".to_string()
     }
-    async fn run(&self, _input: Value) -> Result<String, Box<dyn Error>> {
+    async fn run(&self, _input: Value) -> Result<String, ToolError> {
         Ok("25  of november of 2025".to_string())
     }
 }

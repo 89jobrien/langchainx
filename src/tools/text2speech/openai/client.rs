@@ -1,4 +1,4 @@
-use std::{error::Error, sync::Arc};
+use std::sync::Arc;
 
 use async_openai::types::CreateSpeechRequestArgs;
 use async_openai::Client;
@@ -9,7 +9,7 @@ pub use async_openai::{
 use async_trait::async_trait;
 use serde_json::Value;
 
-use crate::tools::{SpeechStorage, Tool};
+use crate::tools::{SpeechStorage, Tool, ToolError};
 
 #[derive(Clone)]
 pub struct Text2SpeechOpenAI<C: Config> {
@@ -84,8 +84,10 @@ impl<C: Config + Send + Sync> Tool for Text2SpeechOpenAI<C> {
             .to_string()
     }
 
-    async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-        let input = input.as_str().ok_or("Invalid input")?;
+    async fn run(&self, input: Value) -> Result<String, ToolError> {
+        let input = input
+            .as_str()
+            .ok_or_else(|| ToolError::InvalidInput("input must be a string".to_string()))?;
         let client = Client::new();
         let response_format: SpeechResponseFormat = self.response_format;
 
@@ -94,16 +96,27 @@ impl<C: Config + Send + Sync> Tool for Text2SpeechOpenAI<C> {
             .voice(self.voice.clone())
             .response_format(response_format)
             .model(self.model.clone())
-            .build()?;
+            .build()
+            .map_err(|e| ToolError::ExecutionFailed(e.to_string()))?;
 
-        let response = client.audio().speech(request).await?;
+        let response = client
+            .audio()
+            .speech(request)
+            .await
+            .map_err(|e| ToolError::ExecutionFailed(e.to_string()))?;
 
         if self.storage.is_some() {
             let storage = self.storage.as_ref().unwrap(); //safe to unwrap
             let data = response.bytes;
-            return storage.save(&self.path, &data).await;
+            return storage
+                .save(&self.path, &data)
+                .await
+                .map_err(|e| ToolError::ExecutionFailed(e.to_string()));
         } else {
-            response.save(&self.path).await?;
+            response
+                .save(&self.path)
+                .await
+                .map_err(|e| ToolError::ExecutionFailed(e.to_string()))?;
         }
 
         Ok(self.path.clone())

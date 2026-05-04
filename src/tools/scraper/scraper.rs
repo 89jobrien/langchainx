@@ -4,7 +4,7 @@ use scraper::{ElementRef, Html, Selector};
 use serde_json::Value;
 use std::{error::Error, sync::Arc};
 
-use crate::tools::Tool;
+use crate::tools::{Tool, ToolError};
 
 pub struct WebScrapper {}
 
@@ -25,8 +25,10 @@ impl Tool for WebScrapper {
 		Input should be a working url.",
         )
     }
-    async fn run(&self, input: Value) -> Result<String, Box<dyn Error>> {
-        let input = input.as_str().ok_or("Invalid input")?;
+    async fn run(&self, input: Value) -> Result<String, ToolError> {
+        let input = input
+            .as_str()
+            .ok_or_else(|| ToolError::InvalidInput("input must be a string".to_string()))?;
         match scrape_url(input).await {
             Ok(content) => Ok(content),
             Err(e) => Ok(format!("Error scraping {}: {}\n", input, e)),

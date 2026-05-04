@@ -1,8 +1,9 @@
-use std::error::Error;
 use std::string::String;
 
 use async_trait::async_trait;
 use serde_json::{json, Value};
+
+use super::ToolError;
 
 #[async_trait]
 pub trait Tool: Send + Sync {
@@ -44,7 +45,7 @@ pub trait Tool: Send + Sync {
     ///
     /// This function utilizes `parse_input` to parse the input and then calls `run`.
     /// Its used by the Agent
-    async fn call(&self, input: &str) -> Result<String, Box<dyn Error>> {
+    async fn call(&self, input: &str) -> Result<String, ToolError> {
         let input = self.parse_input(input).await;
         self.run(input).await
     }
@@ -58,7 +59,7 @@ pub trait Tool: Send + Sync {
     ///     self.simple_search(input_str).await
     /// }
     /// ```
-    async fn run(&self, input: Value) -> Result<String, Box<dyn Error>>;
+    async fn run(&self, input: Value) -> Result<String, ToolError>;
 
     /// Parses the input string, which could be a JSON value or a raw string, depending on the LLM model.
     ///

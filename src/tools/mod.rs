@@ -1,3 +1,6 @@
+mod error;
+pub use error::ToolError;
+
 mod tool;
 pub use tool::*;
 
