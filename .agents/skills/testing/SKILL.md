@@ -1,80 +1,38 @@
 ---
 name: testing
-description: JOB-257 — FakeLLM, in-process test doubles, writing offline chain/agent tests.
+description: FakeLLM, in-process test doubles, writing offline chain/agent tests.
 ---
 
 <oneliner>
-Every chain test is currently #[ignore] because there is no FakeLLM. Use FakeLLM from
-src/test_utils to write offline tests. Never call real APIs in unit tests.
+FakeLLM is in src/test_utils/ and already implemented. Use it for offline chain tests.
+Never call real APIs in unit tests. FakeLLM::new takes Vec<String>.
 </oneliner>
 
-<current-state>
-## Current State (JOB-257)
-
-Every chain and agent test is gated by `#[ignore]`:
-
-```rust
-#[tokio::test]
-#[ignore]  // requires live OPENAI_API_KEY
-async fn test_invoke_chain() { ... }
-```
-
-There is zero automated test coverage for chain or agent behavior.
-</current-state>
-
 <fakellm>
-## FakeLLM (implement in src/test_utils.rs)
+## FakeLLM
+
+`FakeLLM` is already implemented at `src/test_utils/fake_llm.rs` and re-exported from
+`langchainx::test_utils::FakeLLM`.
 
 ```rust
-// src/test_utils.rs — gated behind #[cfg(any(test, feature = "test-utils"))]
-use std::collections::VecDeque;
-use std::sync::{Arc, atomic::{AtomicUsize, Ordering}};
-use tokio::sync::Mutex;
-use async_trait::async_trait;
-use langchainx::{
-    language_models::{llm::LLM, options::CallOptions, GenerateResult, LLMError},
-    schemas::{Message, StreamData},
-};
+use langchainx::test_utils::FakeLLM;
 
-#[derive(Clone)]
-pub struct FakeLLM {
-    pub responses: Arc<Mutex<VecDeque<String>>>,
-    pub call_count: Arc<AtomicUsize>,
-}
+let llm = FakeLLM::new(vec![
+    "Hello from FakeLLM!".to_string(),
+    "Second response".to_string(),
+]);
 
-impl FakeLLM {
-    pub fn new(responses: Vec<&str>) -> Self {
-        Self {
-            responses: Arc::new(Mutex::new(
-                responses.into_iter().map(String::from).collect()
-            )),
-            call_count: Arc::new(AtomicUsize::new(0)),
-        }
-    }
-
-    pub fn call_count(&self) -> usize {
-        self.call_count.load(Ordering::SeqCst)
-    }
-}
-
-#[async_trait]
-impl LLM for FakeLLM {
-    async fn generate(&self, _messages: &[Message]) -> Result<GenerateResult, LLMError> {
-        self.call_count.fetch_add(1, Ordering::SeqCst);
-        let mut responses = self.responses.lock().await;
-        let generation = responses.pop_front().unwrap_or_default();
-        Ok(GenerateResult { generation, ..Default::default() })
-    }
-
-    async fn stream(
-        &self,
-        _messages: &[Message],
-    ) -> Result<std::pin::Pin<Box<dyn futures::Stream<Item = Result<StreamData, LLMError>> + Send>>, LLMError> {
-        unimplemented!("FakeLLM::stream — use FakeStreamingLLM for stream tests")
-    }
-}
+// Responses are popped in order; empty string when exhausted
+assert_eq!(llm.invoke("anything").await.unwrap(), "Hello from FakeLLM!");
+assert_eq!(llm.call_count(), 1);
+assert_eq!(llm.remaining(), 1);
 ```
 
+Key details:
+- `FakeLLM::new` takes `Vec<String>` (not `Vec<&str>`)
+- `.clone()` shares the same queue — both clones see the same state
+- `.stream()` returns `Err` — use `FakeLLM` only for `generate`/`invoke` tests
+- Uses `std::sync::Mutex` (not tokio) for the response queue
 </fakellm>
 
 <writing-tests>
@@ -83,18 +41,17 @@ impl LLM for FakeLLM {
 ```rust
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::test_utils::FakeLLM;
     use langchainx::{
         chain::{Chain, LLMChainBuilder},
         message_formatter, fmt_template,
         prompt::{HumanMessagePromptTemplate, MessageOrTemplate},
         prompt_args, template_fstring,
+        test_utils::FakeLLM,
     };
 
     #[tokio::test]
     async fn test_llm_chain_invoke() {
-        let fake = FakeLLM::new(vec!["Hello from FakeLLM!"]);
+        let fake = FakeLLM::new(vec!["Hello from FakeLLM!".to_string()]);
 
         let prompt = message_formatter![
             fmt_template!(HumanMessagePromptTemplate::new(
@@ -114,14 +71,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_chain_returns_error_on_empty_responses() {
+    async fn test_chain_returns_empty_when_no_responses() {
         let fake = FakeLLM::new(vec![]); // no responses queued
-        let chain = LLMChainBuilder::new()
-            .llm(fake)
-            .prompt(prompt)
-            .build()
-            .unwrap();
-
+        // ... build chain ...
         let result = chain.invoke(prompt_args! { "input" => "Hi" }).await.unwrap();
         assert_eq!(result, ""); // unwrap_or_default in FakeLLM
     }
@@ -156,7 +108,7 @@ async fn test_chain_with_real_generation() {
     use langchainx::llm::ollama::client::Ollama;
 
     let llm = Ollama::default()
-        .with_model("qwen2.5:0.5b")  // smallest available
+        .with_model("qwen2.5:0.5b")
         .with_base_url("http://localhost:11434");
 
     let chain = LLMChainBuilder::new()
@@ -169,13 +121,11 @@ async fn test_chain_with_real_generation() {
         "input" => "Say only the word 'pong'."
     }).await.unwrap();
 
-    assert!(result.to_lowercase().contains("pong"));
+    assert!(!result.is_empty(), "model returned no output");
 }
 ```
 
 ### Feature Flag
-
-Add to `Cargo.toml` to gate local-LLM tests separately from cloud tests:
 
 ```toml
 [features]
@@ -190,29 +140,20 @@ cargo test --features local-llm-tests -- --ignored
 
 ### What to Assert
 
-Local LLM tests should verify **doneness, not correctness**. The model completed the task
-and returned something — not that it returned a specific string.
+Local LLM tests should verify **doneness, not correctness** — the chain completed without
+error and returned something, not that it returned a specific string.
 
 ```rust
 // WRONG — brittle, model-dependent phrasing
 assert_eq!(result, "The capital of France is Paris.");
-assert!(result.contains("Paris"));
 
 // CORRECT — verify task completion
 assert!(!result.is_empty(), "model returned no output");
 assert!(result.len() > 10, "response too short to be a real answer");
 
-// CORRECT — verify structural properties, not content
-assert!(result.trim().ends_with('.') || result.trim().ends_with('?') || result.trim().ends_with('!'),
-    "response should be a complete sentence");
-
 // CORRECT — for agent/tool tests, verify the tool was called
-assert!(executor_called_tool, "agent should have invoked the tool");
 assert!(!result.is_empty(), "agent should have produced a final answer");
 ```
-
-Test failure means the chain/agent **broke** (panicked, returned error, returned empty),
-not that the model gave a different phrasing than expected.
 
 ### Model Selection Guide
 
@@ -222,17 +163,18 @@ not that the model gave a different phrasing than expected.
 | `llama3.2:1b`  | 1.3GB | chain flow tests, multi-turn memory         |
 | `phi3:mini`    | 2.2GB | agent tool-use loop tests                   |
 
-Always use the smallest model that passes the test — prefer `qwen2.5:0.5b` by default.
+Always use the smallest model that passes the test.
 </local-llm>
 
 <rules>
 ## Testing Rules
 
 - Unit tests: use FakeLLM — no network, no model, deterministic
-- Tests needing real generation: use Ollama local models, gate with `#[cfg_attr(not(feature = "local-llm-tests"), ignore)]`
+- Tests needing real generation: use Ollama local models, gate with
+  `#[cfg_attr(not(feature = "local-llm-tests"), ignore)]`
 - Cloud API tests: stay `#[ignore]` in `tests/integration/`, require explicit env var
 - Remove `#[ignore]` only after replacing the live-API call with FakeLLM or local Ollama
 - Use `assert_eq!(fake.call_count(), N)` to verify chain invocation counts
-- For error-path tests, implement a `FailingLLM` that always returns `Err(LLMError::...)`
+- For error-path tests, implement a struct that returns `Err(LLMError::...)` from `generate`
 - Never use `OPENAI_API_KEY` or `CLAUDE_API_KEY` in automated CI
-  </rules>
+</rules>
