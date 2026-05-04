@@ -1,8 +1,8 @@
 use crate::LoaderError;
 use langchainx_core::schemas::Document;
 use std::collections::HashMap;
-use std::fmt::Debug;
 use std::fmt;
+use std::fmt::Debug;
 use strum_macros::Display;
 use tree_sitter::{Parser, Tree};
 

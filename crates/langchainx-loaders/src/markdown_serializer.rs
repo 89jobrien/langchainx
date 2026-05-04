@@ -29,9 +29,7 @@ pub struct MarkdownDocument {
 
 /// Splits YAML frontmatter (delimited by `---`) from body.
 /// Returns `(metadata_map, body)`.
-pub(crate) fn parse_frontmatter(
-    content: &str,
-) -> (HashMap<String, serde_json::Value>, String) {
+pub(crate) fn parse_frontmatter(content: &str) -> (HashMap<String, serde_json::Value>, String) {
     let mut lines = content.lines();
     let first = lines.next().unwrap_or("");
     if first.trim() != "---" {
@@ -160,7 +158,10 @@ impl MarkdownDocument {
     pub fn parse(src: &str) -> Result<Self, MarkdownSerializerError> {
         let (frontmatter, body) = parse_frontmatter(src);
         let sections = parse_sections(&body);
-        Ok(Self { frontmatter, sections })
+        Ok(Self {
+            frontmatter,
+            sections,
+        })
     }
 
     pub fn to_json(&self) -> Result<String, serde_json::Error> {
@@ -300,8 +301,7 @@ mod tests {
 
     #[test]
     fn test_from_str_full_document() {
-        let src =
-            "---\ntitle: My Doc\n---\n# Intro\nHello world.\n## Details\nMore info.";
+        let src = "---\ntitle: My Doc\n---\n# Intro\nHello world.\n## Details\nMore info.";
         let doc = MarkdownDocument::parse(src).unwrap();
         assert_eq!(
             doc.frontmatter.get("title").unwrap(),
