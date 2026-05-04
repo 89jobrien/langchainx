@@ -16,12 +16,6 @@ impl SimpleMemory {
     }
 }
 
-impl Into<Arc<dyn BaseMemory>> for SimpleMemory {
-    fn into(self) -> Arc<dyn BaseMemory> {
-        Arc::new(self)
-    }
-}
-
 impl Into<Arc<Mutex<dyn BaseMemory>>> for SimpleMemory {
     fn into(self) -> Arc<Mutex<dyn BaseMemory>> {
         Arc::new(Mutex::new(self))
