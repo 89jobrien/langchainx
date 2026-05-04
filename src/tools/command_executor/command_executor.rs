@@ -1,23 +1,28 @@
+use std::path::PathBuf;
+
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use crate::tools::{Tool, ToolError};
 
 pub struct CommandExecutor {
     platform: String,
+    working_dir: Option<PathBuf>,
 }
 
 impl CommandExecutor {
-    /// Create a new CommandExecutor instance
-    /// # Example
-    /// ```rust,ignore
-    /// let tool = CommandExecutor::new("linux");
-    /// ```
     pub fn new<S: Into<String>>(platform: S) -> Self {
         Self {
             platform: platform.into(),
+            working_dir: None,
         }
+    }
+
+    /// Set the working directory for all commands executed by this tool.
+    pub fn with_working_dir(mut self, path: impl Into<PathBuf>) -> Self {
+        self.working_dir = Some(path.into());
+        self
     }
 }
 
@@ -33,6 +38,7 @@ struct CommandInput {
     #[serde(default)]
     args: Vec<String>,
 }
+
 #[derive(Serialize, Deserialize, Debug)]
 struct CommandsWrapper {
     commands: Vec<CommandInput>,
@@ -43,79 +49,68 @@ impl Tool for CommandExecutor {
     fn name(&self) -> String {
         String::from("Command_Executor")
     }
+
     fn description(&self) -> String {
+        let dir_note = match &self.working_dir {
+            Some(p) => format!(" Commands run in directory: {}", p.display()),
+            None => String::new(),
+        };
         format!(
             r#""This tool let you run commands in the terminal"
             "The input should be an array with commands for the following platform: {}"
             "example of input: [{{ "cmd": "ls", "args": [] }},{{"cmd":"mkdir","args":["test"]}}]"
-            "Should be a comma separated commands"
-            "#,
-            self.platform
+            "Should be a comma separated commands"{}"#,
+            self.platform, dir_note
         )
     }
 
     fn parameters(&self) -> Value {
         let prompt = format!(
-            "This tool let you run command on the terminal.
-        The input should be an array with commands for the following platform: {}",
+            "This tool lets you run commands on the terminal for platform: {}.",
             self.platform
         );
-        json!(
-
-        {
-          "description": prompt,
-          "type": "object",
-          "properties": {
-            "commands": {
-              "description": "An array of command objects to be executed",
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "cmd": {
-                    "type": "string",
-                    "description": "The command to execute"
-                  },
-                  "args": {
+        json!({
+            "description": prompt,
+            "type": "object",
+            "properties": {
+                "commands": {
+                    "description": "An array of command objects to be executed",
                     "type": "array",
                     "items": {
-                      "type": "string"
-                    },
-                    "default": [],
-                    "description": "List of arguments for the command"
-                  }
-                },
-                "required": ["cmd"],
-                "additionalProperties": false,
-                "description": "Object representing a command and its optional arguments"
-              }
-            }
-          },
-          "required": ["commands"],
-          "additionalProperties": false
-        }
-                )
+                        "type": "object",
+                        "properties": {
+                            "cmd": {
+                                "type": "string",
+                                "description": "The command to execute"
+                            },
+                            "args": {
+                                "type": "array",
+                                "items": { "type": "string" },
+                                "default": [],
+                                "description": "List of arguments for the command"
+                            }
+                        },
+                        "required": ["cmd"],
+                        "additionalProperties": false,
+                        "description": "Object representing a command and its optional arguments"
+                    }
+                }
+            },
+            "required": ["commands"],
+            "additionalProperties": false
+        })
     }
 
     async fn parse_input(&self, input: &str) -> Value {
         log::info!("Parsing input: {}", input);
 
-        // Attempt to parse input string into CommandsWrapper struct first
-        let wrapper_result = serde_json::from_str::<CommandsWrapper>(input);
-
-        if let Ok(wrapper) = wrapper_result {
-            // If successful, serialize the `commands` back into a serde_json::Value
-            // this is for llm like open ai tools
+        if let Ok(wrapper) = serde_json::from_str::<CommandsWrapper>(input) {
             serde_json::to_value(wrapper.commands).unwrap_or_else(|err| {
                 log::error!("Serialization error: {}", err);
                 Value::Null
             })
         } else {
-            // If the first attempt fails, try parsing it as Vec<CommandInput> directly
-            // This works on any llm
-            let commands_result = serde_json::from_str::<Vec<CommandInput>>(input);
-
-            commands_result.map_or_else(
+            serde_json::from_str::<Vec<CommandInput>>(input).map_or_else(
                 |err| {
                     log::error!("Failed to parse input: {}", err);
                     Value::Null
@@ -131,10 +126,14 @@ impl Tool for CommandExecutor {
         let mut result = String::new();
 
         for command in commands {
-            let mut command_to_execute = std::process::Command::new(&command.cmd);
-            command_to_execute.args(&command.args);
+            let mut cmd = std::process::Command::new(&command.cmd);
+            cmd.args(&command.args);
 
-            let output = command_to_execute
+            if let Some(dir) = &self.working_dir {
+                cmd.current_dir(dir);
+            }
+
+            let output = cmd
                 .output()
                 .map_err(|e| ToolError::ExecutionFailed(e.to_string()))?;
 
@@ -160,19 +159,22 @@ impl Tool for CommandExecutor {
 mod test {
     use super::*;
     use serde_json::json;
+
     #[tokio::test]
-    async fn test_with_string_executor() {
+    async fn test_default_executor() {
         let tool = CommandExecutor::new("linux");
-        let input = json!({
-            "commands": [
-                {
-                    "cmd": "ls",
-                    "args": []
-                }
-            ]
-        });
-        println!("{}", &input.to_string());
+        let input = json!({ "commands": [{ "cmd": "echo", "args": ["hello"] }] });
         let result = tool.call(&input.to_string()).await.unwrap();
-        println!("Res: {}", result);
+        assert!(result.contains("hello"));
+    }
+
+    #[tokio::test]
+    async fn test_with_working_dir() {
+        let tmp = tempfile::tempdir().unwrap();
+        let tool = CommandExecutor::new("linux").with_working_dir(tmp.path());
+        let input = json!({ "commands": [{ "cmd": "pwd", "args": [] }] });
+        let result = tool.call(&input.to_string()).await.unwrap();
+        // Output should contain the temp dir path
+        assert!(result.contains(tmp.path().to_str().unwrap()));
     }
 }
