@@ -92,6 +92,10 @@ pub struct LLMChain {
 
 #[async_trait]
 impl Chain for LLMChain {
+    fn required_keys(&self) -> Vec<String> {
+        self.prompt.get_input_variables()
+    }
+
     fn get_input_keys(&self) -> Vec<String> {
         self.prompt.get_input_variables()
     }
@@ -101,6 +105,7 @@ impl Chain for LLMChain {
     }
 
     async fn call(&self, input_variables: PromptArgs) -> Result<GenerateResult, ChainError> {
+        self.validate_input(&input_variables)?;
         let prompt = self.prompt.format_prompt(input_variables.clone())?;
         log::debug!("Prompt: {:?}", prompt);
         let mut output = self.llm.generate(&prompt.to_chat_messages()).await?;
@@ -110,6 +115,7 @@ impl Chain for LLMChain {
     }
 
     async fn invoke(&self, input_variables: PromptArgs) -> Result<String, ChainError> {
+        self.validate_input(&input_variables)?;
         let prompt = self.prompt.format_prompt(input_variables.clone())?;
         log::debug!("Prompt: {:?}", prompt);
         let output = self
