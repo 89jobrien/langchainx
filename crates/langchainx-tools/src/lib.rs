@@ -26,3 +26,6 @@ pub use text2speech::{SpeechStorage, Text2SpeechOpenAI};
 pub mod confluence;
 pub mod google;
 pub mod jira;
+
+pub mod minibox;
+pub use minibox::MiniboxTool;
