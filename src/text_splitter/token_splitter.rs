@@ -45,3 +45,44 @@ impl TextSplitter for TokenSplitter {
             .collect())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_token_splitter_empty_input() {
+        let splitter = TokenSplitter::default();
+        let chunks = splitter.split_text("").await.unwrap();
+        assert!(chunks.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_token_splitter_produces_chunks() {
+        let opts = SplitterOptions::new().with_chunk_size(10);
+        let splitter = TokenSplitter::new(opts);
+        let text = "The quick brown fox jumps over the lazy dog. ".repeat(5);
+        let chunks = splitter.split_text(&text).await.unwrap();
+        assert!(!chunks.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_token_splitter_short_text_single_chunk() {
+        let opts = SplitterOptions::new().with_chunk_size(512);
+        let splitter = TokenSplitter::new(opts);
+        let text = "Hello world.";
+        let chunks = splitter.split_text(text).await.unwrap();
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(chunks[0], text);
+    }
+
+    #[tokio::test]
+    async fn test_token_splitter_invalid_encoding_name_errors() {
+        let opts = SplitterOptions::new()
+            .with_encoding_name("not_a_real_encoding")
+            .with_chunk_size(10);
+        let splitter = TokenSplitter::new(opts);
+        let result = splitter.split_text("some text").await;
+        assert!(result.is_err());
+    }
+}

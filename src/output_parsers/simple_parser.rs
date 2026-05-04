@@ -30,3 +30,43 @@ impl OutputParser for SimpleParser {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_simple_parser_passthrough() {
+        let parser = SimpleParser::new();
+        let result = parser.parse("hello world").await.unwrap();
+        assert_eq!(result, "hello world");
+    }
+
+    #[tokio::test]
+    async fn test_simple_parser_preserves_whitespace_without_trim() {
+        let parser = SimpleParser::new();
+        let result = parser.parse("  spaced  ").await.unwrap();
+        assert_eq!(result, "  spaced  ");
+    }
+
+    #[tokio::test]
+    async fn test_simple_parser_trim() {
+        let parser = SimpleParser::new().with_trim(true);
+        let result = parser.parse("  hello  ").await.unwrap();
+        assert_eq!(result, "hello");
+    }
+
+    #[tokio::test]
+    async fn test_simple_parser_empty_input() {
+        let parser = SimpleParser::new();
+        let result = parser.parse("").await.unwrap();
+        assert_eq!(result, "");
+    }
+
+    #[tokio::test]
+    async fn test_simple_parser_trim_empty() {
+        let parser = SimpleParser::new().with_trim(true);
+        let result = parser.parse("   ").await.unwrap();
+        assert_eq!(result, "");
+    }
+}
