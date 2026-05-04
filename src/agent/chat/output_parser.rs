@@ -109,3 +109,69 @@ fn parse_json_markdown(json_markdown: &str) -> Option<Value> {
     }
     None
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parser() -> ChatOutputParser {
+        ChatOutputParser::new()
+    }
+
+    #[test]
+    fn parses_action_from_json_markdown() {
+        let text = r#"```json
+{"action": "calculator", "action_input": "2+2"}
+```"#;
+        let event = parser().parse(text).expect("parse failed");
+        match event {
+            AgentEvent::Action(actions) => {
+                assert_eq!(actions.len(), 1);
+                assert_eq!(actions[0].tool, "calculator");
+                assert_eq!(actions[0].tool_input, "2+2");
+            }
+            AgentEvent::Finish(_) => panic!("expected Action, got Finish"),
+        }
+    }
+
+    #[test]
+    fn parses_final_answer_as_finish() {
+        let text = r#"```json
+{"action": "Final Answer", "action_input": "The answer is 42"}
+```"#;
+        let event = parser().parse(text).expect("parse failed");
+        match event {
+            AgentEvent::Finish(f) => assert_eq!(f.output, "The answer is 42"),
+            AgentEvent::Action(_) => panic!("expected Finish, got Action"),
+        }
+    }
+
+    #[test]
+    fn no_json_block_returns_finish_with_raw_text() {
+        let text = "The answer is 42";
+        let event = parser().parse(text).expect("parse failed");
+        match event {
+            AgentEvent::Finish(f) => assert_eq!(f.output, "The answer is 42"),
+            AgentEvent::Action(_) => panic!("expected Finish for plain text"),
+        }
+    }
+
+    #[test]
+    fn json_fenced_without_language_tag_parses() {
+        let text = "```\n{\"action\": \"search\", \"action_input\": \"rust lang\"}\n```";
+        let event = parser().parse(text).expect("parse failed");
+        match event {
+            AgentEvent::Action(actions) => assert_eq!(actions[0].tool, "search"),
+            AgentEvent::Finish(_) => panic!("expected Action"),
+        }
+    }
+
+    #[test]
+    fn action_log_contains_original_text() {
+        let text = "```json\n{\"action\": \"lookup\", \"action_input\": \"foo\"}\n```";
+        let event = parser().parse(text).expect("parse failed");
+        if let AgentEvent::Action(actions) = event {
+            assert!(actions[0].log.contains("lookup"));
+        }
+    }
+}
