@@ -184,6 +184,7 @@ macro_rules! fmt_placeholder {
     };
 }
 
+#[derive(Default)]
 pub struct MessageFormatterStruct {
     items: Vec<MessageOrTemplate>,
 }

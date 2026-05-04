@@ -1,6 +1,8 @@
 use thiserror::Error;
 
-use crate::{chain::ChainError, language_models::LLMError, prompt::PromptError};
+use langchainx_chain::ChainError;
+use langchainx_llm::language_models::LLMError;
+use langchainx_prompt::PromptError;
 
 #[derive(Error, Debug)]
 pub enum AgentError {

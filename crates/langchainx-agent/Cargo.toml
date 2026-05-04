@@ -1,0 +1,22 @@
+[package]
+name = "langchainx-agent"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Agent abstractions and executors for langchainx"
+
+[dependencies]
+langchainx-core    = { path = "../langchainx-core" }
+langchainx-chain   = { path = "../langchainx-chain" }
+langchainx-llm     = { path = "../langchainx-llm" }
+langchainx-memory  = { path = "../langchainx-memory" }
+langchainx-prompt  = { path = "../langchainx-prompt" }
+
+async-trait    = "0.1.80"
+serde          = { version = "1.0", features = ["derive"] }
+serde_json     = "1.0"
+thiserror      = "2.0.0"
+tokio          = { version = "1", features = ["full"] }
+log            = "0.4.21"
+regex          = "1.10.4"

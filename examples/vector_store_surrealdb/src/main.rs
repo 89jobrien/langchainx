@@ -1,4 +1,5 @@
 // To run this example execute: `cargo run` in the folder.
+#![allow(clippy::useless_vec)]
 
 use langchainx::{
     embedding::openai::openai_embedder::OpenAiEmbedder,

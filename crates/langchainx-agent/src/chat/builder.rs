@@ -1,26 +1,31 @@
 use std::sync::Arc;
 
-use crate::{
-    agent::AgentError,
-    chain::{options::ChainCallOptions, LLMChainBuilder},
-    language_models::{llm::LLM, options::CallOptions},
-    schemas::FunctionDefinition,
-    tools::Tool,
+use langchainx_chain::{llm_chain::LLMChainBuilder, options::ChainCallOptions};
+use langchainx_llm::language_models::llm::IntoArcLLM;
+use langchainx_core::tools::Tool;
+
+use crate::error::AgentError;
+
+use super::{
+    output_parser::ChatOutputParser,
+    prompt::{PREFIX, SUFFIX},
+    ConversationalAgent,
 };
 
-use super::{prompt::PREFIX, OpenAiToolAgent};
-
-pub struct OpenAiToolAgentBuilder {
+#[derive(Default)]
+pub struct ConversationalAgentBuilder {
     tools: Option<Vec<Arc<dyn Tool>>>,
     prefix: Option<String>,
+    suffix: Option<String>,
     options: Option<ChainCallOptions>,
 }
 
-impl OpenAiToolAgentBuilder {
+impl ConversationalAgentBuilder {
     pub fn new() -> Self {
         Self {
             tools: None,
             prefix: None,
+            suffix: None,
             options: None,
         }
     }
@@ -35,23 +40,23 @@ impl OpenAiToolAgentBuilder {
         self
     }
 
+    pub fn suffix<S: Into<String>>(mut self, suffix: S) -> Self {
+        self.suffix = Some(suffix.into());
+        self
+    }
+
     pub fn options(mut self, options: ChainCallOptions) -> Self {
         self.options = Some(options);
         self
     }
 
-    pub fn build<L: LLM + 'static>(self, llm: L) -> Result<OpenAiToolAgent, AgentError> {
+    pub fn build<L: IntoArcLLM>(self, llm: L) -> Result<ConversationalAgent, AgentError> {
         let tools = self.tools.unwrap_or_default();
         let prefix = self.prefix.unwrap_or_else(|| PREFIX.to_string());
-        let mut llm = llm;
+        let suffix = self.suffix.unwrap_or_else(|| SUFFIX.to_string());
 
-        let prompt = OpenAiToolAgent::create_prompt(&prefix)?;
+        let prompt = ConversationalAgent::create_prompt(&tools, &suffix, &prefix)?;
         let default_options = ChainCallOptions::default().with_max_tokens(1000);
-        let functions = tools
-            .iter()
-            .map(FunctionDefinition::from_langchain_tool)
-            .collect::<Vec<FunctionDefinition>>();
-        llm.add_options(CallOptions::new().with_functions(functions));
         let chain = Box::new(
             LLMChainBuilder::new()
                 .prompt(prompt)
@@ -60,6 +65,10 @@ impl OpenAiToolAgentBuilder {
                 .build()?,
         );
 
-        Ok(OpenAiToolAgent { chain, tools })
+        Ok(ConversationalAgent {
+            chain,
+            tools,
+            output_parser: ChatOutputParser::new(),
+        })
     }
 }

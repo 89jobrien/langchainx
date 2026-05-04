@@ -1,3 +1,9 @@
+#![allow(
+    clippy::module_inception,
+    clippy::new_without_default,
+    clippy::single_match,
+    dead_code
+)]
 // Re-export upstream crates so `crate::language_models`, `crate::schemas`,
 // `crate::prompt`, `crate::output_parsers` all resolve within this crate.
 // Use langchainx_llm::language_models (superset: includes LLM, LLMError, CallOptions + core types).
