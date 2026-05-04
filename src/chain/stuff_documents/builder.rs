@@ -1,6 +1,8 @@
+use std::sync::Arc;
+
 use crate::{
     chain::{options::ChainCallOptions, ChainError, LLMChainBuilder},
-    language_models::llm::LLM,
+    language_models::llm::{IntoArcLLM, LLM},
     output_parsers::OutputParser,
     prompt::FormatPrompter,
     template_jinja2,
@@ -9,7 +11,7 @@ use crate::{
 use super::StuffDocument;
 
 pub struct StuffDocumentBuilder {
-    llm: Option<Box<dyn LLM>>,
+    llm: Option<Arc<dyn LLM>>,
     options: Option<ChainCallOptions>,
     output_key: Option<String>,
     output_parser: Option<Box<dyn OutputParser>>,
@@ -26,8 +28,8 @@ impl StuffDocumentBuilder {
         }
     }
 
-    pub fn llm<L: Into<Box<dyn LLM>>>(mut self, llm: L) -> Self {
-        self.llm = Some(llm.into());
+    pub fn llm<L: IntoArcLLM>(mut self, llm: L) -> Self {
+        self.llm = Some(llm.into_arc_llm());
         self
     }
 

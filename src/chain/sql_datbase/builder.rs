@@ -1,8 +1,10 @@
+use std::sync::Arc;
+
 use crate::{
     chain::{
         llm_chain::LLMChainBuilder, options::ChainCallOptions, ChainError, DEFAULT_OUTPUT_KEY,
     },
-    language_models::llm::LLM,
+    language_models::llm::{IntoArcLLM, LLM},
     output_parsers::OutputParser,
     prompt::HumanMessagePromptTemplate,
     template_jinja2,
@@ -16,7 +18,7 @@ use super::{
 };
 
 pub struct SQLDatabaseChainBuilder {
-    llm: Option<Box<dyn LLM>>,
+    llm: Option<Arc<dyn LLM>>,
     options: Option<ChainCallOptions>,
     top_k: Option<usize>,
     database: Option<SQLDatabase>,
@@ -36,8 +38,8 @@ impl SQLDatabaseChainBuilder {
         }
     }
 
-    pub fn llm<L: Into<Box<dyn LLM>>>(mut self, llm: L) -> Self {
-        self.llm = Some(llm.into());
+    pub fn llm<L: IntoArcLLM>(mut self, llm: L) -> Self {
+        self.llm = Some(llm.into_arc_llm());
         self
     }
 

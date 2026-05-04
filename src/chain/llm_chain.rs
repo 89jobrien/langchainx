@@ -1,11 +1,15 @@
 use std::pin::Pin;
+use std::sync::Arc;
 
 use async_trait::async_trait;
 use futures::Stream;
 use futures_util::TryStreamExt;
 
 use crate::{
-    language_models::{llm::LLM, GenerateResult},
+    language_models::{
+        llm::{IntoArcLLM, LLM},
+        GenerateResult,
+    },
     output_parsers::{OutputParser, SimpleParser},
     prompt::{FormatPrompter, PromptArgs},
     schemas::StreamData,
@@ -15,7 +19,7 @@ use super::{chain_trait::Chain, options::ChainCallOptions, ChainError};
 
 pub struct LLMChainBuilder {
     prompt: Option<Box<dyn FormatPrompter>>,
-    llm: Option<Box<dyn LLM>>,
+    llm: Option<Arc<dyn LLM>>,
     output_key: Option<String>,
     options: Option<ChainCallOptions>,
     output_parser: Option<Box<dyn OutputParser>>,
@@ -41,8 +45,8 @@ impl LLMChainBuilder {
         self
     }
 
-    pub fn llm<L: Into<Box<dyn LLM>>>(mut self, llm: L) -> Self {
-        self.llm = Some(llm.into());
+    pub fn llm<L: IntoArcLLM>(mut self, llm: L) -> Self {
+        self.llm = Some(llm.into_arc_llm());
         self
     }
 
@@ -67,7 +71,9 @@ impl LLMChainBuilder {
 
         if let Some(options) = self.options {
             let llm_options = ChainCallOptions::to_llm_options(options);
-            llm.add_options(llm_options);
+            Arc::get_mut(&mut llm)
+                .expect("Arc<dyn LLM> must not be shared when setting options")
+                .add_options(llm_options);
         }
 
         let chain = LLMChain {
@@ -85,7 +91,7 @@ impl LLMChainBuilder {
 
 pub struct LLMChain {
     prompt: Box<dyn FormatPrompter>,
-    llm: Box<dyn LLM>,
+    llm: Arc<dyn LLM>,
     output_key: String,
     output_parser: Box<dyn OutputParser>,
 }

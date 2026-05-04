@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{
     agent::AgentError,
     chain::{llm_chain::LLMChainBuilder, options::ChainCallOptions},
-    language_models::llm::LLM,
+    language_models::llm::IntoArcLLM,
     tools::Tool,
 };
 
@@ -50,7 +50,7 @@ impl ConversationalAgentBuilder {
         self
     }
 
-    pub fn build<L: Into<Box<dyn LLM>>>(self, llm: L) -> Result<ConversationalAgent, AgentError> {
+    pub fn build<L: IntoArcLLM>(self, llm: L) -> Result<ConversationalAgent, AgentError> {
         let tools = self.tools.unwrap_or_default();
         let prefix = self.prefix.unwrap_or_else(|| PREFIX.to_string());
         let suffix = self.suffix.unwrap_or_else(|| SUFFIX.to_string());
