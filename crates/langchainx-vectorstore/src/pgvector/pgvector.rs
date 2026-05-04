@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, fmt, sync::Arc};
 
 use async_trait::async_trait;
 use pgvector::Vector;
@@ -40,32 +40,35 @@ pub enum PgLit {
     RawJson(Value),
 }
 
-impl ToString for PgLit {
-    fn to_string(&self) -> String {
+impl fmt::Display for PgLit {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            PgLit::LitStr(str) => format!("'{}'", str.clone()),
-            PgLit::JsonField(path) => format!("cmetadata#>>'{{{}}}'", path.join(",")),
-            PgLit::RawJson(value) => serde_json::to_string(value).unwrap_or("null".to_string()),
+            PgLit::LitStr(str) => write!(f, "'{}'", str),
+            PgLit::JsonField(path) => write!(f, "cmetadata#>>'{{{}}}'", path.join(",")),
+            PgLit::RawJson(value) => {
+                write!(f, "{}", serde_json::to_string(value).unwrap_or_else(|_| "null".to_string()))
+            }
         }
     }
 }
 
-impl ToString for PgFilter {
-    fn to_string(&self) -> String {
+impl fmt::Display for PgFilter {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            PgFilter::Eq(a, b) => format!("{} = {}", a.to_string(), b.to_string()),
+            PgFilter::Eq(a, b) => write!(f, "{} = {}", a, b),
             PgFilter::Cmp(ordering, a, b) => {
                 let op = match ordering {
                     std::cmp::Ordering::Less => "<",
                     std::cmp::Ordering::Greater => ">",
                     std::cmp::Ordering::Equal => "=",
                 };
-                format!("{} {} {}", a.to_string(), op, b.to_string())
+                write!(f, "{} {} {}", a, op, b)
             }
             PgFilter::In(a, values) => {
-                format!(
+                write!(
+                    f,
                     "{} = ANY(ARRAY[{}])",
-                    a.to_string(),
+                    a,
                     values
                         .iter()
                         .map(|s| format!("'{}'", s))
@@ -73,16 +76,16 @@ impl ToString for PgFilter {
                         .join(",")
                 )
             }
-            PgFilter::And(pgfilters) => pgfilters
-                .iter()
-                .map(|pgf| pgf.to_string())
-                .collect::<Vec<String>>()
-                .join(" AND "),
-            PgFilter::Or(pgfilters) => pgfilters
-                .iter()
-                .map(|pgf| pgf.to_string())
-                .collect::<Vec<String>>()
-                .join(" OR "),
+            PgFilter::And(pgfilters) => write!(
+                f,
+                "{}",
+                pgfilters.iter().map(|pgf| pgf.to_string()).collect::<Vec<String>>().join(" AND ")
+            ),
+            PgFilter::Or(pgfilters) => write!(
+                f,
+                "{}",
+                pgfilters.iter().map(|pgf| pgf.to_string()).collect::<Vec<String>>().join(" OR ")
+            ),
         }
     }
 }
@@ -168,7 +171,7 @@ impl VectorStore for Store {
             ids.push(id.clone());
 
             let vector_value =
-                Vector::from(vector.into_iter().map(|x| *x as f32).collect::<Vec<f32>>());
+                Vector::from(vector.iter().map(|x| *x as f32).collect::<Vec<f32>>());
 
             sqlx::query(&format!(
                 r#"INSERT INTO {}
@@ -238,7 +241,7 @@ impl VectorStore for Store {
 
         let rows = sqlx::query(&sql)
             .bind(vector_dims as i64)
-            .bind(&Vector::from(
+            .bind(Vector::from(
                 query_vector
                     .into_iter()
                     .map(|x| x as f32)

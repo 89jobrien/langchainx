@@ -84,10 +84,9 @@ fn get_answer_box(result: &Value) -> String {
             .get("snippet_highlighted_words")
             .and_then(|v| v.as_array())
             && !snippet.is_empty()
+            && let Some(first) = snippet.first().and_then(|v| v.as_str())
         {
-            if let Some(first) = snippet.first().and_then(|v| v.as_str()) {
-                return first.to_string();
-            }
+            return first.to_string();
         }
     }
 

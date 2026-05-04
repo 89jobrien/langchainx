@@ -24,15 +24,9 @@ pub struct HtmlToMarkdownLoader<R> {
     options: HtmlToMarkdownLoaderOptions,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct HtmlToMarkdownLoaderOptions {
     skip_tags: Option<Vec<String>>,
-}
-
-impl Default for HtmlToMarkdownLoaderOptions {
-    fn default() -> Self {
-        Self { skip_tags: None }
-    }
 }
 
 impl HtmlToMarkdownLoaderOptions {

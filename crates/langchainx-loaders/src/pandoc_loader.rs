@@ -25,19 +25,20 @@ pub enum InputFormat {
     VimWiki,
 }
 
-impl ToString for InputFormat {
-    fn to_string(&self) -> String {
-        match self {
-            InputFormat::Docx => "docx".into(),
-            InputFormat::Epub => "epub".into(),
-            InputFormat::Html => "html".into(),
-            InputFormat::JuypterNotebook => "ipynb".into(),
-            InputFormat::MediaWiki => "mediawiki".into(),
-            InputFormat::Markdown => "markdown".into(),
-            InputFormat::RichTextFormat => "rtf".into(),
-            InputFormat::Typst => "typst".into(),
-            InputFormat::VimWiki => "vimwiki".into(),
-        }
+impl fmt::Display for InputFormat {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            InputFormat::Docx => "docx",
+            InputFormat::Epub => "epub",
+            InputFormat::Html => "html",
+            InputFormat::JuypterNotebook => "ipynb",
+            InputFormat::MediaWiki => "mediawiki",
+            InputFormat::Markdown => "markdown",
+            InputFormat::RichTextFormat => "rtf",
+            InputFormat::Typst => "typst",
+            InputFormat::VimWiki => "vimwiki",
+        };
+        write!(f, "{s}")
     }
 }
 
@@ -112,7 +113,7 @@ impl<R: AsyncRead + Send + Sync + Unpin + 'static> Loader for PandocLoader<R> {
             match tokio::io::copy(&mut self.input, &mut stdin).await {
                 Ok(_) => {}
                 Err(e) => {
-                    log::error!("pandoc stdin error: {}", e.to_string());
+                    log::error!("pandoc stdin error: {}", e);
                 }
             }
             stdin.flush().await.unwrap();

@@ -1,3 +1,5 @@
+#![allow(clippy::result_large_err)]
+
 mod document_loader;
 pub use document_loader::*;
 

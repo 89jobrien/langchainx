@@ -16,6 +16,12 @@ pub struct StoreBuilder<C: Connection> {
     schemafull: bool,
 }
 
+impl<C: Connection> Default for StoreBuilder<C> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<C: Connection> StoreBuilder<C> {
     /// Create a new StoreBuilder optimized for SurrealDB. Refer to `new_with_compatiblity()` if
     /// you are looking to connect to store created by python version of langchain.

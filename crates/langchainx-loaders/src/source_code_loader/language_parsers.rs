@@ -2,7 +2,7 @@ use crate::LoaderError;
 use langchainx_core::schemas::Document;
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::string::ToString;
+use std::fmt;
 use strum_macros::Display;
 use tree_sitter::{Parser, Tree};
 
@@ -26,12 +26,13 @@ pub enum LanguageContentTypes {
     FunctionsImpls,
 }
 
-impl ToString for LanguageContentTypes {
-    fn to_string(&self) -> String {
-        match self {
-            LanguageContentTypes::SimplifiedCode => "simplified_code".to_string(),
-            LanguageContentTypes::FunctionsImpls => "functions_impls".to_string(),
-        }
+impl fmt::Display for LanguageContentTypes {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            LanguageContentTypes::SimplifiedCode => "simplified_code",
+            LanguageContentTypes::FunctionsImpls => "functions_impls",
+        };
+        write!(f, "{s}")
     }
 }
 

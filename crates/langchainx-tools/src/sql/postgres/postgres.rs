@@ -89,9 +89,7 @@ impl Engine for PostgreSQLEngine {
     }
 
     async fn table_info(&self, table: &str) -> Result<String, Box<dyn Error>> {
-        let query = format!(
-            "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = $1"
-        );
+        let query = "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = $1".to_string();
         let rows = sqlx::query(&query)
             .bind(table)
             .fetch_all(&self.pool)
