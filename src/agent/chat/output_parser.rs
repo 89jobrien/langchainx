@@ -100,6 +100,56 @@ fn parse_partial_json(s: &str, strict: bool) -> Option<Value> {
     serde_json::from_str(&new_s).ok()
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn valid_action_json_returns_action_event() {
+        let parser = ChatOutputParser::new();
+        let text = "```json\n{\"action\": \"search\", \"action_input\": \"rust lang\"}\n```";
+        let event = parser.parse(text).unwrap();
+        match event {
+            AgentEvent::Action(actions) => {
+                assert_eq!(actions.len(), 1);
+                assert_eq!(actions[0].tool, "search");
+                assert_eq!(actions[0].tool_input, "rust lang");
+            }
+            AgentEvent::Finish(_) => panic!("expected Action, got Finish"),
+        }
+    }
+
+    #[test]
+    fn final_answer_action_returns_finish_event() {
+        let parser = ChatOutputParser::new();
+        let text = "```json\n{\"action\": \"Final Answer\", \"action_input\": \"42\"}\n```";
+        let event = parser.parse(text).unwrap();
+        match event {
+            AgentEvent::Finish(finish) => assert_eq!(finish.output, "42"),
+            AgentEvent::Action(_) => panic!("expected Finish, got Action"),
+        }
+    }
+
+    #[test]
+    fn malformed_json_returns_finish_with_raw_text() {
+        let parser = ChatOutputParser::new();
+        let text = "I cannot parse this as JSON at all.";
+        let event = parser.parse(text).unwrap();
+        match event {
+            AgentEvent::Finish(finish) => assert_eq!(finish.output, text),
+            AgentEvent::Action(_) => panic!("expected Finish, got Action"),
+        }
+    }
+
+    #[test]
+    fn missing_action_field_returns_error() {
+        let parser = ChatOutputParser::new();
+        // Valid JSON in markdown but missing required fields → serde error propagated
+        let text = "```json\n{\"foo\": \"bar\"}\n```";
+        assert!(parser.parse(text).is_err());
+    }
+}
+
 fn parse_json_markdown(json_markdown: &str) -> Option<Value> {
     let re = Regex::new(r"```(?:json)?\s*([\s\S]+?)\s*```").unwrap();
     if let Some(caps) = re.captures(json_markdown) {
