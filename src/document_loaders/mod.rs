@@ -52,3 +52,5 @@ pub use source_code_loader::*;
 
 #[cfg(feature = "rss")]
 pub mod rss_loader;
+#[cfg(feature = "rss")]
+pub use rss_loader::*;
