@@ -32,14 +32,16 @@ sqlx = { version = "0.8.0", default-features = false, features = [
     "json",
     "uuid",
 ], optional = true }
-uuid = { version = "1.8.0", features = ["v4"], optional = true }
+uuid     = { version = "1.8.0", features = ["v4"], optional = true }
+tempfile = { version = "3", optional = true }
 
 [features]
 default    = []
-test-utils = []
+test-utils = ["tempfile"]
 postgres   = ["sqlx", "uuid", "langchainx-tools/postgres"]
 sqlite-vss = ["sqlx"]
 sqlite-vec = ["sqlx"]
 
 [dev-dependencies]
-tokio = { version = "1", features = ["full"] }
+tokio    = { version = "1", features = ["full"] }
+tempfile = "3"
