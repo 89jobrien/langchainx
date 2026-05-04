@@ -1,7 +1,7 @@
 workspace = { members = ["examples/vector_store_surrealdb"] }
 [package]
 name = "langchainx"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 publish = true
 repository = "https://github.com/89jobrien/langchainx"
