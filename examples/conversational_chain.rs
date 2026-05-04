@@ -4,7 +4,7 @@ use futures_util::StreamExt;
 use langchainx::{
     chain::{builder::ConversationalChainBuilder, Chain},
     // fmt_message, fmt_template,
-    llm::openai::{OpenAI, OpenAIModel},
+    llm::openai::OpenAI,
     memory::SimpleMemory,
     // message_formatter,
     // prompt::HumanMessagePromptTemplate,
@@ -15,7 +15,7 @@ use langchainx::{
 
 #[tokio::main]
 async fn main() {
-    let llm = OpenAI::default().with_model(OpenAIModel::Gpt35);
+    let llm = OpenAI::default().with_model("gpt-4o-mini");
     //We initialise a simple memory. By default conversational chain have this memory, but we
     //initialise it as an example, if you dont want to have memory use DummyMemory
     let memory = SimpleMemory::new();

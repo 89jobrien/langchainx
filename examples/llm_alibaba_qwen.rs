@@ -6,8 +6,10 @@ use langchainx::schemas::Message;
 async fn main() {
     // Initialize the Qwen client
     // Requires QWEN_API_KEY environment variable to be set
+    let api_key =
+        std::env::var("QWEN_API_KEY").expect("QWEN_API_KEY environment variable must be set");
     let qwen = Qwen::new()
-        .with_api_key("your_api_key")
+        .with_api_key(api_key)
         .with_model("qwen-turbo"); // Can use enum: QwenModel::QwenTurbo.to_string()
 
     // Generate a response

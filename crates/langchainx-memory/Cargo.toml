@@ -1,0 +1,11 @@
+[package]
+name = "langchainx-memory"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Memory implementations for langchainx"
+
+[dependencies]
+langchainx-core = { path = "../langchainx-core" }
+tokio           = { version = "1", features = ["sync"] }

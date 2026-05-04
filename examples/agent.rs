@@ -3,7 +3,7 @@ use std::sync::Arc;
 use langchainx::{
     agent::{AgentExecutor, ConversationalAgentBuilder},
     chain::{options::ChainCallOptions, Chain},
-    llm::openai::{OpenAI, OpenAIModel},
+    llm::openai::OpenAI,
     memory::SimpleMemory,
     prompt_args,
     tools::CommandExecutor,
@@ -11,7 +11,7 @@ use langchainx::{
 
 #[tokio::main]
 async fn main() {
-    let llm = OpenAI::default().with_model(OpenAIModel::Gpt4Turbo);
+    let llm = OpenAI::default().with_model("gpt-4o");
     let memory = SimpleMemory::new();
     let command_executor = CommandExecutor::default();
     let agent = ConversationalAgentBuilder::new()

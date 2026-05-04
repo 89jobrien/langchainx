@@ -1,3 +1,4 @@
+// Note: uses `sh -c` with a bash-style `while read` pipeline — requires bash-compatible /bin/sh.
 use std::io::{self, BufRead};
 use std::process::{Command, Stdio};
 

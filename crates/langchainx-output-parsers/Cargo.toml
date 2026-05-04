@@ -1,0 +1,16 @@
+[package]
+name = "langchainx-output-parsers"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Output parsers for langchainx"
+
+[dependencies]
+async-trait = "0.1.80"
+thiserror   = "2.0.0"
+regex       = "1.10.4"
+log         = "0.4.21"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }

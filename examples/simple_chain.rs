@@ -1,6 +1,6 @@
 use langchainx::{
     chain::{Chain, LLMChainBuilder},
-    llm::openai::{OpenAI, OpenAIModel},
+    llm::openai::OpenAI,
     prompt::HumanMessagePromptTemplate,
     prompt_args, template_jinja2,
 };
@@ -13,7 +13,7 @@ async fn main() {
         "producto"
     ));
 
-    let llm = OpenAI::default().with_model(OpenAIModel::Gpt35);
+    let llm = OpenAI::default().with_model("gpt-4o-mini");
     let chain = LLMChainBuilder::new()
         .prompt(prompt)
         .llm(llm)

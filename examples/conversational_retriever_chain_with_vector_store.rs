@@ -7,7 +7,7 @@ use langchainx::{
     add_documents,
     chain::{Chain, ConversationalRetrieverChainBuilder},
     embedding::openai::openai_embedder::OpenAiEmbedder,
-    llm::{OpenAI, OpenAIModel},
+    llm::OpenAI,
     memory::SimpleMemory,
     prompt_args,
     schemas::Document,
@@ -54,7 +54,7 @@ async fn main() {
         println!("Error adding documents: {:?}", e);
     });
 
-    let llm = OpenAI::default().with_model(OpenAIModel::Gpt35.to_string());
+    let llm = OpenAI::default().with_model("gpt-4o-mini");
     let prompt= message_formatter![
                     fmt_message!(Message::new_system_message("You are a helpful assistant")),
                     fmt_template!(HumanMessagePromptTemplate::new(
