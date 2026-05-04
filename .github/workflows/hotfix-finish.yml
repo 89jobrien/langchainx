@@ -65,7 +65,7 @@ jobs:
         id: ver
         run: |
           git checkout main
-          CURRENT=$(grep -m1 '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          CURRENT=$(grep -m1 'version' Cargo.toml | sed 's/.*"\(.*\)".*/\1/')
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
           NEXT="${MAJOR}.${MINOR}.$((PATCH + 1))"
           echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
@@ -81,7 +81,7 @@ jobs:
           git merge --no-ff "origin/${BRANCH}" \
             -m "merge(gitflow): ${BRANCH} → main"
           sed -i \
-            "s/^version = \"${CURRENT_VERSION}\"/version = \"${NEXT_VERSION}\"/" \
+            "s/version\s*=\s*\"${CURRENT_VERSION}\"/version     = \"${NEXT_VERSION}\"/" \
             Cargo.toml
           git add Cargo.toml
           git commit -m "chore(version): bump ${CURRENT_VERSION} -> ${NEXT_VERSION} (hotfix)"
