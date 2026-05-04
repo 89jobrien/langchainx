@@ -8,7 +8,7 @@ use crate::{Tool, ToolError};
 
 /// A langchainx tool that wraps the `mbx` CLI for the minibox container runtime.
 ///
-/// Supports: run, ps, stop, pause, resume, rm, pull, exec, logs, sandbox, prune, rmi.
+/// Supports: run, ps, stop, pause, resume, rm, pull, exec, logs, sandbox, prune, rmi, snapshot.
 ///
 /// # Example
 /// ```rust,ignore
@@ -201,6 +201,27 @@ enum MiniboxInput {
 
     /// Remove a specific image by reference (e.g. alpine:latest).
     Rmi { image_ref: String },
+
+    /// Save, restore, or list container snapshots.
+    ///
+    /// Maps to `mbx snapshot save|restore|list`.
+    Snapshot {
+        sub_action: SnapshotAction,
+        /// Container ID or name.
+        container_id: String,
+        /// Snapshot name (required for save/restore, ignored for list).
+        #[serde(default)]
+        name: Option<String>,
+    },
+}
+
+/// Sub-action for the `snapshot` command.
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum SnapshotAction {
+    Save,
+    Restore,
+    List,
 }
 
 fn default_tag() -> String {
@@ -233,7 +254,8 @@ impl Tool for MiniboxTool {
 
     fn description(&self) -> String {
         "Interact with the minibox container runtime via the mbx CLI. \
-         Supported actions: ps, pull, run, stop, pause, resume, rm, exec, logs, sandbox, prune, rmi."
+         Supported actions: ps, pull, run, stop, pause, resume, rm, exec, logs, sandbox, prune, \
+         rmi, snapshot."
             .into()
     }
 
@@ -243,8 +265,16 @@ impl Tool for MiniboxTool {
             "properties": {
                 "action": {
                     "type": "string",
-                    "enum": ["ps","pull","run","stop","pause","resume","rm","exec","logs","sandbox","prune","rmi"],
+                    "enum": [
+                        "ps","pull","run","stop","pause","resume","rm","exec",
+                        "logs","sandbox","prune","rmi","snapshot"
+                    ],
                     "description": "The mbx subcommand to invoke."
+                },
+                "sub_action": {
+                    "type": "string",
+                    "enum": ["save","restore","list"],
+                    "description": "Sub-action for the snapshot command."
                 },
                 "image": {
                     "type": "string",
@@ -507,6 +537,33 @@ impl Tool for MiniboxTool {
             }
 
             MiniboxInput::Rmi { image_ref } => self.run_command(&["rmi", &image_ref]),
+
+            MiniboxInput::Snapshot {
+                sub_action,
+                container_id,
+                name,
+            } => match sub_action {
+                SnapshotAction::List => {
+                    self.run_command(&["snapshot", "list", &container_id])
+                }
+                SnapshotAction::Save => {
+                    let mut args = vec!["snapshot", "save", &container_id];
+                    let name_str;
+                    if let Some(ref n) = name {
+                        name_str = n.clone();
+                        args.push(&name_str);
+                    }
+                    self.run_command(&args)
+                }
+                SnapshotAction::Restore => {
+                    let n = name.ok_or_else(|| {
+                        ToolError::InvalidInput(
+                            "snapshot restore requires a snapshot name".into(),
+                        )
+                    })?;
+                    self.run_command(&["snapshot", "restore", &container_id, &n])
+                }
+            },
         }
     }
 }
@@ -612,5 +669,75 @@ mod tests {
         let t = tool();
         assert_eq!(t.name(), "Minibox");
         assert!(!t.description().is_empty());
+    }
+
+    #[test]
+    fn parses_snapshot_save() {
+        let v = json!({
+            "action": "snapshot",
+            "sub_action": "save",
+            "container_id": "abc123",
+            "name": "snap1"
+        });
+        let action: MiniboxInput = serde_json::from_value(v).unwrap();
+        match action {
+            MiniboxInput::Snapshot {
+                sub_action: SnapshotAction::Save,
+                container_id,
+                name,
+            } => {
+                assert_eq!(container_id, "abc123");
+                assert_eq!(name, Some("snap1".to_string()));
+            }
+            _ => panic!("expected Snapshot/Save"),
+        }
+    }
+
+    #[test]
+    fn parses_snapshot_list() {
+        let v = json!({
+            "action": "snapshot",
+            "sub_action": "list",
+            "container_id": "abc123"
+        });
+        let action: MiniboxInput = serde_json::from_value(v).unwrap();
+        assert!(matches!(
+            action,
+            MiniboxInput::Snapshot {
+                sub_action: SnapshotAction::List,
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn parses_snapshot_restore() {
+        let v = json!({
+            "action": "snapshot",
+            "sub_action": "restore",
+            "container_id": "abc123",
+            "name": "snap1"
+        });
+        let action: MiniboxInput = serde_json::from_value(v).unwrap();
+        assert!(matches!(
+            action,
+            MiniboxInput::Snapshot {
+                sub_action: SnapshotAction::Restore,
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn snapshot_restore_without_name_errors() {
+        let tool = tool();
+        let v = json!({
+            "action": "snapshot",
+            "sub_action": "restore",
+            "container_id": "abc123"
+        });
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let result = rt.block_on(tool.run(v));
+        assert!(result.is_err());
     }
 }
