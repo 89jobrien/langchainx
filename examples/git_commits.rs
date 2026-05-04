@@ -11,7 +11,7 @@ use langchainx::{
     document_loaders::GitCommitLoader,
     document_loaders::Loader,
     embedding::openai::OpenAiEmbedder,
-    vectorstore::{sqlite_vss::StoreBuilder, VecStoreOptions, VectorStore},
+    vectorstore::{VecStoreOptions, VectorStore, sqlite_vss::StoreBuilder},
 };
 #[cfg(feature = "sqlite-vss")]
 use std::io::Write;

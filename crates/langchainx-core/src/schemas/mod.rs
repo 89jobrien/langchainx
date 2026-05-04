@@ -16,7 +16,6 @@ pub use document::*;
 mod retrievers;
 pub use retrievers::*;
 
-
 pub mod convert;
 mod stream;
 

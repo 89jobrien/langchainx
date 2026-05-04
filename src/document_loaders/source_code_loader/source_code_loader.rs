@@ -1,5 +1,5 @@
 use crate::document_loaders::{
-    find_files_with_extension, process_doc_stream, DirLoaderOptions, LoaderError,
+    DirLoaderOptions, LoaderError, find_files_with_extension, process_doc_stream,
 };
 use crate::{document_loaders::Loader, schemas::Document, text_splitter::TextSplitter};
 use async_stream::stream;
@@ -10,7 +10,7 @@ use std::fs::File;
 use std::io::Read;
 use std::pin::Pin;
 
-use super::{get_language_by_filename, LanguageParser, LanguageParserOptions};
+use super::{LanguageParser, LanguageParserOptions, get_language_by_filename};
 
 #[derive(Debug, Clone)]
 pub struct SourceCodeLoader {

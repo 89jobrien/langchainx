@@ -11,8 +11,8 @@ pub use crate::sequential::*;
 pub use crate::sql_datbase::*;
 
 // Sub-module re-exports for `crate::chain::X::Y` paths used in chain files/tests
-pub use crate::llm_chain as llm_chain;
-pub use crate::options as options;
-pub use crate::chain_trait as chain_trait;
-pub use crate::conversational as conversational;
+pub use crate::chain_trait;
+pub use crate::conversational;
+pub use crate::llm_chain;
+pub use crate::options;
 pub use crate::stuff_documents::*;

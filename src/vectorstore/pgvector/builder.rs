@@ -1,13 +1,13 @@
 use std::{collections::HashMap, env, error::Error, sync::Arc};
 
-use serde_json::{json, Value};
-use sqlx::{postgres::PgPoolOptions, Pool, Postgres, Row, Transaction};
+use serde_json::{Value, json};
+use sqlx::{Pool, Postgres, Row, Transaction, postgres::PgPoolOptions};
 
 use crate::{embedding::embedder_trait::Embedder, vectorstore::VecStoreOptions};
 
 use super::{
-    HNSWIndex, PgFilter, PgOptions, Store, PG_LOCKID_EXTENSION, PG_LOCK_ID_COLLECTION_TABLE,
-    PG_LOCK_ID_EMBEDDING_TABLE,
+    HNSWIndex, PG_LOCK_ID_COLLECTION_TABLE, PG_LOCK_ID_EMBEDDING_TABLE, PG_LOCKID_EXTENSION,
+    PgFilter, PgOptions, Store,
 };
 
 const DEFAULT_COLLECTION_NAME: &str = "langchain";

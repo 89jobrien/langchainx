@@ -8,9 +8,9 @@ use crate::{
 };
 
 use super::{
+    ConversationalAgent,
     output_parser::ChatOutputParser,
     prompt::{PREFIX, SUFFIX},
-    ConversationalAgent,
 };
 
 pub struct ConversationalAgentBuilder {

@@ -4,15 +4,15 @@ use async_trait::async_trait;
 use futures::Stream;
 
 use crate::{
-    language_models::{llm::IntoArcLLM, GenerateResult},
+    language_models::{GenerateResult, llm::IntoArcLLM},
     prompt::PromptArgs,
     prompt_args,
-    schemas::{messages::Message, Document, StreamData},
+    schemas::{Document, StreamData, messages::Message},
     template_jinja2,
 };
 
 use super::{
-    options::ChainCallOptions, Chain, ChainError, LLMChain, LLMChainBuilder, StuffDocument,
+    Chain, ChainError, LLMChain, LLMChainBuilder, StuffDocument, options::ChainCallOptions,
 };
 
 const DEFAULTCONDENSEQUESTIONTEMPLATE: &str = r#"Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question, in its original language.
@@ -66,7 +66,7 @@ impl CondenseQuestionGeneratorChain {
             .prompt(condense_question_prompt_template)
             .build()
             .unwrap(); //Its safe to unwrap here because we are sure that the prompt and the LLM are
-                       //set.
+        //set.
         Self { chain }
     }
 

@@ -5,7 +5,7 @@ use futures::Stream;
 use serde_json::Value;
 
 use crate::{
-    chain::{chain_trait::Chain, llm_chain::LLMChain, ChainError},
+    chain::{ChainError, chain_trait::Chain, llm_chain::LLMChain},
     language_models::{GenerateResult, TokenUsage},
     prompt::PromptArgs,
     prompt_args,

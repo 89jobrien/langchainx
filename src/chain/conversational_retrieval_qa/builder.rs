@@ -3,7 +3,7 @@ use tokio::sync::Mutex;
 
 use crate::{
     chain::{
-        Chain, ChainError, CondenseQuestionGeneratorChain, StuffDocumentBuilder, DEFAULT_OUTPUT_KEY,
+        Chain, ChainError, CondenseQuestionGeneratorChain, DEFAULT_OUTPUT_KEY, StuffDocumentBuilder,
     },
     language_models::llm::{IntoArcLLM, LLM},
     memory::SimpleMemory,

@@ -8,7 +8,9 @@ use serde_json::Error as SerdeJsonError;
 
 #[derive(Error, Debug)]
 pub enum RouterBuilderError {
-    #[error("Invalid Router configuration: at least one of utterances or embedding must be provided, and utterances cannot be an empty vector.")]
+    #[error(
+        "Invalid Router configuration: at least one of utterances or embedding must be provided, and utterances cannot be an empty vector."
+    )]
     InvalidConfiguration,
 }
 

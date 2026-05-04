@@ -149,11 +149,11 @@ mod pgvector_tests {
         add_documents,
         schemas::Document,
         similarity_search,
-        vectorstore::{pgvector::StoreBuilder, VectorStore},
+        vectorstore::{VectorStore, pgvector::StoreBuilder},
     };
 
     use crate::common::FakeEmbedder;
-    use crate::{free_port, smolvm_available, wait_for_tcp, SmolvmMachine};
+    use crate::{SmolvmMachine, free_port, smolvm_available, wait_for_tcp};
     use serial_test::serial;
 
     async fn start_pgvector() -> (SmolvmMachine, String) {
@@ -264,12 +264,12 @@ mod qdrant_tests {
         add_documents,
         schemas::Document,
         similarity_search,
-        vectorstore::{qdrant::StoreBuilder, VectorStore},
+        vectorstore::{VectorStore, qdrant::StoreBuilder},
     };
     use qdrant_client::Qdrant;
 
     use crate::common::FakeEmbedder;
-    use crate::{free_port, smolvm_available, wait_for_tcp, SmolvmMachine};
+    use crate::{SmolvmMachine, free_port, smolvm_available, wait_for_tcp};
     use serial_test::serial;
 
     async fn start_qdrant() -> (SmolvmMachine, String) {

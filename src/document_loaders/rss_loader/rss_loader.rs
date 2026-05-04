@@ -5,11 +5,11 @@ use std::{
 };
 
 use async_trait::async_trait;
-use futures::{stream, Stream};
+use futures::{Stream, stream};
 use serde_json::Value;
 
 use crate::{
-    document_loaders::{process_doc_stream, Loader, LoaderError},
+    document_loaders::{Loader, LoaderError, process_doc_stream},
     schemas::Document,
     text_splitter::TextSplitter,
 };
@@ -66,10 +66,7 @@ impl<R: Read + BufRead + Send + Sync + 'static> Loader for RssLoader<R> {
                             metadata.insert("link".to_string(), Value::String(l.to_string()));
                         }
                         if let Some(d) = item.pub_date() {
-                            metadata.insert(
-                                "pub_date".to_string(),
-                                Value::String(d.to_string()),
-                            );
+                            metadata.insert("pub_date".to_string(), Value::String(d.to_string()));
                         }
                         if let Some(a) = item.author() {
                             metadata.insert("author".to_string(), Value::String(a.to_string()));

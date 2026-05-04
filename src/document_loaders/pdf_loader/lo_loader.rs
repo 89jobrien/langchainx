@@ -6,7 +6,7 @@ use futures::Stream;
 use serde_json::Value;
 
 use crate::{
-    document_loaders::{process_doc_stream, Loader, LoaderError},
+    document_loaders::{Loader, LoaderError, process_doc_stream},
     schemas::Document,
     text_splitter::TextSplitter,
 };
