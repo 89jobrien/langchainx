@@ -136,52 +136,61 @@ impl Chain for ConversationalChain {
 #[cfg(test)]
 mod tests {
     use crate::{
-        chain::conversational::builder::ConversationalChainBuilder,
-        llm::openai::{OpenAI, OpenAIModel},
+        chain::{conversational::builder::ConversationalChainBuilder, Chain},
         prompt_args,
+        test_utils::FakeLLM,
     };
 
-    use super::*;
-
     #[tokio::test]
-    #[ignore]
-    async fn test_invoke_conversational() {
-        let llm = OpenAI::default().with_model(OpenAIModel::Gpt35.to_string());
+    async fn conversational_chain_returns_fake_response() {
+        let llm = FakeLLM::new(vec!["response one".into()]);
         let chain = ConversationalChainBuilder::new()
             .llm(llm)
             .build()
-            .expect("Error building ConversationalChain");
+            .expect("failed to build ConversationalChain");
 
-        let input_variables_first = prompt_args! {
-            "input" => "Soy de peru",
-        };
-        // Execute the first `chain.invoke` and assert that it should succeed
-        let result_first = chain.invoke(input_variables_first).await;
-        assert!(
-            result_first.is_ok(),
-            "Error invoking LLMChain: {:?}",
-            result_first.err()
-        );
+        let result = chain
+            .invoke(prompt_args! { "input" => "hello" })
+            .await
+            .expect("invoke failed");
 
-        // Optionally, if you want to print the successful result, you can do so like this:
-        if let Ok(result) = result_first {
-            println!("Result: {:?}", result);
-        }
+        assert_eq!(result, "response one");
+    }
 
-        let input_variables_second = prompt_args! {
-            "input" => "Cuales son platos tipicos de mi pais",
-        };
-        // Execute the second `chain.invoke` and assert that it should succeed
-        let result_second = chain.invoke(input_variables_second).await;
-        assert!(
-            result_second.is_ok(),
-            "Error invoking LLMChain: {:?}",
-            result_second.err()
-        );
+    #[tokio::test]
+    async fn conversational_chain_accumulates_history() {
+        let llm = FakeLLM::new(vec!["first reply".into(), "second reply".into()]);
+        let chain = ConversationalChainBuilder::new()
+            .llm(llm)
+            .build()
+            .expect("failed to build ConversationalChain");
 
-        // Optionally, if you want to print the successful result, you can do so like this:
-        if let Ok(result) = result_second {
-            println!("Result: {:?}", result);
-        }
+        let r1 = chain
+            .invoke(prompt_args! { "input" => "turn one" })
+            .await
+            .expect("first invoke failed");
+        assert_eq!(r1, "first reply");
+
+        let r2 = chain
+            .invoke(prompt_args! { "input" => "turn two" })
+            .await
+            .expect("second invoke failed");
+        assert_eq!(r2, "second reply");
+
+        // Memory should contain both turns (2 human + 2 ai = 4 messages)
+        let memory = chain.memory.lock().await;
+        assert_eq!(memory.messages().len(), 4);
+    }
+
+    #[tokio::test]
+    async fn conversational_chain_missing_input_key_returns_error() {
+        let llm = FakeLLM::new(vec!["x".into()]);
+        let chain = ConversationalChainBuilder::new()
+            .llm(llm)
+            .build()
+            .expect("failed to build ConversationalChain");
+
+        let result = chain.invoke(prompt_args! { "wrong_key" => "val" }).await;
+        assert!(result.is_err());
     }
 }

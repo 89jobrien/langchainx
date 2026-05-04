@@ -152,32 +152,40 @@ pub(crate) fn load_stuff_qa<L: Into<Box<dyn LLM>>>(
 mod tests {
     use crate::{
         chain::{Chain, StuffDocument},
-        llm::openai::OpenAI,
         schemas::Document,
+        test_utils::FakeLLM,
     };
 
     #[tokio::test]
-    #[ignore]
-    async fn test_qa() {
-        let llm = OpenAI::default();
+    async fn stuff_qa_returns_fake_response() {
+        let llm = FakeLLM::new(vec!["Nvim, age 24".into()]);
         let chain = StuffDocument::load_stuff_qa(llm);
         let input = chain
             .qa_prompt_builder()
             .documents(&[
-                Document::new(format!(
-                    "\nQuestion: {}\nAnswer: {}\n",
-                    "Which is the favorite text editor of luis", "Nvim"
-                )),
-                Document::new(format!(
-                    "\nQuestion: {}\nAnswer: {}\n",
-                    "How old is Luis", "24"
-                )),
+                Document::new("Q: favorite editor? A: Nvim"),
+                Document::new("Q: age? A: 24"),
             ])
-            .question("How old is luis and whats his favorite text editor")
+            .question("editor and age?")
             .build();
 
-        let ouput = chain.invoke(input).await.unwrap();
+        let result = chain.invoke(input).await.expect("qa invoke failed");
+        assert_eq!(result, "Nvim, age 24");
+    }
 
-        println!("{}", ouput);
+    #[tokio::test]
+    async fn stuff_qa_empty_documents_still_calls_llm() {
+        let llm = FakeLLM::new(vec!["I don't know".into()]);
+        let call_count = llm.call_count.clone();
+        let chain = StuffDocument::load_stuff_qa(llm);
+        let input = chain
+            .qa_prompt_builder()
+            .documents(&[])
+            .question("anything?")
+            .build();
+
+        let result = chain.invoke(input).await.expect("qa invoke failed");
+        assert_eq!(result, "I don't know");
+        assert_eq!(call_count.load(std::sync::atomic::Ordering::SeqCst), 1);
     }
 }

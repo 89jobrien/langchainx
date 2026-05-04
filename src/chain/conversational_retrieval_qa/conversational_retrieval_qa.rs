@@ -235,16 +235,14 @@ mod tests {
     use std::error::Error;
 
     use crate::{
-        chain::ConversationalRetrieverChainBuilder,
-        llm::openai::{OpenAI, OpenAIModel},
-        memory::SimpleMemory,
-        prompt_args,
-        schemas::Document,
+        chain::ConversationalRetrieverChainBuilder, memory::SimpleMemory, prompt_args,
+        schemas::Document, test_utils::FakeLLM,
     };
 
     use super::*;
 
     struct RetrieverTest {}
+
     #[async_trait]
     impl Retriever for RetrieverTest {
         async fn get_relevant_documents(
@@ -252,66 +250,51 @@ mod tests {
             _question: &str,
         ) -> Result<Vec<Document>, Box<dyn Error>> {
             Ok(vec![
-                Document::new(format!(
-                    "\nQuestion: {}\nAnswer: {}\n",
-                    "Which is the favorite text editor of luis", "Nvim"
-                )),
-                Document::new(format!(
-                    "\nQuestion: {}\nAnswer: {}\n",
-                    "How old is Luis", "24"
-                )),
-                Document::new(format!(
-                    "\nQuestion: {}\nAnswer: {}\n",
-                    "Where do luis live", "Peru"
-                )),
-                Document::new(format!(
-                    "\nQuestion: {}\nAnswer: {}\n",
-                    "Whts his favorite food", "Pan con chicharron"
-                )),
+                Document::new("Q: favorite editor? A: Nvim"),
+                Document::new("Q: age? A: 24"),
             ])
         }
     }
 
     #[tokio::test]
-    #[ignore]
-    async fn test_invoke_retriever_conversational() {
-        let llm = OpenAI::default().with_model(OpenAIModel::Gpt35.to_string());
+    async fn retriever_chain_returns_fake_response() {
+        let llm = FakeLLM::new(vec!["Nvim".into()]);
         let chain = ConversationalRetrieverChainBuilder::new()
             .llm(llm)
             .retriever(RetrieverTest {})
             .memory(SimpleMemory::new().into())
             .build()
-            .expect("Error building ConversationalChain");
+            .expect("failed to build ConversationalRetrieverChain");
 
-        let input_variables_first = prompt_args! {
-            "question" => "Hola",
-        };
-        // Execute the first `chain.invoke` and assert that it should succeed
-        let result_first = chain.invoke(input_variables_first).await;
-        assert!(
-            result_first.is_ok(),
-            "Error invoking LLMChain: {:?}",
-            result_first.err()
-        );
+        let result = chain
+            .invoke(prompt_args! { "question" => "favorite editor?" })
+            .await
+            .expect("invoke failed");
 
-        // Optionally, if you want to print the successful result, you can do so like this:
-        if let Ok(result) = result_first {
-            println!("Result: {:?}", result);
-        }
+        assert_eq!(result, "Nvim");
+    }
 
-        let input_variables_second = prompt_args! {
-            "question" => "Cual es la comida favorita de luis",
-        };
-        // Execute the second `chain.invoke` and assert that it should succeed
-        let result_second = chain.invoke(input_variables_second).await;
-        assert!(
-            result_second.is_ok(),
-            "Error invoking LLMChain: {:?}",
-            result_second.err()
-        );
+    #[tokio::test]
+    async fn retriever_chain_accumulates_memory() {
+        let llm = FakeLLM::new(vec!["first answer".into(), "second answer".into()]);
+        let chain = ConversationalRetrieverChainBuilder::new()
+            .llm(llm)
+            .retriever(RetrieverTest {})
+            .memory(SimpleMemory::new().into())
+            .build()
+            .expect("failed to build ConversationalRetrieverChain");
 
-        if let Ok(result) = result_second {
-            println!("Result: {:?}", result);
-        }
+        chain
+            .invoke(prompt_args! { "question" => "first?" })
+            .await
+            .expect("first invoke failed");
+
+        chain
+            .invoke(prompt_args! { "question" => "second?" })
+            .await
+            .expect("second invoke failed");
+
+        let memory = chain.memory.lock().await;
+        assert_eq!(memory.messages().len(), 4); // 2 human + 2 ai
     }
 }

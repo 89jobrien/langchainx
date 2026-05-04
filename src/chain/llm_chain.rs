@@ -139,47 +139,52 @@ impl Chain for LLMChain {
 #[cfg(test)]
 mod tests {
     use crate::{
-        chain::options::ChainCallOptions,
-        llm::openai::{OpenAI, OpenAIModel},
+        chain::Chain,
         message_formatter,
         prompt::{HumanMessagePromptTemplate, MessageOrTemplate},
         prompt_args, template_fstring,
+        test_utils::FakeLLM,
     };
 
     use super::*;
 
-    #[tokio::test]
-    #[ignore]
-    async fn test_invoke_chain() {
-        // Create an AI message prompt template
-        let human_message_prompt = HumanMessagePromptTemplate::new(template_fstring!(
-            "Mi nombre es: {nombre} ",
-            "nombre",
-        ));
-
-        // Use the `message_formatter` macro to construct the formatter
-        let formatter =
-            message_formatter![MessageOrTemplate::Template(human_message_prompt.into()),];
-
-        let options = ChainCallOptions::default();
-        let llm = OpenAI::default().with_model(OpenAIModel::Gpt35.to_string());
-        let chain = LLMChainBuilder::new()
-            .prompt(formatter)
-            .llm(llm)
-            .options(options)
+    fn make_chain(responses: Vec<String>) -> LLMChain {
+        let prompt = message_formatter![MessageOrTemplate::Template(
+            HumanMessagePromptTemplate::new(template_fstring!("Hello {input}", "input")).into()
+        )];
+        LLMChainBuilder::new()
+            .prompt(prompt)
+            .llm(FakeLLM::new(responses))
             .build()
-            .expect("Failed to build LLMChain");
+            .expect("failed to build LLMChain")
+    }
 
-        let input_variables = prompt_args! {
-            "nombre" => "luis",
+    #[tokio::test]
+    async fn invoke_returns_fake_response() {
+        let chain = make_chain(vec!["hello world".into()]);
+        let result = chain.invoke(prompt_args! { "input" => "hi" }).await;
+        assert_eq!(result.unwrap(), "hello world");
+    }
 
-        };
-        // Execute `chain.invoke` and assert that it should succeed
-        let result = chain.invoke(input_variables).await;
-        assert!(
-            result.is_ok(),
-            "Error invoking LLMChain: {:?}",
-            result.err()
-        )
+    #[tokio::test]
+    async fn call_returns_generate_result() {
+        let chain = make_chain(vec!["the answer".into()]);
+        let result = chain.call(prompt_args! { "input" => "question" }).await;
+        assert_eq!(result.unwrap().generation, "the answer");
+    }
+
+    #[tokio::test]
+    async fn missing_input_variable_returns_error() {
+        let chain = make_chain(vec!["x".into()]);
+        // "input" key is required by the prompt but not provided
+        let result = chain.invoke(prompt_args! { "wrong_key" => "val" }).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn exhausted_fake_llm_returns_empty_string() {
+        let chain = make_chain(vec![]);
+        let result = chain.invoke(prompt_args! { "input" => "hi" }).await;
+        assert_eq!(result.unwrap(), "");
     }
 }

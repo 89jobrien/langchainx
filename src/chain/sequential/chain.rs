@@ -89,47 +89,64 @@ impl Chain for SequentialChain {
 mod tests {
     use crate::{
         chain::{Chain, LLMChainBuilder},
-        llm::openai::OpenAI,
         prompt_args, sequential_chain, template_fstring,
+        test_utils::FakeLLM,
     };
 
     #[tokio::test]
-    #[ignore]
-    async fn test_sequential() {
-        let llm = OpenAI::default();
+    async fn sequential_chain_passes_output_as_next_input() {
         let chain1 = LLMChainBuilder::new()
-            .prompt(template_fstring!(
-                "dame un nombre para una tienda de {input}",
-                "input"
-            ))
-            .llm(llm.clone())
-            .output_key("nombre")
+            .prompt(template_fstring!("step one: {input}", "input"))
+            .llm(FakeLLM::new(vec!["result_one".into()]))
+            .output_key("step1_out")
             .build()
-            .expect("Failed to build LLMChain");
+            .expect("failed to build chain1");
 
         let chain2 = LLMChainBuilder::new()
-            .prompt(template_fstring!(
-                "dame un slogan para una tienda llamada {nombre},tiene que incluir la palabra {palabra}",
-                "nombre",
-            "palabra"
-            ))
-            .llm(llm.clone())
-            .output_key("slogan")
+            .prompt(template_fstring!("step two: {step1_out}", "step1_out"))
+            .llm(FakeLLM::new(vec!["result_two".into()]))
+            .output_key("step2_out")
             .build()
-            .expect("Failed to build LLMChain");
+            .expect("failed to build chain2");
 
-        let chain = sequential_chain!(chain1, chain2);
-        let result = chain
-            .execute(prompt_args! {"input"=>"medias","palabra"=>"arroz"})
-            .await;
-        assert!(
-            result.is_ok(),
-            "Expected `chain.call` to succeed, but it failed with error: {:?}",
-            result.err()
+        let seq = sequential_chain!(chain1, chain2);
+        let output = seq
+            .execute(prompt_args! { "input" => "start" })
+            .await
+            .expect("sequential chain failed");
+
+        // Final generation should be from the last chain
+        assert_eq!(
+            output
+                .get("step2_out")
+                .and_then(|v| v.as_str())
+                .unwrap_or(""),
+            "result_two"
         );
+    }
 
-        if let Ok(output) = result {
-            println!("{:?}", output);
-        }
+    #[tokio::test]
+    async fn sequential_chain_invoke_returns_last_generation() {
+        let chain1 = LLMChainBuilder::new()
+            .prompt(template_fstring!("{input}", "input"))
+            .llm(FakeLLM::new(vec!["middle".into()]))
+            .output_key("mid")
+            .build()
+            .unwrap();
+
+        let chain2 = LLMChainBuilder::new()
+            .prompt(template_fstring!("{mid}", "mid"))
+            .llm(FakeLLM::new(vec!["final".into()]))
+            .output_key("out")
+            .build()
+            .unwrap();
+
+        let seq = sequential_chain!(chain1, chain2);
+        let result = seq
+            .invoke(prompt_args! { "input" => "go" })
+            .await
+            .expect("invoke failed");
+
+        assert_eq!(result, "final");
     }
 }
