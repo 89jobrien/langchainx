@@ -39,5 +39,9 @@ pub mod tools;
 pub mod vectorstore;
 
 pub use langchainx_core::LangChainError;
+pub use langchainx_prompt::{
+    fmt_message, fmt_placeholder, fmt_template, message_formatter, prompt_args, template_fstring,
+    template_jinja2,
+};
 pub use langchainx_vectorstore::{add_documents, similarity_search};
 pub use url;
