@@ -7,7 +7,7 @@ use futures_util::StreamExt;
 use langchainx_core::schemas::Document;
 use langchainx_text_splitter::TextSplitter;
 
-use crate::{process_doc_stream, HtmlLoader, Loader, LoaderError};
+use crate::{HtmlLoader, Loader, LoaderError, process_doc_stream};
 
 pub struct SitemapLoader {
     url: String,
@@ -48,8 +48,8 @@ impl SitemapLoader {
     }
 
     fn extract_locs(xml: &str, tag: &str) -> Vec<String> {
-        use quick_xml::events::Event;
         use quick_xml::Reader;
+        use quick_xml::events::Event;
 
         let mut reader = Reader::from_str(xml);
         reader.config_mut().trim_text(true);
@@ -116,10 +116,8 @@ impl SitemapLoader {
                 Err(_) => continue,
             };
 
-            let mut page_docs: Vec<Document> = stream
-                .filter_map(|r| async move { r.ok() })
-                .collect()
-                .await;
+            let mut page_docs: Vec<Document> =
+                stream.filter_map(|r| async move { r.ok() }).collect().await;
 
             // Ensure source metadata is set to the loc URL
             for doc in &mut page_docs {
@@ -168,7 +166,9 @@ mod tests {
     use super::*;
 
     fn html_page(title: &str) -> String {
-        format!("<html><head><title>{title}</title></head><body><p>{title} content</p></body></html>")
+        format!(
+            "<html><head><title>{title}</title></head><body><p>{title} content</p></body></html>"
+        )
     }
 
     #[tokio::test]
@@ -208,8 +208,8 @@ mod tests {
             .create_async()
             .await;
 
-        let loader = SitemapLoader::new(format!("{base}/sitemap.xml"))
-            .with_client(reqwest::Client::new());
+        let loader =
+            SitemapLoader::new(format!("{base}/sitemap.xml")).with_client(reqwest::Client::new());
 
         let docs: Vec<Document> = loader
             .load()

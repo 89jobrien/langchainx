@@ -1,17 +1,17 @@
 use crate::{
-    language_models::{llm::LLM, GenerateResult, LLMError, TokenUsage},
+    language_models::{GenerateResult, LLMError, TokenUsage, llm::LLM},
     schemas::{Message, MessageType, StreamData},
 };
 use async_trait::async_trait;
 use futures::Stream;
 use ollama_rs::generation::images::Image;
 pub use ollama_rs::{
+    Ollama as OllamaClient,
     error::OllamaError,
     generation::{
-        chat::{request::ChatMessageRequest, ChatMessage, MessageRole},
+        chat::{ChatMessage, MessageRole, request::ChatMessageRequest},
         options::GenerationOptions,
     },
-    Ollama as OllamaClient,
 };
 use std::pin::Pin;
 use std::sync::Arc;

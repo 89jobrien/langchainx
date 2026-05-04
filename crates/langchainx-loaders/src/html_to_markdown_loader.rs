@@ -7,7 +7,7 @@ use std::{
 };
 
 use async_trait::async_trait;
-use futures::{stream, Stream};
+use futures::{Stream, stream};
 use langchainx_core::schemas::Document;
 use langchainx_text_splitter::TextSplitter;
 use serde_json::Value;
@@ -15,7 +15,7 @@ use url::Url;
 
 pub use htmd::{HtmlToMarkdown, HtmlToMarkdownBuilder};
 
-use crate::{process_doc_stream, Loader, LoaderError};
+use crate::{Loader, LoaderError, process_doc_stream};
 
 #[derive(Debug, Clone)]
 pub struct HtmlToMarkdownLoader<R> {

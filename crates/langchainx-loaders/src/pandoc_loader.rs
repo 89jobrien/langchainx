@@ -1,7 +1,7 @@
 use std::{fmt, path::Path, pin::Pin, process::Stdio};
 
 use async_trait::async_trait;
-use futures_util::{stream, Stream};
+use futures_util::{Stream, stream};
 use langchainx_core::schemas::Document;
 use langchainx_text_splitter::TextSplitter;
 use tokio::{
@@ -10,7 +10,7 @@ use tokio::{
     process::Command,
 };
 
-use crate::{process_doc_stream, Loader, LoaderError};
+use crate::{Loader, LoaderError, process_doc_stream};
 
 #[derive(Debug)]
 pub enum InputFormat {

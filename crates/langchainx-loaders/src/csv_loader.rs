@@ -1,4 +1,4 @@
-use crate::{process_doc_stream, Loader, LoaderError};
+use crate::{Loader, LoaderError, process_doc_stream};
 use async_stream::stream;
 use async_trait::async_trait;
 use csv;

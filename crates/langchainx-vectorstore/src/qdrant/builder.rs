@@ -1,6 +1,6 @@
 use langchainx_embedding::embedding::Embedder;
-use qdrant_client::qdrant::{CreateCollectionBuilder, Distance, Filter, VectorParamsBuilder};
 use qdrant_client::Qdrant;
+use qdrant_client::qdrant::{CreateCollectionBuilder, Distance, Filter, VectorParamsBuilder};
 use std::error::Error;
 use std::sync::Arc;
 

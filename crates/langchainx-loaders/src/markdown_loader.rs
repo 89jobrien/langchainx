@@ -1,12 +1,12 @@
 use std::pin::Pin;
 
 use async_trait::async_trait;
-use futures::{stream, Stream};
+use futures::{Stream, stream};
 
 use langchainx_core::schemas::Document;
 use langchainx_text_splitter::TextSplitter;
 
-use crate::{process_doc_stream, Loader, LoaderError};
+use crate::{Loader, LoaderError, process_doc_stream};
 
 /// Splits YAML frontmatter (delimited by `---`) from body content.
 /// Returns `(metadata_lines, body)`.
@@ -62,8 +62,7 @@ impl Loader for MarkdownLoader {
         let (meta_pairs, body) = parse_frontmatter(&self.content);
         let mut doc = Document::new(body);
         for (k, v) in meta_pairs {
-            doc.metadata
-                .insert(k, serde_json::Value::String(v));
+            doc.metadata.insert(k, serde_json::Value::String(v));
         }
         let stream = stream::iter(vec![Ok(doc)]);
         Ok(Box::pin(stream))

@@ -4,10 +4,10 @@ use async_trait::async_trait;
 use serde_json::json;
 use tokio::sync::Mutex;
 
-use super::{agent::Agent, AgentError};
+use super::{AgentError, agent::Agent};
 use crate::schemas::{LogTools, Message};
 use crate::{
-    chain::{chain_trait::Chain, ChainError},
+    chain::{ChainError, chain_trait::Chain},
     language_models::GenerateResult,
     memory::SimpleMemory,
     prompt::PromptArgs,

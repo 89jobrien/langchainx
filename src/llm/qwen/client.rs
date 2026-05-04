@@ -1,5 +1,5 @@
 use crate::{
-    language_models::{llm::LLM, options::CallOptions, GenerateResult, LLMError, TokenUsage},
+    language_models::{GenerateResult, LLMError, TokenUsage, llm::LLM, options::CallOptions},
     llm::QwenError,
     schemas::{Message, StreamData},
 };
@@ -262,7 +262,7 @@ impl Qwen {
                     None => {
                         return Err(LLMError::ContentNotFound(
                             "No content returned from API".to_string(),
-                        ))
+                        ));
                     }
                 };
 

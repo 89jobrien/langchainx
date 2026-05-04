@@ -22,12 +22,12 @@ fn main() -> Result<()> {
     sh.change_dir(root);
 
     match task.as_deref() {
-        Some("fmt-check")   => gates::fmt_check(&sh),
-        Some("clippy")      => gates::clippy(&sh),
-        Some("build")       => gates::build(&sh),
-        Some("test")        => gates::test(&sh),
-        Some("ci")          => gates::ci(&sh),
-        Some("pre-commit")  => gates::pre_commit(&sh),
+        Some("fmt-check") => gates::fmt_check(&sh),
+        Some("clippy") => gates::clippy(&sh),
+        Some("build") => gates::build(&sh),
+        Some("test") => gates::test(&sh),
+        Some("ci") => gates::ci(&sh),
+        Some("pre-commit") => gates::pre_commit(&sh),
         Some("bump") => {
             let level = env::args().nth(2).unwrap_or_else(|| "patch".to_string());
             bump::bump(root, &level)

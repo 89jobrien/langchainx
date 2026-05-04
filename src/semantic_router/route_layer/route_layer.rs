@@ -212,7 +212,7 @@ mod tests {
     use async_trait::async_trait;
 
     use crate::{
-        embedding::{openai::OpenAiEmbedder, EmbedderError},
+        embedding::{EmbedderError, openai::OpenAiEmbedder},
         semantic_router::{MemoryIndex, RouteLayerBuilder},
         test_utils::FakeLLM,
     };

@@ -31,4 +31,4 @@ pub mod qdrant {
     pub use langchainx_vectorstore::qdrant::*;
 }
 
-pub use langchainx_vectorstore::{VecStoreOptions, VectorStore, VectorStoreError, Retriever};
+pub use langchainx_vectorstore::{Retriever, VecStoreOptions, VectorStore, VectorStoreError};

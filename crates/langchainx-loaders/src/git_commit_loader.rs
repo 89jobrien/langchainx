@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::pin::Pin;
 
-use crate::{process_doc_stream, Loader, LoaderError};
+use crate::{Loader, LoaderError, process_doc_stream};
 use async_trait::async_trait;
 use futures::Stream;
 use gix::ThreadSafeRepository;

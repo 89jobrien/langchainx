@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
 use pgvector::Vector;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use sqlx::{Pool, Postgres, Row};
 use uuid::Uuid;
 

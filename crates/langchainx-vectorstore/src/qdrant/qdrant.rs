@@ -1,7 +1,7 @@
 use async_trait::async_trait;
-use qdrant_client::qdrant::{Filter, PointStruct, SearchPointsBuilder, UpsertPointsBuilder};
 use qdrant_client::Payload;
-use serde_json::{json, Value};
+use qdrant_client::qdrant::{Filter, PointStruct, SearchPointsBuilder, UpsertPointsBuilder};
+use serde_json::{Value, json};
 use std::sync::Arc;
 
 pub use qdrant_client::Qdrant;
@@ -50,8 +50,7 @@ impl VectorStore for Store {
             });
 
             if let Some(extra_json) = opt.filters.clone() {
-                if let (Value::Object(base_map), Value::Object(extra_map)) =
-                    (&mut base, extra_json)
+                if let (Value::Object(base_map), Value::Object(extra_map)) = (&mut base, extra_json)
                 {
                     base_map.extend(extra_map);
                 }

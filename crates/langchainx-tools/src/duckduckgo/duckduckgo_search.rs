@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use reqwest::Client;
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use url::Url;
 
 use crate::{Tool, ToolError};

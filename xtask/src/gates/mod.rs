@@ -15,14 +15,14 @@
 mod build;
 mod clippy;
 mod fmt;
-mod test;
 pub mod gate;
+mod test;
 
 pub use build::build;
 pub use clippy::clippy;
 pub use fmt::fmt_check;
-pub use test::test;
 pub use gate::{Gate, run_gates};
+pub use test::test;
 
 use anyhow::Result;
 use xshell::Shell;
@@ -32,12 +32,15 @@ use xshell::Shell;
 /// Identical to what `.github/workflows/ci.yml` runs. Use this locally before
 /// pushing to guarantee CI will pass.
 pub fn ci(sh: &Shell) -> Result<()> {
-    run_gates(sh, &[
-        Gate::new("fmt-check", fmt_check),
-        Gate::new("clippy",    clippy),
-        Gate::new("build",     build),
-        Gate::new("test",      test),
-    ])?;
+    run_gates(
+        sh,
+        &[
+            Gate::new("fmt-check", fmt_check),
+            Gate::new("clippy", clippy),
+            Gate::new("build", build),
+            Gate::new("test", test),
+        ],
+    )?;
     eprintln!("ci passed");
     Ok(())
 }
@@ -46,10 +49,13 @@ pub fn ci(sh: &Shell) -> Result<()> {
 ///
 /// Fast subset — no build or test. Run before every commit.
 pub fn pre_commit(sh: &Shell) -> Result<()> {
-    run_gates(sh, &[
-        Gate::new("fmt-check", fmt_check),
-        Gate::new("clippy",    clippy),
-    ])?;
+    run_gates(
+        sh,
+        &[
+            Gate::new("fmt-check", fmt_check),
+            Gate::new("clippy", clippy),
+        ],
+    )?;
     eprintln!("pre-commit checks passed");
     Ok(())
 }

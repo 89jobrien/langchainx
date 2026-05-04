@@ -1,4 +1,4 @@
-use crate::{process_doc_stream, Loader, LoaderError};
+use crate::{Loader, LoaderError, process_doc_stream};
 use async_stream::stream;
 use async_trait::async_trait;
 use futures::Stream;
@@ -187,9 +187,9 @@ fn doc_from_value(value: Value, content_key: Option<&str>) -> Result<Document, L
             let mut obj = match value {
                 Value::Object(m) => m,
                 other => {
-                    return Err(LoaderError::OtherError(
-                        format!("expected JSON object, got {other}"),
-                    ));
+                    return Err(LoaderError::OtherError(format!(
+                        "expected JSON object, got {other}"
+                    )));
                 }
             };
             let content_val = obj.remove(key).unwrap_or(Value::Null);
@@ -232,7 +232,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_json_array_with_content_key() {
-        let input = r#"[{"text":"hello world","source":"a.txt"},{"text":"foo bar","source":"b.txt"}]"#;
+        let input =
+            r#"[{"text":"hello world","source":"a.txt"},{"text":"foo bar","source":"b.txt"}]"#;
         let loader = JsonLoader::from_string(input).with_content_key("text");
         let docs: Vec<_> = loader
             .load()

@@ -15,7 +15,6 @@ impl PromptValue {
         Self { messages }
     }
 
-
     pub fn to_chat_messages(&self) -> Vec<Message> {
         self.messages.clone()
     }

@@ -3,7 +3,7 @@ use std::pin::Pin;
 use async_stream::stream;
 use async_trait::async_trait;
 use futures::Stream;
-use futures_util::{pin_mut, StreamExt};
+use futures_util::{StreamExt, pin_mut};
 
 use langchainx_core::schemas::Document;
 use langchainx_text_splitter::TextSplitter;

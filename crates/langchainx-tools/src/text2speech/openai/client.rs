@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use async_openai::types::CreateSpeechRequestArgs;
 use async_openai::Client;
+use async_openai::types::CreateSpeechRequestArgs;
 pub use async_openai::{
     config::{Config, OpenAIConfig},
     types::{SpeechModel, SpeechResponseFormat, Voice},

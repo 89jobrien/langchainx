@@ -5,9 +5,9 @@ use async_trait::async_trait;
 use futures::Stream;
 use langchainx_core::schemas::Document;
 use langchainx_text_splitter::TextSplitter;
-use pdf_extract::{output_doc, PlainTextOutput};
+use pdf_extract::{PlainTextOutput, output_doc};
 
-use crate::{process_doc_stream, Loader, LoaderError};
+use crate::{Loader, LoaderError, process_doc_stream};
 
 #[derive(Debug, Clone)]
 pub struct PdfExtractLoader {

@@ -7,7 +7,7 @@ use langchainx_core::schemas::Document;
 use langchainx_text_splitter::TextSplitter;
 use serde_json::Value;
 
-use crate::{process_doc_stream, Loader, LoaderError};
+use crate::{Loader, LoaderError, process_doc_stream};
 
 #[derive(Debug, Clone)]
 pub struct LoPdfLoader {

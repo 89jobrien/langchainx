@@ -1,6 +1,4 @@
-use crate::{
-    find_files_with_extension, process_doc_stream, DirLoaderOptions, Loader, LoaderError,
-};
+use crate::{DirLoaderOptions, Loader, LoaderError, find_files_with_extension, process_doc_stream};
 use async_stream::stream;
 use async_trait::async_trait;
 use futures::Stream;
@@ -11,7 +9,7 @@ use std::fs::File;
 use std::io::Read;
 use std::pin::Pin;
 
-use super::{get_language_by_filename, LanguageParser, LanguageParserOptions};
+use super::{LanguageParser, LanguageParserOptions, get_language_by_filename};
 
 #[derive(Debug, Clone)]
 pub struct SourceCodeLoader {

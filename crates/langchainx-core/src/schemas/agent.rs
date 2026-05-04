@@ -33,7 +33,6 @@ pub enum AgentEvent {
     Finish(AgentFinish),
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

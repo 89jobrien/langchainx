@@ -4,7 +4,7 @@ use tokio::sync::Mutex;
 
 use crate::{
     chain::{
-        llm_chain::LLMChainBuilder, options::ChainCallOptions, ChainError, DEFAULT_OUTPUT_KEY,
+        ChainError, DEFAULT_OUTPUT_KEY, llm_chain::LLMChainBuilder, options::ChainCallOptions,
     },
     language_models::llm::{IntoArcLLM, LLM},
     memory::SimpleMemory,
@@ -14,7 +14,7 @@ use crate::{
     template_fstring,
 };
 
-use super::{prompt::DEFAULT_TEMPLATE, ConversationalChain, DEFAULT_INPUT_VARIABLE};
+use super::{ConversationalChain, DEFAULT_INPUT_VARIABLE, prompt::DEFAULT_TEMPLATE};
 
 pub struct ConversationalChainBuilder {
     llm: Option<Arc<dyn LLM>>,

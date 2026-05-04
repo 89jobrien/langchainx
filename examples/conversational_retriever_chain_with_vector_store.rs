@@ -11,7 +11,7 @@ use langchainx::{
     memory::SimpleMemory,
     prompt_args,
     schemas::Document,
-    vectorstore::{pgvector::StoreBuilder, Retriever, VectorStore},
+    vectorstore::{Retriever, VectorStore, pgvector::StoreBuilder},
 };
 
 #[cfg(feature = "postgres")]

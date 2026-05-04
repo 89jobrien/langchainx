@@ -46,11 +46,7 @@ macro_rules! add_documents {
 #[macro_export]
 macro_rules! similarity_search {
     ($obj:expr, $query:expr, $limit:expr) => {
-        $obj.similarity_search(
-            $query,
-            $limit,
-            &$crate::VecStoreOptions::default(),
-        )
+        $obj.similarity_search($query, $limit, &$crate::VecStoreOptions::default())
     };
     ($obj:expr, $query:expr, $limit:expr, $opt:expr) => {
         $obj.similarity_search($query, $limit, $opt)

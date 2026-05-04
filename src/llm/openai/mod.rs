@@ -4,6 +4,7 @@ pub use async_openai::config::{AzureConfig, Config, OpenAIConfig};
 
 use async_openai::types::{ChatCompletionToolChoiceOption, ResponseFormat};
 use async_openai::{
+    Client,
     error::OpenAIError,
     types::{
         ChatCompletionMessageToolCall, ChatCompletionRequestAssistantMessageArgs,
@@ -13,17 +14,16 @@ use async_openai::{
         ChatCompletionRequestUserMessageContentPart, ChatCompletionStreamOptions,
         CreateChatCompletionRequest, CreateChatCompletionRequestArgs,
     },
-    Client,
 };
 use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 
 use crate::schemas::convert::{LangchainIntoOpenAI, TryLangchainIntoOpenAI};
 use crate::{
-    language_models::{llm::LLM, options::CallOptions, GenerateResult, LLMError, TokenUsage},
+    language_models::{GenerateResult, LLMError, TokenUsage, llm::LLM, options::CallOptions},
     schemas::{
-        messages::{Message, MessageType},
         StreamData,
+        messages::{Message, MessageType},
     },
 };
 
