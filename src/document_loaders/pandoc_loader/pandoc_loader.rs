@@ -162,8 +162,20 @@ mod tests {
 
     use super::*;
 
+    fn pandoc_available() -> bool {
+        std::process::Command::new("pandoc")
+            .arg("--version")
+            .output()
+            .is_ok()
+    }
+
     #[tokio::test]
     async fn test_pandoc_loader() {
+        if !pandoc_available() {
+            eprintln!("skipping test_pandoc_loader: pandoc not on PATH");
+            return;
+        }
+
         let path = "./src/document_loaders/test_data/sample.docx";
 
         let loader = PandocLoader::from_path(InputFormat::Docx.to_string(), path)
