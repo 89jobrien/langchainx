@@ -46,7 +46,7 @@ Here is the user's input (remember to respond with a markdown code snippet of a 
 
 {{input}}"#;
 
-pub const TEMPLATE_TOOL_RESPONSE: &str = r#"TOOL RESPONSE: 
+pub const TEMPLATE_TOOL_RESPONSE: &str = r#"TOOL RESPONSE:
 ---------------------
 {{observation}}
 

@@ -12,6 +12,7 @@ members = [
     "crates/langchainx-tools",
     "crates/langchainx-loaders",
     "crates/langchainx-vectorstore",
+    "crates/langchainx-agent",
     "examples/vector_store_surrealdb",
     "xtask",
 ]
@@ -37,10 +38,12 @@ documentation = "https://github.com/89jobrien/langchainx"
 [dependencies]
 langchainx-core          = { path = "crates/langchainx-core" }
 langchainx-embedding     = { path = "crates/langchainx-embedding" }
+langchainx-llm           = { path = "crates/langchainx-llm" }
 langchainx-text-splitter = { path = "crates/langchainx-text-splitter" }
 langchainx-tools         = { path = "crates/langchainx-tools" }
 langchainx-loaders       = { path = "crates/langchainx-loaders" }
 langchainx-vectorstore   = { path = "crates/langchainx-vectorstore" }
+langchainx-agent         = { path = "crates/langchainx-agent" }
 scraper = "0.21"
 serde = { version = "1.0", features = ["derive"] }
 async-trait = "0.1.80"

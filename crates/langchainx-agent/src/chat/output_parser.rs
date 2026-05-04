@@ -4,10 +4,9 @@ use regex::Regex;
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::{
-    agent::AgentError,
-    schemas::agent::{AgentAction, AgentEvent, AgentFinish},
-};
+use langchainx_core::schemas::agent::{AgentAction, AgentEvent, AgentFinish};
+
+use crate::error::AgentError;
 
 use super::prompt::FORMAT_INSTRUCTIONS;
 
@@ -18,6 +17,7 @@ struct AgentOutput {
 }
 
 pub struct ChatOutputParser {}
+
 impl ChatOutputParser {
     pub fn new() -> Self {
         Self {}
@@ -29,7 +29,6 @@ impl ChatOutputParser {
         log::debug!("Parsing to Agent Action: {}", text);
         match parse_json_markdown(text) {
             Some(value) => {
-                // Deserialize the Value into AgentOutput
                 let agent_output: AgentOutput = serde_json::from_value(value)?;
 
                 if agent_output.action == "Final Answer" {
@@ -53,13 +52,13 @@ impl ChatOutputParser {
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_format_instructions(&self) -> &str {
         FORMAT_INSTRUCTIONS
     }
 }
 
 fn parse_partial_json(s: &str, strict: bool) -> Option<Value> {
-    // First, attempt to parse the string as-is.
     match serde_json::from_str::<Value>(s) {
         Ok(val) => return Some(val),
         Err(_) if !strict => (),
@@ -79,10 +78,10 @@ fn parse_partial_json(s: &str, strict: bool) -> Option<Value> {
             '}' | ']' if !is_inside_string => {
                 if let Some(c) = stack.pop_back() {
                     if c != char {
-                        return None; // Mismatched closing character
+                        return None;
                     }
                 } else {
-                    return None; // Unbalanced closing character
+                    return None;
                 }
             }
             '\\' if is_inside_string => escaped = !escaped,
@@ -91,23 +90,18 @@ fn parse_partial_json(s: &str, strict: bool) -> Option<Value> {
         new_s.push(char);
     }
 
-    // Close any open structures.
     while let Some(c) = stack.pop_back() {
         new_s.push(c);
     }
 
-    // Attempt to parse again.
     serde_json::from_str(&new_s).ok()
 }
 
 fn parse_json_markdown(json_markdown: &str) -> Option<Value> {
     let re = Regex::new(r"```(?:json)?\s*([\s\S]+?)\s*```").unwrap();
-    if let Some(caps) = re.captures(json_markdown) {
-        if let Some(json_str) = caps.get(1) {
-            return parse_partial_json(json_str.as_str(), false);
-        }
-    }
-    None
+    re.captures(json_markdown)
+        .and_then(|caps| caps.get(1))
+        .and_then(|json_str| parse_partial_json(json_str.as_str(), false))
 }
 
 #[cfg(test)]

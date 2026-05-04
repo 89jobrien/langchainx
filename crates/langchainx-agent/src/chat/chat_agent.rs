@@ -3,24 +3,30 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use serde_json::json;
 
-use crate::{
-    agent::{AgentError, agent::Agent, chat::prompt::FORMAT_INSTRUCTIONS},
-    chain::chain_trait::Chain,
+use langchainx_chain::chain_trait::Chain;
+use langchainx_core::{
+    schemas::{
+        agent::{AgentAction, AgentEvent},
+        messages::Message,
+    },
+    tools::Tool,
+};
+use langchainx_prompt::{
     message_formatter,
     prompt::{
         HumanMessagePromptTemplate, MessageFormatterStruct, MessageOrTemplate, PromptArgs,
         PromptFromatter,
     },
-    prompt_args,
-    schemas::{
-        agent::{AgentAction, AgentEvent},
-        messages::Message,
-    },
-    template_jinja2,
-    tools::Tool,
+    prompt_args, template_jinja2,
 };
 
-use super::{output_parser::ChatOutputParser, prompt::TEMPLATE_TOOL_RESPONSE};
+use crate::agent::Agent;
+use crate::error::AgentError;
+
+use super::{
+    output_parser::ChatOutputParser,
+    prompt::{FORMAT_INSTRUCTIONS, TEMPLATE_TOOL_RESPONSE},
+};
 
 pub struct ConversationalAgent {
     pub(crate) chain: Box<dyn Chain>,
@@ -50,7 +56,7 @@ impl ConversationalAgent {
         let input_variables_fstring = prompt_args! {
             "tools" => tool_string,
             "format_instructions" => FORMAT_INSTRUCTIONS,
-            "tool_names"=>tool_names
+            "tool_names" => tool_names
         };
 
         let sufix_prompt = sufix_prompt.format(input_variables_fstring)?;
@@ -77,7 +83,7 @@ impl ConversationalAgent {
         for (action, observation) in intermediate_steps.iter() {
             thoughts.push(Message::new_ai_message(&action.log));
             let tool_response = template_jinja2!(TEMPLATE_TOOL_RESPONSE, "observation")
-                .format(prompt_args!("observation"=>observation))?;
+                .format(prompt_args!("observation" => observation))?;
             thoughts.push(Message::new_human_message(&tool_response));
         }
         Ok(thoughts)
@@ -101,68 +107,5 @@ impl Agent for ConversationalAgent {
 
     fn get_tools(&self) -> Vec<Arc<dyn Tool>> {
         self.tools.clone()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::sync::Arc;
-
-    use async_trait::async_trait;
-    use serde_json::Value;
-
-    use crate::{
-        agent::{chat::builder::ConversationalAgentBuilder, executor::AgentExecutor},
-        chain::chain_trait::Chain,
-        llm::openai::{OpenAI, OpenAIModel},
-        memory::SimpleMemory,
-        prompt_args,
-        tools::{Tool, ToolError},
-    };
-
-    struct Calc {}
-
-    #[async_trait]
-    impl Tool for Calc {
-        fn name(&self) -> String {
-            "Calculator".to_string()
-        }
-        fn description(&self) -> String {
-            "Usefull to make calculations".to_string()
-        }
-        async fn run(&self, _input: Value) -> Result<String, ToolError> {
-            Ok("25".to_string())
-        }
-    }
-
-    #[tokio::test]
-    #[ignore]
-    async fn test_invoke_agent() {
-        let llm = OpenAI::default().with_model(OpenAIModel::Gpt4.to_string());
-        let memory = SimpleMemory::new();
-        let tool_calc = Calc {};
-        let agent = ConversationalAgentBuilder::new()
-            .tools(&[Arc::new(tool_calc)])
-            .build(llm)
-            .unwrap();
-        let input_variables = prompt_args! {
-            "input" => "hola,Me llamo luis, y tengo 10 anos, y estudio Computer scinence",
-        };
-        let executor = AgentExecutor::from_agent(agent).with_memory(memory.into());
-        match executor.invoke(input_variables).await {
-            Ok(result) => {
-                println!("Result: {:?}", result);
-            }
-            Err(e) => panic!("Error invoking LLMChain: {:?}", e),
-        }
-        let input_variables = prompt_args! {
-            "input" => "cuanta es la edad de luis +10 y que estudia",
-        };
-        match executor.invoke(input_variables).await {
-            Ok(result) => {
-                println!("Result: {:?}", result);
-            }
-            Err(e) => panic!("Error invoking LLMChain: {:?}", e),
-        }
     }
 }

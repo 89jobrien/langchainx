@@ -1,15 +1,17 @@
 use std::sync::Arc;
 
-use crate::{
-    agent::AgentError,
-    chain::{LLMChainBuilder, options::ChainCallOptions},
+use langchainx_chain::{LLMChainBuilder, options::ChainCallOptions};
+use langchainx_core::tools::Tool;
+use langchainx_llm::{
     language_models::{llm::LLM, options::CallOptions},
     schemas::FunctionDefinition,
-    tools::Tool,
 };
+
+use crate::error::AgentError;
 
 use super::{OpenAiToolAgent, prompt::PREFIX};
 
+#[derive(Default)]
 pub struct OpenAiToolAgentBuilder {
     tools: Option<Vec<Arc<dyn Tool>>>,
     prefix: Option<String>,
@@ -49,7 +51,9 @@ impl OpenAiToolAgentBuilder {
         let default_options = ChainCallOptions::default().with_max_tokens(1000);
         let functions = tools
             .iter()
-            .map(FunctionDefinition::from_langchain_tool)
+            .map(|tool| {
+                FunctionDefinition::new(&tool.name(), &tool.description(), tool.parameters())
+            })
             .collect::<Vec<FunctionDefinition>>();
         llm.add_options(CallOptions::new().with_functions(functions));
         let chain = Box::new(

@@ -1,11 +1,10 @@
 use std::sync::Arc;
 
-use crate::{
-    agent::AgentError,
-    chain::{llm_chain::LLMChainBuilder, options::ChainCallOptions},
-    language_models::llm::IntoArcLLM,
-    tools::Tool,
-};
+use langchainx_chain::{llm_chain::LLMChainBuilder, options::ChainCallOptions};
+use langchainx_core::tools::Tool;
+use langchainx_llm::language_models::llm::IntoArcLLM;
+
+use crate::error::AgentError;
 
 use super::{
     ConversationalAgent,
@@ -13,6 +12,7 @@ use super::{
     prompt::{PREFIX, SUFFIX},
 };
 
+#[derive(Default)]
 pub struct ConversationalAgentBuilder {
     tools: Option<Vec<Arc<dyn Tool>>>,
     prefix: Option<String>,

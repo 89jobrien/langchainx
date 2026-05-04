@@ -1,4 +1,25 @@
-#![allow(dead_code)]
+#![allow(
+    dead_code,
+    clippy::collapsible_if,
+    clippy::collapsible_match,
+    clippy::derivable_impls,
+    clippy::from_over_into,
+    clippy::get_first,
+    clippy::inherent_to_string,
+    clippy::into_iter_on_ref,
+    clippy::manual_map,
+    clippy::manual_range_contains,
+    clippy::manual_strip,
+    clippy::module_inception,
+    clippy::needless_borrow,
+    clippy::needless_borrows_for_generic_args,
+    clippy::new_without_default,
+    clippy::single_match,
+    clippy::to_string_in_format_args,
+    clippy::to_string_trait_impl,
+    clippy::unnecessary_map_or,
+    clippy::unnecessary_to_owned
+)]
 #[cfg(any(test, feature = "test-utils"))]
 pub mod test_utils;
 

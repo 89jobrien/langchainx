@@ -2,13 +2,13 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use crate::{
-    prompt::PromptArgs,
+use langchainx_core::{
     schemas::agent::{AgentAction, AgentEvent},
     tools::Tool,
 };
+use langchainx_prompt::PromptArgs;
 
-use super::AgentError;
+use crate::error::AgentError;
 
 #[async_trait]
 pub trait Agent: Send + Sync {

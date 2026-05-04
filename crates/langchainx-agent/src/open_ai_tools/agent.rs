@@ -4,19 +4,23 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use serde_json::json;
 
-use crate::{
-    agent::{Agent, AgentError},
-    chain::Chain,
-    fmt_message, fmt_placeholder, fmt_template, message_formatter,
-    prompt::{HumanMessagePromptTemplate, MessageFormatterStruct, PromptArgs},
+use langchainx_chain::Chain;
+use langchainx_core::{
     schemas::{
-        FunctionCallResponse,
         agent::{AgentAction, AgentEvent, AgentFinish, LogTools},
         messages::Message,
     },
-    template_jinja2,
     tools::Tool,
 };
+use langchainx_llm::schemas::FunctionCallResponse;
+use langchainx_prompt::{
+    fmt_message, fmt_placeholder, fmt_template, message_formatter,
+    prompt::{HumanMessagePromptTemplate, MessageFormatterStruct, PromptArgs},
+    template_jinja2,
+};
+
+use crate::agent::Agent;
+use crate::error::AgentError;
 
 pub struct OpenAiToolAgent {
     pub(crate) chain: Box<dyn Chain>,
@@ -46,20 +50,13 @@ impl OpenAiToolAgent {
 
         let mut tools_ai_message_seen: HashMap<String, ()> = HashMap::default();
         for (action, observation) in intermediate_steps {
-            // Deserialize directly and embed in method calls to streamline code.
-            // Extract the tool ID and tool calls from the log.
             let LogTools { tool_id, tools } = serde_json::from_str(&action.log)?;
             let tools_vec: Vec<FunctionCallResponse> = serde_json::from_str(&tools)?;
 
-            // one action can trigger multiple observations.  But make sure we add it to
-            // the scratchpad before the related observations.  There can also be multiple
-            // different actions in the same thought chain.
             if tools_ai_message_seen.insert(tools, ()).is_none() {
                 thoughts.push(Message::new_ai_message("").with_tool_calls(json!(tools_vec)));
             }
 
-            // Add a tool message for each observation. Observation is the ouput of the tool call.
-            // tool_id is the id of the tool.
             thoughts.push(Message::new_tool_message(observation, tool_id));
         }
 
@@ -82,16 +79,14 @@ impl Agent for OpenAiToolAgent {
             Ok(tools) => {
                 let mut actions: Vec<AgentAction> = Vec::new();
                 for tool in tools {
-                    //Log tools will be send as log
                     let log: LogTools = LogTools {
                         tool_id: tool.id.clone(),
-                        tools: output.clone(), //We send the complete tools ouput, we will need it in
-                                               //the open ai call
+                        tools: output.clone(),
                     };
                     actions.push(AgentAction {
                         tool: tool.function.name.clone(),
                         tool_input: tool.function.arguments.clone(),
-                        log: serde_json::to_string(&log)?, //We send this as string to minimise changes
+                        log: serde_json::to_string(&log)?,
                     });
                 }
                 return Ok(AgentEvent::Action(actions));

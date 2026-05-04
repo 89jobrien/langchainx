@@ -4,19 +4,22 @@ use async_trait::async_trait;
 use serde_json::json;
 use tokio::sync::Mutex;
 
-use super::{AgentError, agent::Agent};
-use crate::schemas::{LogTools, Message};
-use crate::{
-    chain::{ChainError, chain_trait::Chain},
+use langchainx_chain::{ChainError, chain_trait::Chain};
+use langchainx_core::{
     language_models::GenerateResult,
-    memory::SimpleMemory,
-    prompt::PromptArgs,
     schemas::{
+        LogTools,
         agent::{AgentAction, AgentEvent},
         memory::BaseMemory,
+        messages::Message,
     },
     tools::Tool,
 };
+use langchainx_memory::SimpleMemory;
+use langchainx_prompt::prompt::PromptArgs;
+
+use crate::agent::Agent;
+use crate::error::AgentError;
 
 pub struct AgentExecutor<A>
 where
@@ -108,10 +111,7 @@ where
                         let observation = match observation_result {
                             Ok(result) => result,
                             Err(err) => {
-                                log::info!(
-                                    "The tool return the following error: {}",
-                                    err.to_string()
-                                );
+                                log::info!("The tool return the following error: {}", err);
                                 if self.break_if_error {
                                     return Err(ChainError::AgentError(
                                         AgentError::ToolError(err.to_string()).to_string(),
@@ -130,9 +130,8 @@ where
                         let mut memory = memory.lock().await;
 
                         memory.add_user_message(match &input_variables["input"] {
-                            // This avoids adding extra quotes to the user input in the history.
                             serde_json::Value::String(s) => s,
-                            x => x, // this the json encoded value.
+                            x => x,
                         });
 
                         let mut tools_ai_message_seen: HashMap<String, ()> = HashMap::default();
@@ -156,13 +155,13 @@ where
                 }
             }
 
-            if let Some(max_iterations) = self.max_iterations {
-                if steps.len() >= max_iterations as usize {
-                    return Ok(GenerateResult {
-                        generation: "Max iterations reached".to_string(),
-                        ..Default::default()
-                    });
-                }
+            if let Some(max_iterations) = self.max_iterations
+                && steps.len() >= max_iterations as usize
+            {
+                return Ok(GenerateResult {
+                    generation: "Max iterations reached".to_string(),
+                    ..Default::default()
+                });
             }
         }
     }
@@ -181,16 +180,15 @@ mod tests {
     use serde_json::Value;
 
     use super::*;
-    use crate::{
-        chain::Chain,
-        prompt_args,
+    use langchainx_chain::Chain;
+    use langchainx_core::{
         schemas::agent::{AgentAction, AgentEvent, AgentFinish},
         tools::ToolError,
     };
+    use langchainx_prompt::prompt_args;
 
-    // --- FakeAgent ---
+    use crate::agent::Agent;
 
-    /// An agent that emits a fixed sequence of `AgentEvent`s.
     struct FakeAgent {
         events: Arc<Mutex<Vec<AgentEvent>>>,
         tools: Vec<Arc<dyn Tool>>,
@@ -219,7 +217,6 @@ mod tests {
         ) -> Result<AgentEvent, AgentError> {
             let mut events = self.events.lock().await;
             if events.is_empty() {
-                // Default: return a finish so the loop terminates.
                 Ok(AgentEvent::Finish(AgentFinish {
                     output: "done".into(),
                 }))
@@ -232,8 +229,6 @@ mod tests {
             self.tools.clone()
         }
     }
-
-    // --- FakeTool ---
 
     struct FakeTool {
         name: String,
@@ -261,8 +256,6 @@ mod tests {
             Ok(self.response.clone())
         }
     }
-
-    // --- tests ---
 
     #[tokio::test]
     async fn executor_finish_on_first_plan() {
@@ -314,8 +307,6 @@ mod tests {
 
     #[tokio::test]
     async fn executor_respects_max_iterations() {
-        // Agent always returns an action — never finishes.
-        // With max_iterations=2 it should stop and return the sentinel message.
         let tool = FakeTool::new("loop_tool", "observation");
         let events: Vec<AgentEvent> = (0..10)
             .map(|_| {
