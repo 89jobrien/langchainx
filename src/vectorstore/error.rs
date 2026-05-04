@@ -20,6 +20,12 @@ pub enum VectorStoreError {
     OtherError(String),
 }
 
+impl From<VectorStoreError> for langchainx_core::LangChainError {
+    fn from(e: VectorStoreError) -> Self {
+        langchainx_core::LangChainError::VectorStore(Box::new(e))
+    }
+}
+
 #[cfg(any(feature = "postgres", feature = "sqlite-vss", feature = "sqlite-vec"))]
 impl From<sqlx::Error> for VectorStoreError {
     fn from(e: sqlx::Error) -> Self {

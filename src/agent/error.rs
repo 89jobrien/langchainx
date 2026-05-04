@@ -28,3 +28,9 @@ pub enum AgentError {
     #[error("Error: {0}")]
     OtherError(String),
 }
+
+impl From<AgentError> for langchainx_core::LangChainError {
+    fn from(e: AgentError) -> Self {
+        langchainx_core::LangChainError::Agent(Box::new(e))
+    }
+}

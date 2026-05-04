@@ -50,3 +50,9 @@ pub enum LLMError {
     #[error("Error: {0}")]
     OtherError(String),
 }
+
+impl From<LLMError> for langchainx_core::LangChainError {
+    fn from(e: LLMError) -> Self {
+        langchainx_core::LangChainError::LLM(Box::new(e))
+    }
+}

@@ -12,3 +12,9 @@ pub enum PromptError {
     #[error("Error: {0}")]
     OtherError(String),
 }
+
+impl From<PromptError> for langchainx_core::LangChainError {
+    fn from(e: PromptError) -> Self {
+        langchainx_core::LangChainError::Prompt(Box::new(e))
+    }
+}
