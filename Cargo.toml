@@ -136,7 +136,7 @@ html-to-markdown = ["dep:htmd", "langchainx-loaders/html-to-markdown"]
 mistralai = ["mistralai-client", "langchainx-embedding/mistralai"]
 lopdf = ["dep:lopdf", "langchainx-loaders/lopdf"]
 pdf-extract = ["dep:lopdf", "dep:pdf-extract", "langchainx-loaders/pdf-extract"]
-ollama = ["ollama-rs", "langchainx-embedding/ollama"]
+ollama = ["ollama-rs", "langchainx-embedding/ollama", "langchainx-llm/ollama"]
 opensearch = ["dep:opensearch", "aws-config", "langchainx-vectorstore/opensearch"]
 postgres = [
     "pgvector",

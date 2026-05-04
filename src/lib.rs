@@ -38,6 +38,7 @@ pub mod text_splitter;
 pub mod tools;
 pub mod vectorstore;
 
+pub use langchainx_chain::sequential_chain;
 pub use langchainx_core::LangChainError;
 pub use langchainx_prompt::{
     fmt_message, fmt_placeholder, fmt_template, message_formatter, prompt_args, template_fstring,

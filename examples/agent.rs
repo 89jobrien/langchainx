@@ -1,11 +1,10 @@
-use std::sync::Arc;
 use langchainx_agent::{AgentExecutor, ConversationalAgentBuilder};
 use langchainx_chain::{Chain, options::ChainCallOptions};
 use langchainx_llm::OpenAI;
 use langchainx_memory::SimpleMemory;
 use langchainx_prompt::prompt_args;
 use langchainx_tools::CommandExecutor;
-};
+use std::sync::Arc;
 
 #[tokio::main]
 async fn main() {

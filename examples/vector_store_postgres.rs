@@ -6,7 +6,9 @@ use langchainx_core::schemas::Document;
 #[cfg(feature = "postgres")]
 use langchainx_embedding::embedding::openai::openai_embedder::OpenAiEmbedder;
 #[cfg(feature = "postgres")]
-use langchainx_vectorstore::{VectorStore, add_documents, pgvector::StoreBuilder, similarity_search};
+use langchainx_vectorstore::{
+    VectorStore, add_documents, pgvector::StoreBuilder, similarity_search,
+};
 #[cfg(feature = "postgres")]
 use std::io::Write;
 #[cfg(feature = "postgres")]
