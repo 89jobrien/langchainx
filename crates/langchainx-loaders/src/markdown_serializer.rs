@@ -155,13 +155,21 @@ pub(crate) fn parse_sections(body: &str) -> Vec<Section> {
 }
 
 impl MarkdownDocument {
-    pub fn parse(src: &str) -> Result<Self, MarkdownSerializerError> {
+    /// Parse a markdown string into a `MarkdownDocument`.
+    // The method name matches the plan's public API; `FromStr` is also implemented below.
+    #[allow(clippy::should_implement_trait)]
+    pub fn from_str(src: &str) -> Result<Self, MarkdownSerializerError> {
         let (frontmatter, body) = parse_frontmatter(src);
         let sections = parse_sections(&body);
         Ok(Self {
             frontmatter,
             sections,
         })
+    }
+
+    /// Alias for `from_str` — kept for backwards compatibility.
+    pub fn parse(src: &str) -> Result<Self, MarkdownSerializerError> {
+        Self::from_str(src)
     }
 
     pub fn to_json(&self) -> Result<String, serde_json::Error> {
@@ -178,7 +186,7 @@ impl std::str::FromStr for MarkdownDocument {
     type Err = MarkdownSerializerError;
 
     fn from_str(src: &str) -> Result<Self, Self::Err> {
-        Self::parse(src)
+        Self::from_str(src)
     }
 }
 
@@ -317,7 +325,11 @@ mod tests {
         let body = "# Root\n## First\n### Deep\nDeep text.\n## Second\nSecond text.";
         let sections = parse_sections(body);
         assert_eq!(sections.len(), 1);
-        assert_eq!(sections[0].children.len(), 2, "Root must have two h2 children");
+        assert_eq!(
+            sections[0].children.len(),
+            2,
+            "Root must have two h2 children"
+        );
         assert_eq!(sections[0].children[0].title, "First");
         assert_eq!(sections[0].children[0].children.len(), 1);
         assert_eq!(sections[0].children[0].children[0].title, "Deep");
@@ -354,7 +366,7 @@ mod tests {
     #[test]
     fn test_from_str_full_document() {
         let src = "---\ntitle: My Doc\n---\n# Intro\nHello world.\n## Details\nMore info.";
-        let doc = MarkdownDocument::parse(src).unwrap();
+        let doc = MarkdownDocument::from_str(src).unwrap();
         assert_eq!(
             doc.frontmatter.get("title").unwrap(),
             &serde_json::Value::String("My Doc".into())
@@ -367,7 +379,7 @@ mod tests {
     #[test]
     fn test_to_json_roundtrip() {
         let src = "# Hello\nContent.";
-        let doc = MarkdownDocument::parse(src).unwrap();
+        let doc = MarkdownDocument::from_str(src).unwrap();
         let json = doc.to_json().unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed["sections"][0]["title"], "Hello");
