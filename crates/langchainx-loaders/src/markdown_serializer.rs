@@ -297,6 +297,58 @@ mod tests {
         assert_eq!(l2[0].children[0].content, "Deep.");
     }
 
+    /// A depth jump from h1 directly to h3 (no h2 in between) — h3 should
+    /// still become a child of h1, not a root-level section.
+    #[test]
+    fn test_nested_depth_jump_h1_to_h3() {
+        let body = "# Top\nTop text.\n### Skip\nSkip text.";
+        let sections = parse_sections(body);
+        assert_eq!(sections.len(), 1, "h3 must be nested under h1, not at root");
+        assert_eq!(sections[0].title, "Top");
+        assert_eq!(sections[0].children.len(), 1);
+        assert_eq!(sections[0].children[0].title, "Skip");
+        assert_eq!(sections[0].children[0].level, 3);
+    }
+
+    /// After a deep section, a shallower sibling at the same level as an earlier
+    /// ancestor must return to the correct parent level.
+    #[test]
+    fn test_nested_return_to_h2_after_h3() {
+        let body = "# Root\n## First\n### Deep\nDeep text.\n## Second\nSecond text.";
+        let sections = parse_sections(body);
+        assert_eq!(sections.len(), 1);
+        assert_eq!(sections[0].children.len(), 2, "Root must have two h2 children");
+        assert_eq!(sections[0].children[0].title, "First");
+        assert_eq!(sections[0].children[0].children.len(), 1);
+        assert_eq!(sections[0].children[0].children[0].title, "Deep");
+        assert_eq!(sections[0].children[1].title, "Second");
+        assert_eq!(sections[0].children[1].content, "Second text.");
+    }
+
+    /// Content assigned to a parent heading must not include lines that belong
+    /// to its child headings.
+    #[test]
+    fn test_nested_content_attribution() {
+        let body = "# Parent\nParent only.\n## Child\nChild only.";
+        let sections = parse_sections(body);
+        assert_eq!(sections[0].content, "Parent only.");
+        assert_eq!(sections[0].children[0].content, "Child only.");
+    }
+
+    /// Multiple root-level h1 sections each with their own h2 children.
+    #[test]
+    fn test_nested_multiple_h1_each_with_h2() {
+        let body = "# A\n## A1\nA1.\n# B\n## B1\nB1.";
+        let sections = parse_sections(body);
+        assert_eq!(sections.len(), 2);
+        assert_eq!(sections[0].title, "A");
+        assert_eq!(sections[0].children.len(), 1);
+        assert_eq!(sections[0].children[0].title, "A1");
+        assert_eq!(sections[1].title, "B");
+        assert_eq!(sections[1].children.len(), 1);
+        assert_eq!(sections[1].children[0].title, "B1");
+    }
+
     // --- MarkdownDocument API ---
 
     #[test]
