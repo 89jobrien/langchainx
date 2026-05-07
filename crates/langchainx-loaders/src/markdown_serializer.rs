@@ -29,6 +29,15 @@ pub struct MarkdownDocument {
 
 /// Splits YAML frontmatter (delimited by `---`) from body.
 /// Returns `(metadata_map, body)`.
+///
+/// # Example
+///
+/// ```ignore
+/// let src = "---\ntitle: Hello\n---\nBody.";
+/// let (meta, body) = parse_frontmatter(src);
+/// assert_eq!(meta["title"], serde_json::Value::String("Hello".into()));
+/// assert_eq!(body, "Body.");
+/// ```
 pub(crate) fn parse_frontmatter(content: &str) -> (HashMap<String, serde_json::Value>, String) {
     let mut lines = content.lines();
     let first = lines.next().unwrap_or("");
@@ -42,7 +51,7 @@ pub(crate) fn parse_frontmatter(content: &str) -> (HashMap<String, serde_json::V
         if in_front {
             if line.trim() == "---" {
                 in_front = false;
-            } else if let Some((k, v)) = line.split_once(':') {
+            } else if let Some((k, v)) = line.split_once(": ") {
                 meta.insert(
                     k.trim().to_string(),
                     serde_json::Value::String(v.trim().to_string()),
@@ -76,7 +85,8 @@ fn heading_level(line: &str) -> Option<(u8, &str)> {
 }
 
 /// Parse body text into a nested `Section` tree.
-/// Sections before the first heading are silently dropped.
+///
+/// **Note:** content before the first heading is silently dropped.
 pub(crate) fn parse_sections(body: &str) -> Vec<Section> {
     struct Seg {
         level: u8,
@@ -156,9 +166,9 @@ pub(crate) fn parse_sections(body: &str) -> Vec<Section> {
 
 impl MarkdownDocument {
     /// Parse a markdown string into a `MarkdownDocument`.
-    // The method name matches the plan's public API; `FromStr` is also implemented below.
-    #[allow(clippy::should_implement_trait)]
-    pub fn from_str(src: &str) -> Result<Self, MarkdownSerializerError> {
+    ///
+    /// **Note:** content before the first heading is silently dropped.
+    pub fn parse_markdown(src: &str) -> Result<Self, MarkdownSerializerError> {
         let (frontmatter, body) = parse_frontmatter(src);
         let sections = parse_sections(&body);
         Ok(Self {
@@ -167,9 +177,10 @@ impl MarkdownDocument {
         })
     }
 
-    /// Alias for `from_str` — kept for backwards compatibility.
+    /// Alias for `parse_markdown`.
+    #[deprecated(since = "0.1.0", note = "use FromStr or parse_markdown instead")]
     pub fn parse(src: &str) -> Result<Self, MarkdownSerializerError> {
-        Self::from_str(src)
+        Self::parse_markdown(src)
     }
 
     pub fn to_json(&self) -> Result<String, serde_json::Error> {
@@ -186,7 +197,7 @@ impl std::str::FromStr for MarkdownDocument {
     type Err = MarkdownSerializerError;
 
     fn from_str(src: &str) -> Result<Self, Self::Err> {
-        Self::from_str(src)
+        Self::parse_markdown(src)
     }
 }
 
@@ -194,7 +205,7 @@ impl TryFrom<&str> for MarkdownDocument {
     type Error = MarkdownSerializerError;
 
     fn try_from(src: &str) -> Result<Self, Self::Error> {
-        Self::parse(src)
+        Self::parse_markdown(src)
     }
 }
 
@@ -242,6 +253,17 @@ mod tests {
         let (meta, body) = parse_frontmatter(src);
         assert!(meta.is_empty());
         assert_eq!(body, src);
+    }
+
+    #[test]
+    fn test_parse_frontmatter_url_value() {
+        let src = "---\nurl: https://example.com\n---\nBody.";
+        let (meta, body) = parse_frontmatter(src);
+        assert_eq!(
+            meta.get("url").unwrap(),
+            &serde_json::Value::String("https://example.com".into())
+        );
+        assert_eq!(body, "Body.");
     }
 
     // --- parse_sections ---
@@ -364,9 +386,9 @@ mod tests {
     // --- MarkdownDocument API ---
 
     #[test]
-    fn test_from_str_full_document() {
+    fn test_parse_markdown_full_document() {
         let src = "---\ntitle: My Doc\n---\n# Intro\nHello world.\n## Details\nMore info.";
-        let doc = MarkdownDocument::from_str(src).unwrap();
+        let doc = MarkdownDocument::parse_markdown(src).expect("parse_markdown should succeed");
         assert_eq!(
             doc.frontmatter.get("title").unwrap(),
             &serde_json::Value::String("My Doc".into())
@@ -377,9 +399,22 @@ mod tests {
     }
 
     #[test]
+    fn test_from_str_trait() {
+        use std::str::FromStr;
+        let src = "---\ntitle: My Doc\n---\n# Intro\nHello world.\n## Details\nMore info.";
+        let doc =
+            MarkdownDocument::from_str(src).expect("FromStr::from_str should not recurse infinitely");
+        assert_eq!(
+            doc.frontmatter.get("title").unwrap(),
+            &serde_json::Value::String("My Doc".into())
+        );
+        assert_eq!(doc.sections[0].title, "Intro");
+    }
+
+    #[test]
     fn test_to_json_roundtrip() {
         let src = "# Hello\nContent.";
-        let doc = MarkdownDocument::from_str(src).unwrap();
+        let doc = MarkdownDocument::parse_markdown(src).expect("parse_markdown should succeed");
         let json = doc.to_json().unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed["sections"][0]["title"], "Hello");
@@ -388,7 +423,7 @@ mod tests {
     #[test]
     fn test_try_from_str() {
         let src = "# Test\nBody.";
-        let doc = MarkdownDocument::try_from(src).unwrap();
+        let doc = MarkdownDocument::try_from(src).expect("try_from should succeed");
         assert_eq!(doc.sections[0].title, "Test");
     }
 
@@ -396,6 +431,7 @@ mod tests {
     #[test]
     fn test_to_yaml_contains_title() {
         let src = "# Hello\nContent.";
+        #[allow(deprecated)]
         let doc = MarkdownDocument::parse(src).unwrap();
         let yaml = doc.to_yaml().unwrap();
         assert!(yaml.contains("Hello"));

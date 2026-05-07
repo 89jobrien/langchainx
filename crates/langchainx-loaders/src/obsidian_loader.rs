@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
 
@@ -15,6 +16,12 @@ use crate::{Loader, LoaderError, markdown_serializer::parse_frontmatter, process
 /// - Skips the `.obsidian/` configuration directory.
 /// - Parses YAML frontmatter into `Document.metadata`.
 /// - Sets `source` metadata to the absolute file path.
+///
+/// `Clone` is derived to allow callers to reuse a loader configuration across
+/// multiple load calls without consuming the original.
+///
+/// **Note:** `load()` currently collects all matching files eagerly before
+/// streaming. A future version will stream lazily.
 #[derive(Debug, Clone)]
 pub struct ObsidianLoader {
     vault_path: PathBuf,
@@ -29,33 +36,42 @@ impl ObsidianLoader {
 
     async fn collect_md_files(dir: &Path) -> Result<Vec<PathBuf>, LoaderError> {
         let mut files = Vec::new();
-        Self::walk(dir, &mut files).await?;
-        Ok(files)
-    }
+        let mut queue: VecDeque<PathBuf> = VecDeque::new();
+        queue.push_back(dir.to_path_buf());
 
-    #[async_recursion::async_recursion]
-    async fn walk(dir: &Path, files: &mut Vec<PathBuf>) -> Result<(), LoaderError> {
-        let mut reader = fs::read_dir(dir).await.map_err(|e| {
-            LoaderError::OtherError(format!("Failed to read dir {:?}: {}", dir, e))
-        })?;
-        while let Some(entry) = reader.next_entry().await.map_err(|e| {
-            LoaderError::OtherError(format!("Dir entry error: {}", e))
-        })? {
-            let path = entry.path();
-            if path.is_dir() {
-                // Skip .obsidian config directory
-                let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-                if name == ".obsidian" {
+        while let Some(current) = queue.pop_front() {
+            let mut reader = fs::read_dir(&current).await.map_err(|e| {
+                LoaderError::OtherError(format!("Failed to read dir {:?}: {}", current, e))
+            })?;
+            while let Some(entry) = reader.next_entry().await.map_err(|e| {
+                LoaderError::OtherError(format!("Dir entry error: {}", e))
+            })? {
+                let file_type = entry.file_type().await.map_err(|e| {
+                    LoaderError::OtherError(format!("Failed to get file type: {}", e))
+                })?;
+
+                if file_type.is_symlink() {
+                    // Symlinks are not followed to avoid cycles and unguarded traversal.
                     continue;
                 }
-                Self::walk(&path, files).await?;
-            } else if path.is_file()
-                && path.extension().and_then(|e| e.to_str()) == Some("md")
-            {
-                files.push(path);
+
+                let path = entry.path();
+
+                if file_type.is_dir() {
+                    let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                    if name == ".obsidian" {
+                        continue;
+                    }
+                    queue.push_back(path);
+                } else if file_type.is_file()
+                    && path.extension().and_then(|e| e.to_str()) == Some("md")
+                {
+                    files.push(path);
+                }
             }
         }
-        Ok(())
+
+        Ok(files)
     }
 }
 
@@ -74,11 +90,16 @@ impl Loader for ObsidianLoader {
                 LoaderError::OtherError(format!("Failed to read {:?}: {}", path, e))
             })?;
             let (mut meta, body) = parse_frontmatter(&content);
-            let abs_path = path
-                .canonicalize()
-                .unwrap_or(path.clone())
-                .to_string_lossy()
-                .to_string();
+            let abs_path = match path.canonicalize() {
+                Ok(p) => p.to_string_lossy().to_string(),
+                Err(e) => {
+                    eprintln!(
+                        "warn: canonicalize failed for {:?}: {} — using original path",
+                        path, e
+                    );
+                    path.to_string_lossy().to_string()
+                }
+            };
             meta.insert("source".to_string(), serde_json::Value::String(abs_path));
             let mut doc = Document::new(body);
             doc.metadata = meta;
@@ -128,16 +149,22 @@ mod tests {
         // Nested note
         let sub = root.join("subdir");
         fs::create_dir(&sub).await.unwrap();
-        fs::write(sub.join("nested.md"), "---\nauthor: Alice\n---\nNested content.")
-            .await
-            .unwrap();
+        fs::write(
+            sub.join("nested.md"),
+            "---\nauthor: Alice\n---\nNested content.",
+        )
+        .await
+        .unwrap();
 
         // .obsidian dir — should be skipped
         let obsidian = root.join(".obsidian");
         fs::create_dir(&obsidian).await.unwrap();
-        fs::write(obsidian.join("config.md"), "---\ninternal: true\n---\nShould be skipped.")
-            .await
-            .unwrap();
+        fs::write(
+            obsidian.join("config.md"),
+            "---\ninternal: true\n---\nShould be skipped.",
+        )
+        .await
+        .unwrap();
 
         dir
     }
@@ -154,8 +181,14 @@ mod tests {
         }
 
         // Should find 3 notes (note1, note2, nested) — not the .obsidian one
-        assert_eq!(docs.len(), 3, "Expected 3 docs, got {}: {:?}", docs.len(),
-            docs.iter().map(|d| d.metadata.get("source")).collect::<Vec<_>>());
+        let sources: Vec<_> = docs.iter().map(|d| d.metadata.get("source")).collect();
+        assert_eq!(
+            docs.len(),
+            3,
+            "Expected 3 docs, got {}: {:?}",
+            docs.len(),
+            sources,
+        );
     }
 
     #[tokio::test]
