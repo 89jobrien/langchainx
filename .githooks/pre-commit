@@ -48,7 +48,7 @@ if [ "$BRANCH" = "develop" ]; then
 fi
 
 # ── Enforce branch naming convention ─────────────────────────────────────────
-VALID_PATTERN='^(main|develop|feature/.+|release/[0-9]+\.[0-9]+\.[0-9]+|hotfix/.+)$'
+VALID_PATTERN='^(main|develop|feature/.+|issue/.+|release/[0-9]+\.[0-9]+\.[0-9]+|hotfix/.+)$'
 if ! echo "$BRANCH" | grep -qE "$VALID_PATTERN"; then
     echo -e "${RED}✗ BLOCKED: Branch name '${BRANCH}' does not follow gitflow conventions.${NC}"
     echo -e "${CYAN}  Allowed patterns:${NC}"

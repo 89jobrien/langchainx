@@ -21,6 +21,7 @@ use super::{
 pub struct SqlChainPromptBuilder {
     query: String,
 }
+#[allow(clippy::new_without_default)] // Builder pattern
 impl SqlChainPromptBuilder {
     pub fn new() -> Self {
         Self {
