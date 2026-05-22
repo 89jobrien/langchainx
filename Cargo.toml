@@ -129,7 +129,7 @@ tempfile = { version = "3", optional = true }
 
 [features]
 default = []
-test-utils = ["dep:tempfile"]
+test-utils = ["dep:tempfile", "langchainx-chain/test-utils"]
 fastembed = ["dep:fastembed", "langchainx-embedding/fastembed"]
 git = ["gix", "flume", "langchainx-loaders/git"]
 html-to-markdown = ["dep:htmd", "langchainx-loaders/html-to-markdown"]

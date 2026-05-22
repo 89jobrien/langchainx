@@ -17,6 +17,7 @@ pub struct StuffDocumentBuilder {
     output_parser: Option<Box<dyn OutputParser>>,
     prompt: Option<Box<dyn FormatPrompter>>,
 }
+#[allow(clippy::new_without_default)] // Builder pattern
 impl StuffDocumentBuilder {
     pub fn new() -> Self {
         Self {

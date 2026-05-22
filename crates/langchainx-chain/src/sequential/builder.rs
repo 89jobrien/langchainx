@@ -8,6 +8,7 @@ pub struct SequentialChainBuilder {
     chains: Vec<Box<dyn Chain>>,
 }
 
+#[allow(clippy::new_without_default)] // Builder pattern
 impl SequentialChainBuilder {
     pub fn new() -> Self {
         Self { chains: Vec::new() }

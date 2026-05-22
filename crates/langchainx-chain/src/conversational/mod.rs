@@ -25,6 +25,7 @@ pub struct ConversationalChainPromptBuilder {
     input: String,
 }
 
+#[allow(clippy::new_without_default)] // Builder pattern
 impl ConversationalChainPromptBuilder {
     pub fn new() -> Self {
         Self {

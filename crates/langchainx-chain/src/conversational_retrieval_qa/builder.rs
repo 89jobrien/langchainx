@@ -56,6 +56,7 @@ pub struct ConversationalRetrieverChainBuilder {
     input_key: String,
     output_key: String,
 }
+#[allow(clippy::new_without_default)] // Builder pattern
 impl ConversationalRetrieverChainBuilder {
     pub fn new() -> Self {
         ConversationalRetrieverChainBuilder {

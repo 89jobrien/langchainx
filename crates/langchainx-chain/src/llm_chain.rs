@@ -25,6 +25,7 @@ pub struct LLMChainBuilder {
     output_parser: Option<Box<dyn OutputParser>>,
 }
 
+#[allow(clippy::new_without_default)] // Builder pattern
 impl LLMChainBuilder {
     pub fn new() -> Self {
         Self {

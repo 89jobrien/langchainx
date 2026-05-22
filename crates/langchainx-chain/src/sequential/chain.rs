@@ -12,6 +12,7 @@ use crate::{
 //THIS IS EXPERIMENTAL
 pub struct SequentialChain {
     pub(crate) chains: Vec<Box<dyn Chain>>,
+    #[allow(dead_code)] // Planned for input validation in SequentialChain
     pub(crate) input_keys: HashSet<String>,
     pub(crate) outputs: HashSet<String>,
 }

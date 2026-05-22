@@ -26,6 +26,7 @@ pub struct CondenseQuestionPromptBuilder {
     chat_history: String,
     question: String,
 }
+#[allow(clippy::new_without_default)] // Builder pattern
 impl CondenseQuestionPromptBuilder {
     pub fn new() -> Self {
         Self {
@@ -103,6 +104,7 @@ pub struct StuffQAPromptBuilder<'a> {
     question: String,
 }
 
+#[allow(clippy::new_without_default)] // Builder pattern
 impl<'a> StuffQAPromptBuilder<'a> {
     pub fn new() -> Self {
         Self {

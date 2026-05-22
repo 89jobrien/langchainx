@@ -26,6 +26,7 @@ pub struct ConversationalChainBuilder {
     prompt: Option<Box<dyn FormatPrompter>>,
 }
 
+#[allow(clippy::new_without_default)] // Builder pattern; Default would be misleading
 impl ConversationalChainBuilder {
     pub fn new() -> Self {
         Self {
