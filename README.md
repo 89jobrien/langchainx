@@ -5,7 +5,7 @@ Building applications with LLMs through composability, with Rust!
 > **Upstream credit:** This crate is a fork of
 > [langchain-rust](https://github.com/Abraxas-365/langchain-rust) by
 > [Ryo Kanazawa (Abraxas-365)](https://github.com/Abraxas-365), used under the MIT License.
-> Changes in this fork include typed error types, a three-tier e2e test suite, smolvm-based
+> Changes in this fork include custom error types, a three-tier e2e test suite, smolvm-based
 > container tests, a Cargo workspace split into focused sub-crates, and ongoing architectural
 > improvements tracked in [GitHub Issues](https://github.com/89jobrien/langchainx/issues).
 
