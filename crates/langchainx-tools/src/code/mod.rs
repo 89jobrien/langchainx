@@ -52,6 +52,21 @@ pub mod nu;
 #[cfg(feature = "nu-tool")]
 pub use nu::NuTool;
 
+pub mod rustqual;
+pub use rustqual::RustqualTool;
+
+pub mod kani;
+pub use kani::KaniTool;
+
+pub mod clippy;
+pub use clippy::ClippyTool;
+
+pub mod cargo_test;
+pub use cargo_test::CargoTestTool;
+
+pub mod agentlint;
+pub use agentlint::AgentlintTool;
+
 /// Returns the standard set of coding agent tools rooted at `base_dir`.
 ///
 /// With `bash-tool` feature enabled, `BashTool` is also included.
@@ -66,6 +81,18 @@ pub fn coding_tools(base_dir: impl Into<PathBuf>) -> Vec<Arc<dyn Tool>> {
         Arc::new(EditFileTool::new(base.clone())),
         Arc::new(GlobTool::new(base.clone())),
         Arc::new(GrepTool::new(base.clone())),
+        // NOTE: The following tools require external CLI binaries at runtime:
+        // - RustqualTool requires `rustqual`
+        // - KaniTool requires `kani`
+        // - ClippyTool requires `cargo` (with clippy component)
+        // - CargoTestTool requires `cargo` (or `cargo-nextest`)
+        // - AgentlintTool requires `agentlint`
+        // If a binary is missing, the tool returns ToolError::ExecutionFailed.
+        Arc::new(RustqualTool::new(base.clone())),
+        Arc::new(KaniTool::new(base.clone())),
+        Arc::new(ClippyTool::new(base.clone())),
+        Arc::new(CargoTestTool::new(base.clone())),
+        Arc::new(AgentlintTool::new(base.clone())),
     ];
 
     #[cfg(feature = "bash-tool")]
@@ -84,7 +111,7 @@ mod tests {
     #[test]
     fn coding_tools_returns_expected_count() {
         let tools = coding_tools(".");
-        let mut expected = 5;
+        let mut expected = 10;
         #[cfg(feature = "bash-tool")]
         { expected += 1; }
         #[cfg(feature = "nu-tool")]

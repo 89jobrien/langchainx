@@ -66,11 +66,17 @@ impl Tool for BashTool {
     }
 }
 
-fn run_with_timeout(command: &str, _timeout: Duration) -> Result<String, ToolError> {
-    let output = Command::new("sh")
-        .arg("-c")
-        .arg(command)
-        .output()
+fn run_with_timeout(command: &str, timeout: Duration) -> Result<String, ToolError> {
+    let (tx, rx) = std::sync::mpsc::channel();
+    let cmd = command.to_string();
+    std::thread::spawn(move || {
+        let result = Command::new("sh").arg("-c").arg(&cmd).output();
+        let _ = tx.send(result);
+    });
+
+    let output = rx
+        .recv_timeout(timeout)
+        .map_err(|_| ToolError::ExecutionFailed("command timed out".to_string()))?
         .map_err(|e| ToolError::ExecutionFailed(format!("failed to spawn sh: {e}")))?;
 
     let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
@@ -143,5 +149,19 @@ mod tests {
         let tool = BashTool;
         let result = tool.run(json!({ "not_a_command": "x" })).await;
         assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn bash_timeout_enforced() {
+        let tool = BashTool;
+        let result = tool
+            .run(json!({ "command": "sleep 10", "timeout_secs": 1 }))
+            .await;
+        assert!(result.is_err(), "expected timeout error, got: {result:?}");
+        let err = result.unwrap_err();
+        assert!(
+            err.to_string().contains("timed out"),
+            "error should mention timeout: {err}"
+        );
     }
 }
