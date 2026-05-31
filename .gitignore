@@ -25,3 +25,11 @@ Cargo.lock
 .worktrees/
 .claude/skills
 .ctx/private/
+
+# Local agent configs
+.agents/
+
+# Fuzz build artifacts
+fuzz/target/
+fuzz/artifacts/
+fuzz/Cargo.lock
