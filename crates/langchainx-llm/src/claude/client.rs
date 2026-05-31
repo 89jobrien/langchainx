@@ -110,11 +110,7 @@ impl Claude {
             .map(|c| c.text.clone())
             .unwrap_or_default();
 
-        let tokens = Some(TokenUsage {
-            prompt_tokens: res.usage.input_tokens,
-            completion_tokens: res.usage.output_tokens,
-            total_tokens: res.usage.input_tokens + res.usage.output_tokens,
-        });
+        let tokens = Some(TokenUsage::new(res.usage.input_tokens, res.usage.output_tokens));
 
         Ok(GenerateResult { tokens, generation })
     }
@@ -174,9 +170,19 @@ impl LLM for Claude {
                         let value: Value = parse_sse_to_json(&String::from_utf8_lossy(&bytes))?;
                         if value["type"].as_str().unwrap_or("") == "content_block_delta" {
                             let content = value["delta"]["text"].clone();
-                            // Return StreamData based on the parsed content
-                            // TODO get tokens from the response
                             Ok(StreamData::new(value, None, content.as_str().unwrap_or("")))
+                        } else if value["type"].as_str().unwrap_or("") == "message_start" {
+                            let input_tokens = value["message"]["usage"]["input_tokens"]
+                                .as_u64()
+                                .unwrap_or(0) as u32;
+                            let tokens = TokenUsage::new(input_tokens, 0);
+                            Ok(StreamData::new(value, Some(tokens), ""))
+                        } else if value["type"].as_str().unwrap_or("") == "message_delta" {
+                            let output_tokens = value["usage"]["output_tokens"]
+                                .as_u64()
+                                .unwrap_or(0) as u32;
+                            let tokens = TokenUsage::new(0, output_tokens);
+                            Ok(StreamData::new(value, Some(tokens), ""))
                         } else {
                             Ok(StreamData::new(value, None, ""))
                         }
