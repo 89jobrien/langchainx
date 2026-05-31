@@ -1,7 +1,31 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use crate::Tool;
+
+pub mod kani;
+pub use kani::KaniTool;
+
+pub mod rustqual;
+pub use rustqual::RustqualTool;
+
+/// Validate that `path` resolves under `base_dir`.
+/// Returns the canonical path or an error.
+pub(crate) fn validate_path(base_dir: &Path, path: &str) -> Result<PathBuf, crate::ToolError> {
+    let joined = base_dir.join(path);
+    let canonical = joined
+        .canonicalize()
+        .map_err(|e| crate::ToolError::InvalidInput(format!("path not found: {e}")))?;
+    let base_canonical = base_dir
+        .canonicalize()
+        .map_err(|e| crate::ToolError::InvalidInput(format!("base dir not found: {e}")))?;
+    if !canonical.starts_with(&base_canonical) {
+        return Err(crate::ToolError::InvalidInput(
+            "path escapes base directory".to_string(),
+        ));
+    }
+    Ok(canonical)
+}
 
 #[cfg(feature = "bash-tool")]
 pub mod bash;
@@ -66,6 +90,20 @@ mod tests {
         #[cfg(feature = "nu-tool")]
         { expected += 1; }
         assert_eq!(tools.len(), expected);
+    }
+
+    #[test]
+    fn validate_path_rejects_traversal() {
+        let base = std::env::temp_dir();
+        let result = validate_path(&base, "../../etc/passwd");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn validate_path_accepts_valid() {
+        let base = std::env::temp_dir();
+        let result = validate_path(&base, ".");
+        assert!(result.is_ok());
     }
 
     #[test]
