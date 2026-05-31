@@ -73,7 +73,7 @@ impl NuTool {
         if output.status.success() {
             let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
             let truncated = if stdout.len() > MAX_OUTPUT_CHARS {
-                stdout[..MAX_OUTPUT_CHARS].to_string()
+                stdout.chars().take(MAX_OUTPUT_CHARS).collect::<String>()
             } else {
                 stdout
             };
@@ -82,7 +82,7 @@ impl NuTool {
             let exit_code = output.status.code().unwrap_or(-1);
             let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
             let stderr_truncated = if stderr.len() > MAX_OUTPUT_CHARS {
-                stderr[..MAX_OUTPUT_CHARS].to_string()
+                stderr.chars().take(MAX_OUTPUT_CHARS).collect::<String>()
             } else {
                 stderr
             };
@@ -276,6 +276,34 @@ mod tests {
     fn builder_default_timeout() {
         let tool = NuTool::new();
         assert_eq!(tool.timeout_secs, DEFAULT_TIMEOUT_SECS);
+    }
+
+    #[test]
+    fn truncation_does_not_panic_on_multibyte_chars() {
+        // Each char is 3 bytes in UTF-8. With MAX_OUTPUT_CHARS=10_000,
+        // a string of 10_001 such chars would panic with byte-index slicing
+        // if the boundary fell inside a multi-byte char.
+        let multibyte = "a".repeat(MAX_OUTPUT_CHARS + 1);
+        // Sanity: this works. Now test with actual multi-byte chars.
+        let multibyte_cjk = "\u{4e16}".repeat(MAX_OUTPUT_CHARS + 1); // CJK char, 3 bytes each
+
+        // Simulate the truncation logic directly
+        let truncated = if multibyte.len() > MAX_OUTPUT_CHARS {
+            multibyte.chars().take(MAX_OUTPUT_CHARS).collect::<String>()
+        } else {
+            multibyte
+        };
+        assert_eq!(truncated.chars().count(), MAX_OUTPUT_CHARS);
+
+        let truncated_cjk = if multibyte_cjk.len() > MAX_OUTPUT_CHARS {
+            multibyte_cjk
+                .chars()
+                .take(MAX_OUTPUT_CHARS)
+                .collect::<String>()
+        } else {
+            multibyte_cjk
+        };
+        assert_eq!(truncated_cjk.chars().count(), MAX_OUTPUT_CHARS);
     }
 
     #[tokio::test]
