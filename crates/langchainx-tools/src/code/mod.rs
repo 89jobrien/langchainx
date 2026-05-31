@@ -52,12 +52,6 @@ pub mod nu;
 #[cfg(feature = "nu-tool")]
 pub use nu::NuTool;
 
-pub mod rustqual;
-pub use rustqual::RustqualTool;
-
-pub mod kani;
-pub use kani::KaniTool;
-
 pub mod clippy;
 pub use clippy::ClippyTool;
 
