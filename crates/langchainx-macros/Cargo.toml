@@ -1,0 +1,18 @@
+[package]
+name = "langchainx-macros"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Convenience macros for langchainx (tool!, etc.)"
+
+[dependencies]
+langchainx-core   = { path = "../langchainx-core" }
+langchainx-prompt = { path = "../langchainx-prompt" }
+langchainx-chain  = { path = "../langchainx-chain" }
+async-trait = "0.1.80"
+serde_json = "1.0"
+
+[dev-dependencies]
+langchainx-llm = { path = "../langchainx-llm" }
+futures = "0.3"
+tokio = { version = "1", features = ["rt", "macros"] }
