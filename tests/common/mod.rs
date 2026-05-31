@@ -107,6 +107,26 @@ impl Embedder for FakeEmbedder {
 }
 
 // ---------------------------------------------------------------------------
+// EchoTool — simple tool for agent conformance tests
+// ---------------------------------------------------------------------------
+
+#[allow(dead_code)]
+pub struct EchoTool;
+
+#[async_trait]
+impl langchainx::tools::Tool for EchoTool {
+    fn name(&self) -> String {
+        "echo".into()
+    }
+    fn description(&self) -> String {
+        "echoes input".into()
+    }
+    async fn run(&self, input: serde_json::Value) -> Result<String, langchainx::tools::ToolError> {
+        Ok(format!("echoed: {input}"))
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Ollama availability check — skip tests when Ollama is not running
 // ---------------------------------------------------------------------------
 

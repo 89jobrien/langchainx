@@ -5,7 +5,7 @@
 /// 2. `invoke()` returns just the generation string from `call()`.
 /// 3. `execute()` returns a HashMap containing "output" and "generate_result" keys.
 /// 4. `get_output_keys()` returns at least one key.
-/// 5. Missing required input variables produces ChainError::MissingInputVariable.
+/// 5. Missing required input variables produces an error.
 mod common;
 
 use langchainx::{
@@ -15,6 +15,27 @@ use langchainx::{
 };
 
 use common::FakeLLM;
+
+#[tokio::test]
+async fn llm_chain_missing_input_variable_returns_err() {
+    let llm = FakeLLM::new(vec!["unused"]);
+    let prompt = HumanMessagePromptTemplate::new(template_fstring!(
+        "{a} and {b}",
+        "a",
+        "b"
+    ));
+    let chain = LLMChainBuilder::new()
+        .prompt(prompt)
+        .llm(llm)
+        .build()
+        .expect("build chain");
+
+    let result = chain.invoke(prompt_args! { "a" => "alpha" }).await;
+    assert!(
+        result.is_err(),
+        "invoke() with missing input variable must return Err"
+    );
+}
 
 #[tokio::test]
 async fn llm_chain_call_returns_generate_result() {

@@ -4,7 +4,7 @@
 /// 1. `load()` returns a Stream of Result<Document, LoaderError>.
 /// 2. Each Document has non-empty page_content.
 /// 3. Documents are emitted in order.
-/// 4. Empty input produces an empty stream (not an error).
+/// 4. Empty input produces a single document with empty content (not an error).
 use futures_util::StreamExt;
 
 use langchainx::document_loaders::{Loader, TextLoader};

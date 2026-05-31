@@ -5,18 +5,20 @@
 /// 2. `get_tools()` returns the tools the agent was configured with.
 /// 3. `AgentExecutor::invoke()` drives the plan loop to completion.
 /// 4. `AgentExecutor` respects max_iterations.
+mod common;
+
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use serde_json::Value;
 use tokio::sync::Mutex;
 
+use common::EchoTool;
 use langchainx::{
     agent::{Agent, AgentError, AgentExecutor},
     chain::Chain,
     prompt_args,
     schemas::agent::{AgentAction, AgentEvent, AgentFinish},
-    tools::{Tool, ToolError},
+    tools::Tool,
 };
 
 struct FixedAgent {
@@ -61,21 +63,6 @@ impl Agent for FixedAgent {
 
     fn get_tools(&self) -> Vec<Arc<dyn Tool>> {
         self.tools.clone()
-    }
-}
-
-struct EchoTool;
-
-#[async_trait]
-impl Tool for EchoTool {
-    fn name(&self) -> String {
-        "echo".into()
-    }
-    fn description(&self) -> String {
-        "echoes input".into()
-    }
-    async fn run(&self, input: Value) -> Result<String, ToolError> {
-        Ok(format!("echoed: {input}"))
     }
 }
 
@@ -155,4 +142,24 @@ async fn executor_respects_max_iterations() {
         .await
         .expect("executor invoke");
     assert_eq!(result, "Max iterations reached");
+}
+
+#[tokio::test]
+async fn executor_unknown_tool_returns_error() {
+    let agent = FixedAgent::with_events(
+        vec![AgentEvent::Action(vec![AgentAction {
+            tool: "nonexistent".into(),
+            tool_input: "x".into(),
+            log: "".into(),
+        }])],
+        vec![], // no tools registered
+    );
+    let executor = AgentExecutor::from_agent(agent);
+    let result = executor
+        .invoke(prompt_args! { "input" => "test" })
+        .await;
+    assert!(
+        result.is_err(),
+        "executor must error when tool is not found"
+    );
 }
