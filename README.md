@@ -34,6 +34,7 @@ can be used directly for smaller dependency footprints.
 | `langchainx-loaders` | Document loaders (PDF, HTML, CSV, Pandoc, Git, source code) |
 | `langchainx-vectorstore` | Vector store backends (Postgres, Qdrant, OpenSearch, SQLite, SurrealDB) |
 | `langchainx-text-splitter` | Text splitting utilities (token-aware, markdown-aware) |
+| `langchainx-macros` | Convenience macros (`tool!`, `llm!`, `prompt!`, `chain!`) |
 | `langchainx-semantic-router` | Semantic routing — static and dynamic (LLM-backed) |
 | `langchainx-macros` | Convenience macros: `tool!`, `llm!`, `prompt!`, `chain!` |
 
@@ -261,3 +262,56 @@ async fn main() {
     println!("Result: {:?}", result);
 }
 ```
+
+### Quick Start with Macros
+
+The `langchainx-macros` crate provides declarative macros that reduce common
+wiring to one-liners. The example above becomes:
+
+```rust
+use langchainx::{chain, llm, prompt, prompt_args};
+use langchainx::chain::Chain;
+use langchainx::llm::openai::{OpenAI, OpenAIConfig};
+
+#[tokio::main]
+async fn main() {
+    let llm = llm!(OpenAI<OpenAIConfig>, model = "gpt-4o-mini");
+    let prompt = prompt!("Capital of {country}?", "country");
+    let chain = chain!(prompt, llm);
+
+    let result = chain
+        .invoke(prompt_args! { "country" => "France" })
+        .await
+        .unwrap();
+    println!("Result: {result}");
+}
+```
+
+Define tools with minimal boilerplate:
+
+```rust
+use langchainx::tool;
+use serde_json::json;
+
+tool!(DateTool, "Gets the current date", |_input| {
+    Ok("2026-06-01".to_string())
+});
+
+tool!(
+    SearchTool,
+    "Searches the web",
+    parameters = json!({
+        "type": "object",
+        "properties": {
+            "query": { "type": "string", "description": "Search query" }
+        },
+        "required": ["query"]
+    }),
+    |input| {
+        let q = input["query"].as_str().unwrap_or("none");
+        Ok(format!("results for: {q}"))
+    }
+);
+```
+
+See `docs/ideas/macros-dsl.md` for the full macro specification.
