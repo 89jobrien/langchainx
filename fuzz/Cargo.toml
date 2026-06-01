@@ -1,0 +1,52 @@
+[package]
+name = "langchainx-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+async-trait = "0.1"
+libfuzzer-sys = "0.4"
+serde_json = "1"
+tokio = { version = "1", features = ["rt", "macros"] }
+futures-util = "0.3"
+
+[dependencies.langchainx]
+path = ".."
+
+[dependencies.langchainx-loaders]
+path = "../crates/langchainx-loaders"
+
+[dependencies.langchainx-core]
+path = "../crates/langchainx-core"
+
+[[bin]]
+name = "fuzz_csv_loader"
+path = "fuzz_targets/fuzz_csv_loader.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_json_loader"
+path = "fuzz_targets/fuzz_json_loader.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_markdown_loader"
+path = "fuzz_targets/fuzz_markdown_loader.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_tool_parse_input"
+path = "fuzz_targets/fuzz_tool_parse_input.rs"
+test = false
+doc = false
+bench = false

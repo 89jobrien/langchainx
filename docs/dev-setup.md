@@ -28,24 +28,24 @@ The script prints `KEY=value` lines which `.nuenv` loads into the shell environm
 
 1. Copy the example env file:
 
-   ```sh
-   cp .nuenv.example .nuenv
-   ```
+    ```sh
+    cp .nuenv.example .nuenv
+    ```
 
 2. Update `scripts/resolve-env.rs` with your 1Password vault item names/paths. The
    `op://Personal/<item>/<field>` refs must match your vault.
 
 3. For services with a configured op plugin, ensure the plugin is set up:
 
-   ```sh
-   op plugin init openai   # example
-   ```
+    ```sh
+    op plugin init openai   # example
+    ```
 
 4. Enter the project directory — `.nuenv` is sourced automatically. To reload manually:
 
-   ```sh
-   source .nuenv
-   ```
+    ```sh
+    source .nuenv
+    ```
 
 ### Adding a new variable
 
@@ -57,11 +57,11 @@ Var { name: "MY_API_KEY", source: Source::Op("op://Personal/<item>/credential") 
 
 Source variants:
 
-| Variant | When to use |
-|---|---|
-| `Source::Plugin { plugin, env_var }` | Service has a configured `op plugin` |
-| `Source::Op(ref)` | Secret lives in a 1Password vault item |
-| `Source::Default(value)` | Non-secret config with a sensible default |
+| Variant                              | When to use                               |
+| ------------------------------------ | ----------------------------------------- |
+| `Source::Plugin { plugin, env_var }` | Service has a configured `op plugin`      |
+| `Source::Op(ref)`                    | Secret lives in a 1Password vault item    |
+| `Source::Default(value)`             | Non-secret config with a sensible default |
 
 ### Without 1Password
 
@@ -88,20 +88,20 @@ cargo test --all-features --test e2e_local_llm   # requires Ollama running
 
 Most integrations are opt-in via Cargo feature flags. Key flags:
 
-| Flag | Enables |
-|---|---|
-| `postgres` | pgvector vectorstore + SqlDatabase chain |
-| `qdrant` | Qdrant vectorstore |
-| `surrealdb` | SurrealDB vectorstore |
-| `ollama` | Ollama LLM + embeddings |
-| `fastembed` | Local FastEmbed embeddings |
-| `mistralai` | MistralAI LLM + embeddings |
-| `git` | Git commit document loader |
-| `lopdf` / `pdf-extract` | PDF document loaders |
-| `html-to-markdown` | HTML→Markdown loader |
-| `tree-sitter` | Source code loader |
-| `rss` | RSS feed loader |
-| `sitemap` | Sitemap loader |
+| Flag                    | Enables                                  |
+| ----------------------- | ---------------------------------------- |
+| `postgres`              | pgvector vectorstore + SqlDatabase chain |
+| `qdrant`                | Qdrant vectorstore                       |
+| `surrealdb`             | SurrealDB vectorstore                    |
+| `ollama`                | Ollama LLM + embeddings                  |
+| `fastembed`             | Local FastEmbed embeddings               |
+| `mistralai`             | MistralAI LLM + embeddings               |
+| `git`                   | Git commit document loader               |
+| `lopdf` / `pdf-extract` | PDF document loaders                     |
+| `html-to-markdown`      | HTML→Markdown loader                     |
+| `tree-sitter`           | Source code loader                       |
+| `rss`                   | RSS feed loader                          |
+| `sitemap`               | Sitemap loader                           |
 
 Build with all features (matches CI):
 

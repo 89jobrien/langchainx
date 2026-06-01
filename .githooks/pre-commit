@@ -53,6 +53,7 @@ if ! echo "$BRANCH" | grep -qE "$VALID_PATTERN"; then
     echo -e "${RED}✗ BLOCKED: Branch name '${BRANCH}' does not follow gitflow conventions.${NC}"
     echo -e "${CYAN}  Allowed patterns:${NC}"
     echo -e "${CYAN}    feature/<name>        — new features${NC}"
+    echo -e "${CYAN}    issue/<number>        — GitHub issue branches${NC}"
     echo -e "${CYAN}    release/<M.m.p>       — release preparation${NC}"
     echo -e "${CYAN}    hotfix/<name>         — urgent fixes from main${NC}"
     echo -e "${CYAN}    develop               — integration branch${NC}"
