@@ -15,8 +15,8 @@
 /// 2. `input_variables()` lists the required variables.
 use langchainx::{
     prompt::{
-        FormatPrompter, HumanMessagePromptTemplate, MessageFormatter,
-        PromptFromatter, PromptTemplate, TemplateFormat,
+        FormatPrompter, HumanMessagePromptTemplate, MessageFormatter, PromptFromatter,
+        PromptTemplate, TemplateFormat,
     },
     prompt_args,
     schemas::MessageType,
@@ -73,12 +73,7 @@ fn format_prompter_returns_prompt_value_with_messages() {
 
 #[test]
 fn format_prompter_get_input_variables_matches_template() {
-    let pt = HumanMessagePromptTemplate::new(template_fstring!(
-        "{a} {b} {c}",
-        "a",
-        "b",
-        "c"
-    ));
+    let pt = HumanMessagePromptTemplate::new(template_fstring!("{a} {b} {c}", "a", "b", "c"));
     let vars = pt.get_input_variables();
     assert_eq!(vars.len(), 3);
     assert!(vars.contains(&"a".to_string()));
@@ -91,9 +86,7 @@ fn format_prompter_get_input_variables_matches_template() {
 #[test]
 fn message_formatter_produces_human_message() {
     let hm = HumanMessagePromptTemplate::new(template_fstring!("User: {msg}", "msg"));
-    let msgs = hm
-        .format_messages(prompt_args! { "msg" => "hi" })
-        .unwrap();
+    let msgs = hm.format_messages(prompt_args! { "msg" => "hi" }).unwrap();
     assert_eq!(msgs.len(), 1);
     assert_eq!(msgs[0].message_type, MessageType::HumanMessage);
     assert_eq!(msgs[0].content, "User: hi");

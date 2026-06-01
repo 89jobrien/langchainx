@@ -18,10 +18,7 @@ async fn simple_parser_parse_non_empty_returns_ok() {
 async fn simple_parser_parse_empty_returns_ok() {
     let parser = SimpleParser::new();
     let result = parser.parse("").await;
-    assert!(
-        result.is_ok(),
-        "parse('') must return Ok, not error"
-    );
+    assert!(result.is_ok(), "parse('') must return Ok, not error");
     assert_eq!(result.unwrap(), "");
 }
 
@@ -45,5 +42,8 @@ async fn simple_parser_passthrough_preserves_content() {
     let parser = SimpleParser::new();
     let input = "line1\nline2\n  indented";
     let result = parser.parse(input).await.unwrap();
-    assert_eq!(result, input, "passthrough parser must preserve exact content");
+    assert_eq!(
+        result, input,
+        "passthrough parser must preserve exact content"
+    );
 }

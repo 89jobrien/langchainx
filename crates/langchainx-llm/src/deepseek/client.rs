@@ -11,6 +11,9 @@ use std::{fmt, pin::Pin, str};
 
 use super::models::{ApiResponse, DeepseekMessage, Payload, ResponseFormat};
 
+const PENALTY_RANGE_MIN: f32 = -2.0;
+const PENALTY_RANGE_MAX: f32 = 2.0;
+
 pub enum DeepseekModel {
     DeepseekChat,
     DeepseekReasoner,
@@ -176,14 +179,14 @@ impl Deepseek {
 
         // Apply frequency_penalty if it's in the options range
         if let Some(fp) = self.options.frequency_penalty
-            && (-2.0_f32..=2.0).contains(&fp)
+            && (PENALTY_RANGE_MIN..=PENALTY_RANGE_MAX).contains(&fp)
         {
             payload.frequency_penalty = Some(fp);
         }
 
         // Apply presence_penalty if it's in the options range
         if let Some(pp) = self.options.presence_penalty
-            && (-2.0_f32..=2.0).contains(&pp)
+            && (PENALTY_RANGE_MIN..=PENALTY_RANGE_MAX).contains(&pp)
         {
             payload.presence_penalty = Some(pp);
         }
@@ -217,6 +220,7 @@ impl LLM for Deepseek {
         self.generate(messages).await
     }
 
+    // qual:allow(iosp) reason: "streaming I/O boundary"
     async fn stream(
         &self,
         messages: &[Message],

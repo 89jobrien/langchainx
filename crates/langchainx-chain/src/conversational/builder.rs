@@ -76,6 +76,7 @@ impl ConversationalChainBuilder {
         self
     }
 
+    // qual:allow(iosp) reason: "builder validation + construction"
     pub fn build(self) -> Result<ConversationalChain, ChainError> {
         let llm = self
             .llm

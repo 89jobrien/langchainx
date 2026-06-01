@@ -127,6 +127,7 @@ impl<C: Config + Send + Sync + 'static> LLM for OpenAI<C> {
             .map(|res| res.generation)
     }
 
+    // qual:allow(iosp) reason: "streaming I/O boundary"
     async fn stream(
         &self,
         messages: &[Message],

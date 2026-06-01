@@ -141,11 +141,12 @@ Tool Input:
             return Err(RouteLayerBuilderError::MissingIndex);
         }
 
+        const DEFAULT_THRESHOLD: f64 = 0.82;
         let mut router = RouteLayer {
             embedder: self.embedder.unwrap(),
             index: self.index.unwrap(),
             llm: self.llm.unwrap(),
-            threshold: self.threshold.unwrap_or(0.82),
+            threshold: self.threshold.unwrap_or(DEFAULT_THRESHOLD),
             top_k: self.top_k,
             aggregation_method: self.aggregation_method,
         };

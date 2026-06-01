@@ -43,14 +43,18 @@ impl TokenUsage {
     pub fn sum(&self, other: &TokenUsage) -> TokenUsage {
         TokenUsage {
             prompt_tokens: self.prompt_tokens.saturating_add(other.prompt_tokens),
-            completion_tokens: self.completion_tokens.saturating_add(other.completion_tokens),
+            completion_tokens: self
+                .completion_tokens
+                .saturating_add(other.completion_tokens),
             total_tokens: self.total_tokens.saturating_add(other.total_tokens),
         }
     }
 
     pub fn add(&mut self, other: &TokenUsage) {
         self.prompt_tokens = self.prompt_tokens.saturating_add(other.prompt_tokens);
-        self.completion_tokens = self.completion_tokens.saturating_add(other.completion_tokens);
+        self.completion_tokens = self
+            .completion_tokens
+            .saturating_add(other.completion_tokens);
         self.total_tokens = self.total_tokens.saturating_add(other.total_tokens);
     }
 }

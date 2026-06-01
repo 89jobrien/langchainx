@@ -127,6 +127,7 @@ impl ConversationalRetrieverChainBuilder {
         self
     }
 
+    // qual:allow(iosp) reason: "builder validation + construction"
     pub fn build(mut self) -> Result<ConversationalRetrieverChain, ChainError> {
         if let Some(llm) = self.llm {
             let combine_documents_chain = {

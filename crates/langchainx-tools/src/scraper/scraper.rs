@@ -66,6 +66,7 @@ async fn scrape_url(url: &str) -> Result<String, Box<dyn Error>> {
     Ok(final_text.to_string())
 }
 
+// qual:allow(iosp) reason: "DOM traversal with filtering"
 fn collect_text_not_in_script(element: &ElementRef, text: &mut Vec<String>) {
     for node in element.children() {
         if node.value().is_element() {

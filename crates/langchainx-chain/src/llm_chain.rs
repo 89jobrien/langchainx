@@ -61,6 +61,7 @@ impl LLMChainBuilder {
         self
     }
 
+    // qual:allow(iosp) reason: "builder validation + construction"
     pub fn build(self) -> Result<LLMChain, ChainError> {
         let prompt = self
             .prompt

@@ -11,6 +11,8 @@ use std::{collections::HashMap, fmt, pin::Pin};
 
 use super::models::{ApiResponse, ClaudeMessage, Payload};
 
+const DEFAULT_MAX_TOKENS: u32 = 1024;
+
 pub enum ClaudeModel {
     Claude3pus20240229,
     Claude3sonnet20240229,
@@ -110,7 +112,10 @@ impl Claude {
             .map(|c| c.text.clone())
             .unwrap_or_default();
 
-        let tokens = Some(TokenUsage::new(res.usage.input_tokens, res.usage.output_tokens));
+        let tokens = Some(TokenUsage::new(
+            res.usage.input_tokens,
+            res.usage.output_tokens,
+        ));
 
         Ok(GenerateResult { tokens, generation })
     }
@@ -126,7 +131,7 @@ impl Claude {
                 .into_iter()
                 .map(ClaudeMessage::from_message)
                 .collect::<Vec<_>>(),
-            max_tokens: self.options.max_tokens.unwrap_or(1024),
+            max_tokens: self.options.max_tokens.unwrap_or(DEFAULT_MAX_TOKENS),
             stream: None,
             stop_sequences: self.options.stop_words.clone(),
             temperature: self.options.temperature,
@@ -163,32 +168,29 @@ impl LLM for Claude {
         let stream = client.execute(request).await?;
         let stream = stream.bytes_stream();
         // Process each chunk as it arrives
-        let processed_stream = stream.then(move |result| {
-            async move {
-                match result {
-                    Ok(bytes) => {
-                        let value: Value = parse_sse_to_json(&String::from_utf8_lossy(&bytes))?;
-                        if value["type"].as_str().unwrap_or("") == "content_block_delta" {
-                            let content = value["delta"]["text"].clone();
-                            Ok(StreamData::new(value, None, content.as_str().unwrap_or("")))
-                        } else if value["type"].as_str().unwrap_or("") == "message_start" {
-                            let input_tokens = value["message"]["usage"]["input_tokens"]
-                                .as_u64()
-                                .unwrap_or(0) as u32;
-                            let tokens = TokenUsage::new(input_tokens, 0);
-                            Ok(StreamData::new(value, Some(tokens), ""))
-                        } else if value["type"].as_str().unwrap_or("") == "message_delta" {
-                            let output_tokens = value["usage"]["output_tokens"]
-                                .as_u64()
-                                .unwrap_or(0) as u32;
-                            let tokens = TokenUsage::new(0, output_tokens);
-                            Ok(StreamData::new(value, Some(tokens), ""))
-                        } else {
-                            Ok(StreamData::new(value, None, ""))
-                        }
+        let processed_stream = stream.then(move |result| async move {
+            match result {
+                Ok(bytes) => {
+                    let value: Value = parse_sse_to_json(&String::from_utf8_lossy(&bytes))?;
+                    if value["type"].as_str().unwrap_or("") == "content_block_delta" {
+                        let content = value["delta"]["text"].clone();
+                        Ok(StreamData::new(value, None, content.as_str().unwrap_or("")))
+                    } else if value["type"].as_str().unwrap_or("") == "message_start" {
+                        let input_tokens = value["message"]["usage"]["input_tokens"]
+                            .as_u64()
+                            .unwrap_or(0) as u32;
+                        let tokens = TokenUsage::new(input_tokens, 0);
+                        Ok(StreamData::new(value, Some(tokens), ""))
+                    } else if value["type"].as_str().unwrap_or("") == "message_delta" {
+                        let output_tokens =
+                            value["usage"]["output_tokens"].as_u64().unwrap_or(0) as u32;
+                        let tokens = TokenUsage::new(0, output_tokens);
+                        Ok(StreamData::new(value, Some(tokens), ""))
+                    } else {
+                        Ok(StreamData::new(value, None, ""))
                     }
-                    Err(e) => Err(LLMError::RequestError(e)),
                 }
+                Err(e) => Err(LLMError::RequestError(e)),
             }
         });
 

@@ -6,6 +6,8 @@ use langchainx_llm::language_models::llm::IntoArcLLM;
 
 use crate::error::AgentError;
 
+const DEFAULT_AGENT_MAX_TOKENS: u32 = 1000;
+
 use super::{
     ConversationalAgent,
     output_parser::ChatOutputParser,
@@ -56,7 +58,7 @@ impl ConversationalAgentBuilder {
         let suffix = self.suffix.unwrap_or_else(|| SUFFIX.to_string());
 
         let prompt = ConversationalAgent::create_prompt(&tools, &suffix, &prefix)?;
-        let default_options = ChainCallOptions::default().with_max_tokens(1000);
+        let default_options = ChainCallOptions::default().with_max_tokens(DEFAULT_AGENT_MAX_TOKENS);
         let chain = Box::new(
             LLMChainBuilder::new()
                 .prompt(prompt)

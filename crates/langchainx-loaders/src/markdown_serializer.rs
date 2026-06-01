@@ -38,6 +38,7 @@ pub struct MarkdownDocument {
 /// assert_eq!(meta["title"], serde_json::Value::String("Hello".into()));
 /// assert_eq!(body, "Body.");
 /// ```
+// qual:allow(iosp) reason: "parser with interleaved validation"
 pub(crate) fn parse_frontmatter(content: &str) -> (HashMap<String, serde_json::Value>, String) {
     let mut lines = content.lines();
     let first = lines.next().unwrap_or("");
@@ -76,7 +77,8 @@ fn heading_level(line: &str) -> Option<(u8, &str)> {
         return None;
     }
     let hashes = line.bytes().take_while(|&b| b == b'#').count();
-    if hashes > 6 {
+    const MAX_HEADING_LEVEL: usize = 6;
+    if hashes > MAX_HEADING_LEVEL {
         return None;
     }
     let rest = &line[hashes..];
@@ -87,6 +89,7 @@ fn heading_level(line: &str) -> Option<(u8, &str)> {
 /// Parse body text into a nested `Section` tree.
 ///
 /// **Note:** content before the first heading is silently dropped.
+// qual:allow(iosp) reason: "parser with interleaved state machine"
 pub(crate) fn parse_sections(body: &str) -> Vec<Section> {
     struct Seg {
         level: u8,
@@ -402,8 +405,8 @@ mod tests {
     fn test_from_str_trait() {
         use std::str::FromStr;
         let src = "---\ntitle: My Doc\n---\n# Intro\nHello world.\n## Details\nMore info.";
-        let doc =
-            MarkdownDocument::from_str(src).expect("FromStr::from_str should not recurse infinitely");
+        let doc = MarkdownDocument::from_str(src)
+            .expect("FromStr::from_str should not recurse infinitely");
         assert_eq!(
             doc.frontmatter.get("title").unwrap(),
             &serde_json::Value::String("My Doc".into())

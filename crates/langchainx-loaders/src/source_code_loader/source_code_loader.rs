@@ -84,6 +84,7 @@ impl SourceCodeLoader {
 
 #[async_trait]
 impl Loader for SourceCodeLoader {
+    // qual:allow(iosp) reason: "loader I/O boundary"
     async fn load(
         mut self,
     ) -> Result<

@@ -69,6 +69,7 @@ impl SplitterOptions {
 impl TryFrom<&SplitterOptions> for ChunkConfig<CoreBPE> {
     type Error = TextSplitterError;
 
+    // qual:allow(iosp) reason: "I/O boundary — tokenizer resolution"
     fn try_from(options: &SplitterOptions) -> Result<Self, Self::Error> {
         let tk = if !options.encoding_name.is_empty() {
             let tokenizer = SplitterOptions::get_tokenizer_from_str(&options.encoding_name)

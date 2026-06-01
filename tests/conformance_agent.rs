@@ -155,9 +155,7 @@ async fn executor_unknown_tool_returns_error() {
         vec![], // no tools registered
     );
     let executor = AgentExecutor::from_agent(agent);
-    let result = executor
-        .invoke(prompt_args! { "input" => "test" })
-        .await;
+    let result = executor.invoke(prompt_args! { "input" => "test" }).await;
     assert!(
         result.is_err(),
         "executor must error when tool is not found"

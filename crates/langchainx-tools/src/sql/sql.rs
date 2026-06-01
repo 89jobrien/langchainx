@@ -50,6 +50,8 @@ pub struct SQLDatabaseBuilder {
     ignore_tables: HashSet<String>,
 }
 
+const DEFAULT_SAMPLE_ROWS: i32 = 3;
+
 impl SQLDatabaseBuilder {
     pub fn new<E>(engine: E) -> Self
     where
@@ -57,7 +59,7 @@ impl SQLDatabaseBuilder {
     {
         SQLDatabaseBuilder {
             engine: Box::new(engine),
-            sample_rows_number: 3, // Default value
+            sample_rows_number: DEFAULT_SAMPLE_ROWS,
             ignore_tables: HashSet::new(),
         }
     }
@@ -109,6 +111,7 @@ impl SQLDatabase {
         self.all_tables.iter().cloned().collect()
     }
 
+    // qual:allow(iosp) reason: "database I/O boundary"
     pub async fn table_info(&self, tables: &[String]) -> Result<String, Box<dyn Error>> {
         let mut tables: HashSet<String> = tables.iter().cloned().collect();
         if tables.is_empty() {

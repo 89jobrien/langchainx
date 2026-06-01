@@ -41,6 +41,7 @@ impl MiniboxTool {
         cmd
     }
 
+    // qual:allow(iosp) reason: "subprocess I/O boundary"
     fn run_command(&self, args: &[&str]) -> Result<String, ToolError> {
         let mut cmd = self.build_command();
         cmd.args(args);
@@ -381,6 +382,7 @@ impl Tool for MiniboxTool {
         }
     }
 
+    // qual:allow(iosp) reason: "tool I/O boundary"
     async fn run(&self, input: Value) -> Result<String, ToolError> {
         let action: MiniboxInput =
             serde_json::from_value(input).map_err(|e| ToolError::InvalidInput(e.to_string()))?;
@@ -543,9 +545,7 @@ impl Tool for MiniboxTool {
                 container_id,
                 name,
             } => match sub_action {
-                SnapshotAction::List => {
-                    self.run_command(&["snapshot", "list", &container_id])
-                }
+                SnapshotAction::List => self.run_command(&["snapshot", "list", &container_id]),
                 SnapshotAction::Save => {
                     let mut args = vec!["snapshot", "save", &container_id];
                     let name_str;
@@ -557,9 +557,7 @@ impl Tool for MiniboxTool {
                 }
                 SnapshotAction::Restore => {
                     let n = name.ok_or_else(|| {
-                        ToolError::InvalidInput(
-                            "snapshot restore requires a snapshot name".into(),
-                        )
+                        ToolError::InvalidInput("snapshot restore requires a snapshot name".into())
                     })?;
                     self.run_command(&["snapshot", "restore", &container_id, &n])
                 }

@@ -4,7 +4,7 @@
 ///
 /// Run:
 ///   cargo run --example ci_fix_agent --all-features
-use langchainx_tools::code::coding_tools;
+use langchainx_tools::shell::coding_tools;
 
 fn main() {
     let tools = coding_tools(".");

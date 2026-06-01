@@ -41,29 +41,49 @@ fn now_iso() -> String {
     format!("{y:04}-{mo:02}-{d:02}T{h:02}:{mi:02}:{s:02}Z")
 }
 
+const SECS_PER_MINUTE: u64 = 60;
+const MINS_PER_HOUR: u64 = 60;
+const HOURS_PER_DAY: u64 = 24;
+const UNIX_EPOCH_YEAR: u64 = 1970;
+const DAYS_PER_YEAR: u64 = 365;
+const DAYS_PER_LEAP_YEAR: u64 = 366;
+const MONTHS_PER_YEAR: usize = 12;
+const LEAP_YEAR_MONTH_DAYS: [u64; MONTHS_PER_YEAR] =
+    [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const COMMON_YEAR_MONTH_DAYS: [u64; MONTHS_PER_YEAR] =
+    [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const LEAP_DIVISOR: u64 = 4;
+const CENTURY_DIVISOR: u64 = 100;
+const QUAD_CENTURY_DIVISOR: u64 = 400;
+const STDERR_TAIL_LINES: usize = 10;
+
 /// Decompose a Unix timestamp (seconds) into (year, month, day, hour, min, sec).
 fn epoch_to_parts(mut secs: u64) -> (u64, u64, u64, u64, u64, u64) {
-    let s = secs % 60;
-    secs /= 60;
-    let mi = secs % 60;
-    secs /= 60;
-    let h = secs % 24;
-    secs /= 24;
+    let s = secs % SECS_PER_MINUTE;
+    secs /= SECS_PER_MINUTE;
+    let mi = secs % MINS_PER_HOUR;
+    secs /= MINS_PER_HOUR;
+    let h = secs % HOURS_PER_DAY;
+    secs /= HOURS_PER_DAY;
 
     let mut days = secs;
-    let mut y = 1970u64;
+    let mut y = UNIX_EPOCH_YEAR;
     loop {
-        let days_in_year = if is_leap(y) { 366 } else { 365 };
+        let days_in_year = if is_leap(y) {
+            DAYS_PER_LEAP_YEAR
+        } else {
+            DAYS_PER_YEAR
+        };
         if days < days_in_year {
             break;
         }
         days -= days_in_year;
         y += 1;
     }
-    let month_days: [u64; 12] = if is_leap(y) {
-        [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    let month_days = if is_leap(y) {
+        LEAP_YEAR_MONTH_DAYS
     } else {
-        [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+        COMMON_YEAR_MONTH_DAYS
     };
     let mut mo = 1u64;
     for &md in &month_days {
@@ -78,7 +98,8 @@ fn epoch_to_parts(mut secs: u64) -> (u64, u64, u64, u64, u64, u64) {
 }
 
 fn is_leap(y: u64) -> bool {
-    (y.is_multiple_of(4) && !y.is_multiple_of(100)) || y.is_multiple_of(400)
+    (y.is_multiple_of(LEAP_DIVISOR) && !y.is_multiple_of(CENTURY_DIVISOR))
+        || y.is_multiple_of(QUAD_CENTURY_DIVISOR)
 }
 
 fn append_event_to(path: &PathBuf, json: &str) {
@@ -131,7 +152,7 @@ pub fn trace_gate_error(id: TraceId, stderr: &str) {
     let stderr_tail: String = stderr
         .lines()
         .rev()
-        .take(10)
+        .take(STDERR_TAIL_LINES)
         .collect::<Vec<_>>()
         .into_iter()
         .rev()
@@ -199,7 +220,10 @@ mod tests {
             let contents = fs::read_to_string(trace_file).expect("trace file");
             assert!(contents.contains(r#""event":"skill.error""#));
             assert!(contents.contains("line 15"), "should include last lines");
-            assert!(!contents.contains("line 1\""), "should not include first lines");
+            assert!(
+                !contents.contains("line 1\""),
+                "should not include first lines"
+            );
         });
     }
 

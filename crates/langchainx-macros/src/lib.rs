@@ -303,7 +303,10 @@ mod tests {
             .unwrap();
         let msgs = pv.to_chat_messages();
         assert_eq!(msgs.len(), 1);
-        assert_eq!(msgs[0].message_type, langchainx_core::schemas::MessageType::HumanMessage);
+        assert_eq!(
+            msgs[0].message_type,
+            langchainx_core::schemas::MessageType::HumanMessage
+        );
         assert_eq!(msgs[0].content, "Capital of France?");
     }
 
@@ -324,8 +327,8 @@ mod tests {
     // -- chain! tests --
 
     // Shared FakeLLM for chain tests
-    use langchainx_llm::language_models::{GenerateResult, LLMError, llm::LLM};
     use langchainx_core::schemas::{Message, StreamData};
+    use langchainx_llm::language_models::{GenerateResult, LLMError, llm::LLM};
 
     struct FakeLLM(String);
     #[async_trait::async_trait]

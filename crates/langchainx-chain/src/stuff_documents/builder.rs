@@ -50,6 +50,7 @@ impl StuffDocumentBuilder {
         self
     }
 
+    // qual:allow(iosp) reason: "builder validation + construction"
     pub fn build(self) -> Result<StuffDocument, ChainError> {
         let llm = self
             .llm

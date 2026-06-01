@@ -72,6 +72,7 @@ impl HtmlToMarkdownLoader<BufReader<File>> {
 
 #[async_trait]
 impl<R: Read + Send + Sync + 'static> Loader for HtmlToMarkdownLoader<R> {
+    // qual:allow(iosp) reason: "loader I/O boundary"
     async fn load(
         mut self,
     ) -> Result<

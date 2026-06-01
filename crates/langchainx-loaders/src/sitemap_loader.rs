@@ -88,6 +88,7 @@ impl SitemapLoader {
         xml.contains("<sitemapindex")
     }
 
+    // qual:allow(iosp) reason: "network I/O boundary"
     async fn collect_docs(&self) -> Result<Vec<Document>, LoaderError> {
         let root_xml = self.fetch_text(&self.url).await?;
 

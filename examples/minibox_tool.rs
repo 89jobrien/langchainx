@@ -11,7 +11,7 @@
 use std::sync::Arc;
 
 use langchainx::agent::{AgentExecutor, OpenAiToolAgentBuilder};
-use langchainx::chain::{options::ChainCallOptions, Chain};
+use langchainx::chain::{Chain, options::ChainCallOptions};
 use langchainx::llm::OpenAI;
 use langchainx::memory::SimpleMemory;
 use langchainx::prompt::prompt_args;

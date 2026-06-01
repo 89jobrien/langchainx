@@ -9,9 +9,11 @@ pub struct WindowBufferMemory {
     messages: Vec<Message>,
 }
 
+const DEFAULT_WINDOW_SIZE: usize = 10;
+
 impl Default for WindowBufferMemory {
     fn default() -> Self {
-        Self::new(10)
+        Self::new(DEFAULT_WINDOW_SIZE)
     }
 }
 

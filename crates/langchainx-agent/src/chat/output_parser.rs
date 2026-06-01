@@ -58,6 +58,7 @@ impl ChatOutputParser {
     }
 }
 
+// qual:allow(iosp) reason: "JSON parsing with fallback logic"
 fn parse_partial_json(s: &str, strict: bool) -> Option<Value> {
     match serde_json::from_str::<Value>(s) {
         Ok(val) => return Some(val),

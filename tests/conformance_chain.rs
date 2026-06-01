@@ -19,11 +19,7 @@ use common::FakeLLM;
 #[tokio::test]
 async fn llm_chain_missing_input_variable_returns_err() {
     let llm = FakeLLM::new(vec!["unused"]);
-    let prompt = HumanMessagePromptTemplate::new(template_fstring!(
-        "{a} and {b}",
-        "a",
-        "b"
-    ));
+    let prompt = HumanMessagePromptTemplate::new(template_fstring!("{a} and {b}", "a", "b"));
     let chain = LLMChainBuilder::new()
         .prompt(prompt)
         .llm(llm)
@@ -50,29 +46,27 @@ async fn llm_chain_call_returns_generate_result() {
         .build()
         .expect("build chain");
 
-    let result = chain
-        .call(prompt_args! { "country" => "France" })
-        .await;
-    assert!(result.is_ok(), "call() must return Ok, got: {:?}", result.err());
+    let result = chain.call(prompt_args! { "country" => "France" }).await;
+    assert!(
+        result.is_ok(),
+        "call() must return Ok, got: {:?}",
+        result.err()
+    );
     assert_eq!(result.unwrap().generation, "Paris");
 }
 
 #[tokio::test]
 async fn llm_chain_invoke_returns_string() {
     let llm = FakeLLM::new(vec!["Berlin"]);
-    let prompt = HumanMessagePromptTemplate::new(template_fstring!(
-        "Capital of {country}?",
-        "country"
-    ));
+    let prompt =
+        HumanMessagePromptTemplate::new(template_fstring!("Capital of {country}?", "country"));
     let chain = LLMChainBuilder::new()
         .prompt(prompt)
         .llm(llm)
         .build()
         .expect("build chain");
 
-    let result = chain
-        .invoke(prompt_args! { "country" => "Germany" })
-        .await;
+    let result = chain.invoke(prompt_args! { "country" => "Germany" }).await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap(), "Berlin");
 }
@@ -80,19 +74,15 @@ async fn llm_chain_invoke_returns_string() {
 #[tokio::test]
 async fn llm_chain_execute_returns_hashmap_with_output_keys() {
     let llm = FakeLLM::new(vec!["Tokyo"]);
-    let prompt = HumanMessagePromptTemplate::new(template_fstring!(
-        "Capital of {country}?",
-        "country"
-    ));
+    let prompt =
+        HumanMessagePromptTemplate::new(template_fstring!("Capital of {country}?", "country"));
     let chain = LLMChainBuilder::new()
         .prompt(prompt)
         .llm(llm)
         .build()
         .expect("build chain");
 
-    let result = chain
-        .execute(prompt_args! { "country" => "Japan" })
-        .await;
+    let result = chain.execute(prompt_args! { "country" => "Japan" }).await;
     assert!(result.is_ok(), "execute() must return Ok");
     let map = result.unwrap();
     assert!(
@@ -140,10 +130,7 @@ async fn llm_chain_invoke_is_consistent_with_call() {
         .await
         .unwrap()
         .generation;
-    let invoke_str = chain
-        .invoke(prompt_args! { "x" => "test" })
-        .await
-        .unwrap();
+    let invoke_str = chain.invoke(prompt_args! { "x" => "test" }).await.unwrap();
     assert_eq!(
         call_gen, invoke_str,
         "invoke() must return same string as call().generation"

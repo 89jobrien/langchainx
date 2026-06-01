@@ -36,6 +36,7 @@ pub struct DirLoaderOptions {
 }
 
 /// Recursively list all files in a directory
+// qual:allow(iosp) reason: "filesystem I/O boundary"
 #[async_recursion]
 pub async fn list_files_in_path(
     dir_path: &Path,
@@ -73,6 +74,7 @@ pub async fn list_files_in_path(
 }
 
 /// Find files in a directory that match the given options
+// qual:allow(iosp) reason: "filesystem I/O boundary"
 pub async fn find_files_with_extension(
     folder_path: &str,
     opts: &DirLoaderOptions,

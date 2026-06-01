@@ -74,6 +74,7 @@ impl Chain for ConversationalRetrieverChain {
         Ok(result)
     }
 
+    // qual:allow(iosp) reason: "chain execution I/O boundary"
     async fn execute(
         &self,
         input_variables: PromptArgs,

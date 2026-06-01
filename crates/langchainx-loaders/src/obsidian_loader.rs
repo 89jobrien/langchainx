@@ -43,9 +43,11 @@ impl ObsidianLoader {
             let mut reader = fs::read_dir(&current).await.map_err(|e| {
                 LoaderError::OtherError(format!("Failed to read dir {:?}: {}", current, e))
             })?;
-            while let Some(entry) = reader.next_entry().await.map_err(|e| {
-                LoaderError::OtherError(format!("Dir entry error: {}", e))
-            })? {
+            while let Some(entry) = reader
+                .next_entry()
+                .await
+                .map_err(|e| LoaderError::OtherError(format!("Dir entry error: {}", e)))?
+            {
                 let file_type = entry.file_type().await.map_err(|e| {
                     LoaderError::OtherError(format!("Failed to get file type: {}", e))
                 })?;
@@ -77,6 +79,7 @@ impl ObsidianLoader {
 
 #[async_trait]
 impl Loader for ObsidianLoader {
+    // qual:allow(iosp) reason: "loader I/O boundary"
     async fn load(
         self,
     ) -> Result<
