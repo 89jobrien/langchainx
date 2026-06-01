@@ -36,4 +36,16 @@ pub mod jira;
 pub mod minibox;
 pub use minibox::MiniboxTool;
 
-pub mod code;
+pub mod shell;
+
+pub mod cargo;
+pub use cargo::{CargoTestTool, ClippyTool};
+
+pub mod kani;
+pub use kani::KaniTool;
+
+pub mod rustqual;
+pub use rustqual::RustqualTool;
+
+pub mod agentlint;
+pub use agentlint::AgentlintTool;
