@@ -51,6 +51,8 @@ jobs:
           override: true
           profile: minimal
           components: rustfmt, clippy
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
       - name: Run CI gates
         run: cargo xtask ci
 

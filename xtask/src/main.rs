@@ -39,7 +39,9 @@ fn main() -> Result<()> {
             eprintln!("usage: cargo xtask <task>");
             eprintln!();
             eprintln!("tasks:");
-            eprintln!("  ci           fmt-check + clippy + audit + build + test  (mirrors CI exactly)");
+            eprintln!(
+                "  ci           fmt-check + clippy + audit + build + test  (mirrors CI exactly)"
+            );
             eprintln!("  fmt-check    cargo fmt --check");
             eprintln!("  clippy       cargo clippy --all-features -D warnings");
             eprintln!("  audit        cargo audit (with known advisory ignores)");
