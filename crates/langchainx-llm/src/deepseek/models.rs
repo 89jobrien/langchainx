@@ -1,4 +1,4 @@
-use crate::schemas::{Message, MessageType};
+use crate::schemas::Message;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -22,12 +22,7 @@ impl DeepseekMessage {
     }
 
     pub fn from_message(message: &Message) -> Self {
-        match message.message_type {
-            MessageType::SystemMessage => Self::new("system", &message.content),
-            MessageType::AIMessage => Self::new("assistant", &message.content),
-            MessageType::HumanMessage => Self::new("user", &message.content),
-            MessageType::ToolMessage => Self::new("tool", &message.content),
-        }
+        Self::new(message.message_type.role_str(), &message.content)
     }
 }
 
