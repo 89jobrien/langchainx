@@ -313,15 +313,17 @@ mod tests {
     // -- llm! tests --
 
     #[test]
-    fn llm_default_compiles() {
+    fn llm_macro_default_compiles() {
         use langchainx_llm::openai::{OpenAI, OpenAIConfig};
-        let _llm: OpenAI<OpenAIConfig> = llm!(OpenAI<OpenAIConfig>);
+        let llm: OpenAI<OpenAIConfig> = llm!(OpenAI<OpenAIConfig>);
+        assert!(std::mem::size_of_val(&llm) > 0);
     }
 
     #[test]
-    fn llm_with_model_compiles() {
+    fn llm_macro_with_model_compiles() {
         use langchainx_llm::openai::{OpenAI, OpenAIConfig};
-        let _llm = llm!(OpenAI<OpenAIConfig>, model = "gpt-4o-mini");
+        let llm = llm!(OpenAI<OpenAIConfig>, model = "gpt-4o-mini");
+        assert!(std::mem::size_of_val(&llm) > 0);
     }
 
     // -- chain! tests --
