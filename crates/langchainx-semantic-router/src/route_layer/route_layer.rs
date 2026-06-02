@@ -14,6 +14,9 @@ pub enum AggregationMethod {
 }
 impl AggregationMethod {
     pub fn aggregate(&self, values: &[f64]) -> f64 {
+        if values.is_empty() {
+            return 0.0;
+        }
         match self {
             AggregationMethod::Sum => values.iter().sum(),
             AggregationMethod::Mean => values.iter().sum::<f64>() / values.len() as f64,
@@ -288,6 +291,50 @@ mod tests {
             .unwrap()
             .unwrap();
         assert!((result.similarity_score - 1.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn test_mean_aggregate_empty_slice() {
+        // Should return 0.0, not panic with division by zero
+        assert_eq!(AggregationMethod::Mean.aggregate(&[]), 0.0);
+    }
+
+    #[test]
+    fn test_max_aggregate_empty_slice() {
+        assert_eq!(AggregationMethod::Max.aggregate(&[]), 0.0);
+    }
+
+    #[test]
+    fn test_sum_aggregate_empty_slice() {
+        assert_eq!(AggregationMethod::Sum.aggregate(&[]), 0.0);
+    }
+
+    mod proptests {
+        use super::*;
+        use proptest::prelude::*;
+
+        fn finite_f64() -> impl Strategy<Value = f64> {
+            (-1e10f64..1e10f64)
+        }
+
+        proptest! {
+            #[test]
+            fn mean_between_min_and_max(values in prop::collection::vec(finite_f64(), 1..100)) {
+                let mean = AggregationMethod::Mean.aggregate(&values);
+                let min = values.iter().cloned().fold(f64::INFINITY, f64::min);
+                let max = values.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+                prop_assert!(mean >= min && mean <= max,
+                    "mean {} not in [{}, {}]", mean, min, max);
+            }
+
+            #[test]
+            fn sum_gte_max_for_non_negative(values in prop::collection::vec(0.0f64..1e10, 1..100)) {
+                let sum = AggregationMethod::Sum.aggregate(&values);
+                let max = AggregationMethod::Max.aggregate(&values);
+                prop_assert!(sum >= max,
+                    "sum {} < max {}", sum, max);
+            }
+        }
     }
 
     #[tokio::test]
