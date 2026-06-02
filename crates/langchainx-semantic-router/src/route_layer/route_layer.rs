@@ -123,8 +123,6 @@ impl RouteLayer {
         (top_route, top_scores)
     }
 
-    // FIXME(#88): .expect() on line 136 -- route_choise is checked for
-    //   None above, but the flow is clearer with if-let or early return.
     /// Call the route layer with a query and return the best route choise.
     /// If route has a tool description, it will also return the tool input.
     pub async fn call<S: Into<String>>(
@@ -136,24 +134,21 @@ impl RouteLayer {
 
         let route_choise = self.call_embedding(&query_vector).await?;
 
-        if route_choise.is_none() {
+        let Some(choice) = route_choise else {
             return Ok(None);
-        }
-
-        // route_choise confirmed Some above
-        let choice = route_choise.as_ref().expect("checked is_none above");
-        let router = self.index.get_router(&choice.route).await?;
-
-        let description = match router.tool_description {
-            Some(ref desc) => desc,
-            None => return Ok(route_choise),
         };
 
-        let tool_input = self.generate_tool_input(&query, description).await?;
+        let router = self.index.get_router(&choice.route).await?;
 
-        Ok(route_choise.map(|route| RouteChoise {
+        let Some(description) = router.tool_description else {
+            return Ok(Some(choice));
+        };
+
+        let tool_input = self.generate_tool_input(&query, &description).await?;
+
+        Ok(Some(RouteChoise {
             tool_input: Some(tool_input),
-            ..route
+            ..choice
         }))
     }
 

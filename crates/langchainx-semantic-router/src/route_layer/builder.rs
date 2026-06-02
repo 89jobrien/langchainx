@@ -91,9 +91,7 @@ Tool Input:
             "description",
             "query"
         ));
-        // FIXME(#88): .expect() here is safe because prompt and LLM are
-        //   always provided, but callers cannot distinguish build failure from
-        //   panic. Consider returning Result from this builder method.
+        // SAFETY(#88): prompt and LLM are unconditionally set above; build is infallible here.
         let chain = LLMChainBuilder::new()
             .prompt(prompt)
             .llm(llm)

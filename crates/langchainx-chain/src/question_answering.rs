@@ -68,6 +68,7 @@ impl CondenseQuestionGeneratorChain {
             .llm(llm)
             .prompt(condense_question_prompt_template)
             .build()
+            // SAFETY: prompt and LLM are unconditionally set above; build is infallible here.
             .expect("CondenseQuestionGeneratorChain: prompt and LLM are always set");
         Self { chain }
     }
@@ -146,6 +147,7 @@ pub(crate) fn load_stuff_qa<L: IntoArcLLM>(
         .options(options.unwrap_or_default())
         .llm(llm)
         .build()
+        // SAFETY: prompt and LLM are unconditionally set above; build is infallible here.
         .expect("load_stuff_qa: prompt and LLM are always set");
 
     StuffDocument::new(llm_chain)
