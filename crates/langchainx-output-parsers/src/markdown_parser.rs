@@ -34,7 +34,7 @@ impl Default for MarkdownParser {
 #[async_trait]
 impl OutputParser for MarkdownParser {
     async fn parse(&self, output: &str) -> Result<String, OutputParserError> {
-        let re = Regex::new(r"```(?:\w+)?\s*([\s\S]+?)\s*```")?;
+        let re = Regex::new(&self.expresion)?;
         if let Some(cap) = re.captures(output) {
             let find = cap[1].to_string();
             if self.trim {
@@ -77,6 +77,21 @@ mod tests {
         let parser = MarkdownParser::new();
         let result = parser.parse("```\nplain text\n```").await.unwrap();
         assert_eq!(result, "plain text");
+    }
+
+    #[tokio::test]
+    async fn test_custom_expresion_is_used() {
+        let parser =
+            MarkdownParser::new().with_custom_expresion(r"<code>(.*?)</code>");
+        let result = parser.parse("<code>hello</code>").await.unwrap();
+        assert_eq!(result, "hello");
+    }
+
+    #[tokio::test]
+    async fn test_default_expresion_extracts_code_block() {
+        let parser = MarkdownParser::new();
+        let result = parser.parse("```python\nprint('hi')\n```").await.unwrap();
+        assert_eq!(result, "print('hi')");
     }
 
     #[tokio::test]
