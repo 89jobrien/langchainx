@@ -1,3 +1,9 @@
+// NOTE: No round-trip conformance tests yet. Current implementations
+// (in langchainx-llm tools_openai_like.rs, response_format_openai_like.rs)
+// only implement OpenAIFromLangchain (langchain -> openai direction).
+// No LangchainFromOpenAI impls exist, so round-trip testing is not
+// possible until reverse conversions are added.
+
 pub trait LangchainIntoOpenAI<T>: Sized {
     fn into_openai(self) -> T;
 }

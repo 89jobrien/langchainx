@@ -227,4 +227,24 @@ mod tests {
         let restored: MessageType = serde_json::from_str(&json).unwrap();
         assert_eq!(restored, original);
     }
+
+    #[test]
+    fn messages_to_string_exact_format() {
+        let msgs = vec![
+            Message::new_system_message("be helpful"),
+            Message::new_human_message("hello"),
+            Message::new_ai_message("hi"),
+            Message::new_tool_message("result", "id-1"),
+        ];
+        let s = Message::messages_to_string(&msgs);
+        assert_eq!(
+            s,
+            "SystemMessage: be helpful\nHumanMessage: hello\nAIMessage: hi\nToolMessage: result"
+        );
+    }
+
+    #[test]
+    fn messages_to_string_empty_returns_empty() {
+        assert_eq!(Message::messages_to_string(&[]), "");
+    }
 }

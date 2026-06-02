@@ -94,4 +94,20 @@ mod tests {
         assert_eq!(msgs[0].message_type, MessageType::AIMessage);
         assert_eq!(msgs[0].content, "ai response");
     }
+
+    #[test]
+    fn to_string_formats_type_colon_content() {
+        let mut mem = SimpleMemory::new();
+        mem.add_user_message(&"hello");
+        mem.add_ai_message(&"hi there");
+        mem.add_message(Message::new_system_message("be helpful"));
+        let s = mem.to_string();
+        assert_eq!(s, "human: hello\nai: hi there\nsystem: be helpful");
+    }
+
+    #[test]
+    fn to_string_empty_memory_returns_empty() {
+        let mem = SimpleMemory::new();
+        assert_eq!(mem.to_string(), "");
+    }
 }
