@@ -285,7 +285,7 @@ mod tests {
 
     // TODO(#90): rename to reference truncate_output.
     #[test]
-    fn truncation_does_not_panic_on_multibyte_chars() {
+    fn truncate_output_does_not_panic_on_multibyte_chars() {
         // Each char is 3 bytes in UTF-8. With MAX_OUTPUT_CHARS=10_000,
         // a string of 10_001 such chars would panic with byte-index slicing
         // if the boundary fell inside a multi-byte char.

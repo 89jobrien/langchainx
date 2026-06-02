@@ -607,7 +607,7 @@ mod tests {
 
     // TODO(#90): rename to `minibox_input_parses_run_action_minimal`.
     #[test]
-    fn parses_run_action_minimal() {
+    fn minibox_input_parses_run_action_minimal() {
         let v = json!({ "action": "run", "image": "alpine" });
         let action: MiniboxInput = serde_json::from_value(v).unwrap();
         match action {
@@ -621,7 +621,7 @@ mod tests {
 
     // TODO(#90): rename to `minibox_input_parses_stop_action`.
     #[test]
-    fn parses_stop_action() {
+    fn minibox_input_parses_stop_action() {
         let v = json!({ "action": "stop", "id": "abc123" });
         let action: MiniboxInput = serde_json::from_value(v).unwrap();
         assert!(matches!(action, MiniboxInput::Stop { id } if id == "abc123"));
@@ -629,7 +629,7 @@ mod tests {
 
     // TODO(#90): rename to `minibox_input_parses_rm_all`.
     #[test]
-    fn parses_rm_all() {
+    fn minibox_input_parses_rm_all() {
         let v = json!({ "action": "rm", "all": true });
         let action: MiniboxInput = serde_json::from_value(v).unwrap();
         assert!(matches!(action, MiniboxInput::Rm { all: true, .. }));
@@ -656,7 +656,7 @@ mod tests {
 
     // TODO(#90): rename to `minibox_input_parses_sandbox_defaults`.
     #[test]
-    fn parses_sandbox_defaults() {
+    fn minibox_input_parses_sandbox_defaults() {
         let v = json!({ "action": "sandbox", "script": "/tmp/foo.py" });
         let action: MiniboxInput = serde_json::from_value(v).unwrap();
         match action {
