@@ -131,26 +131,21 @@ impl RouteLayer {
 
         let route_choise = self.call_embedding(&query_vector).await?;
 
-        if route_choise.is_none() {
+        let Some(choice) = route_choise else {
             return Ok(None);
-        }
+        };
 
-        let router = self
-            .index
-            .get_router(&route_choise.as_ref().unwrap().route) //safe to unwrap
-            .await?;
+        let router = self.index.get_router(&choice.route).await?;
 
-        if router.tool_description.is_none() {
-            return Ok(route_choise);
-        }
+        let Some(description) = router.tool_description else {
+            return Ok(Some(choice));
+        };
 
-        let tool_input = self
-            .generate_tool_input(&query, &router.tool_description.unwrap())
-            .await?;
+        let tool_input = self.generate_tool_input(&query, &description).await?;
 
-        Ok(route_choise.map(|route| RouteChoise {
+        Ok(Some(RouteChoise {
             tool_input: Some(tool_input),
-            ..route
+            ..choice
         }))
     }
 

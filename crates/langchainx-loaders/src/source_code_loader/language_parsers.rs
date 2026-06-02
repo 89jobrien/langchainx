@@ -141,7 +141,9 @@ impl LanguageParser {
     }
 
     pub fn parse_code(&mut self, code: &String) -> Vec<Document> {
-        let tree = self.parser.parse(code, None).unwrap();
+        let Some(tree) = self.parser.parse(code, None) else {
+            return vec![];
+        };
         if self.parser_options.parser_threshold > tree.root_node().end_position().row as u64 {
             return vec![Document::new(code).with_metadata(HashMap::from([
                 (

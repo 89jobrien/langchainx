@@ -95,7 +95,8 @@ Tool Input:
             .prompt(prompt)
             .llm(llm)
             .build()
-            .unwrap(); //safe to unwrap
+            // SAFETY: prompt and LLM are unconditionally set above; build is infallible here.
+            .expect("RouteLayerBuilder::llm: prompt and LLM are always set");
         self.llm = Some(chain);
         self
     }
