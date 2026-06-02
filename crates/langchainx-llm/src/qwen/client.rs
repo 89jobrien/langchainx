@@ -1,3 +1,5 @@
+// TODO(#89): 353 lines -- consider splitting request
+//   building, response parsing, and streaming into separate submodules.
 use crate::{
     language_models::{GenerateResult, LLMError, TokenUsage, llm::LLM, options::CallOptions},
     schemas::{Message, StreamData},

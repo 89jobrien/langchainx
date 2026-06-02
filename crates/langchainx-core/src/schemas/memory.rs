@@ -19,6 +19,7 @@ pub trait BaseMemory: Send + Sync {
 
     fn clear(&mut self);
 
+    // TODO(#91): add unit test for to_string() formatting.
     fn to_string(&self) -> String {
         self.messages()
             .iter()

@@ -283,6 +283,7 @@ mod tests {
         assert_eq!(tool.timeout_secs, DEFAULT_TIMEOUT_SECS);
     }
 
+    // TODO(#90): rename to reference truncate_output.
     #[test]
     fn truncation_does_not_panic_on_multibyte_chars() {
         // Each char is 3 bytes in UTF-8. With MAX_OUTPUT_CHARS=10_000,

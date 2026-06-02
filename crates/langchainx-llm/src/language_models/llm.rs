@@ -26,6 +26,7 @@ pub trait LLM: Sync + Send {
     fn add_options(&mut self, _options: CallOptions) {
         // No action taken
     }
+    // TODO(#91): add unit test for messages_to_string formatting.
     //This is usefull when using non chat models
     fn messages_to_string(&self, messages: &[Message]) -> String {
         messages

@@ -15,6 +15,8 @@ use url::Url;
 
 use crate::{Loader, LoaderError, process_doc_stream};
 
+// TODO(#36): add fuzz target for HtmlLoader -- readability extractor
+//   should not panic on malformed HTML, unclosed tags, or binary input.
 #[derive(Debug, Clone)]
 pub struct HtmlLoader<R> {
     html: R,

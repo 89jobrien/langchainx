@@ -312,12 +312,14 @@ mod tests {
 
     // -- llm! tests --
 
+    // TODO(#90): rename to reference llm! macro, add assertion.
     #[test]
     fn llm_default_compiles() {
         use langchainx_llm::openai::{OpenAI, OpenAIConfig};
         let _llm: OpenAI<OpenAIConfig> = llm!(OpenAI<OpenAIConfig>);
     }
 
+    // TODO(#90): add assertion on model field.
     #[test]
     fn llm_with_model_compiles() {
         use langchainx_llm::openai::{OpenAI, OpenAIConfig};

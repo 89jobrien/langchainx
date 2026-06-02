@@ -91,11 +91,14 @@ Tool Input:
             "description",
             "query"
         ));
+        // FIXME(#88): .expect() here is safe because prompt and LLM are
+        //   always provided, but callers cannot distinguish build failure from
+        //   panic. Consider returning Result from this builder method.
         let chain = LLMChainBuilder::new()
             .prompt(prompt)
             .llm(llm)
             .build()
-            .unwrap(); //safe to unwrap
+            .expect("RouteLayerBuilder::llm: prompt and LLM are always set");
         self.llm = Some(chain);
         self
     }
@@ -129,23 +132,14 @@ Tool Input:
     }
 
     pub async fn build(mut self) -> Result<RouteLayer, RouteLayerBuilderError> {
-        if self.embedder.is_none() {
-            return Err(RouteLayerBuilderError::MissingEmbedder);
-        }
-
-        if self.llm.is_none() {
-            return Err(RouteLayerBuilderError::MissingLLM);
-        }
-
-        if self.index.is_none() {
-            return Err(RouteLayerBuilderError::MissingIndex);
-        }
-
         const DEFAULT_THRESHOLD: f64 = 0.82;
+        let embedder = self.embedder.ok_or(RouteLayerBuilderError::MissingEmbedder)?;
+        let index = self.index.ok_or(RouteLayerBuilderError::MissingIndex)?;
+        let llm = self.llm.ok_or(RouteLayerBuilderError::MissingLLM)?;
         let mut router = RouteLayer {
-            embedder: self.embedder.unwrap(),
-            index: self.index.unwrap(),
-            llm: self.llm.unwrap(),
+            embedder,
+            index,
+            llm,
             threshold: self.threshold.unwrap_or(DEFAULT_THRESHOLD),
             top_k: self.top_k,
             aggregation_method: self.aggregation_method,

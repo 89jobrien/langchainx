@@ -3,6 +3,11 @@ use regex::Regex;
 
 use super::{OutputParser, OutputParserError};
 
+// TODO(#86): add fuzz target for parse() -- markdown code fence extraction
+//   is a parser boundary that should survive adversarial input.
+// FIXME(#86): `expresion` field is set but never read in parse() -- the
+//   hardcoded regex in parse() ignores self.expresion and
+//   with_custom_expresion().
 pub struct MarkdownParser {
     expresion: String,
     trim: bool,

@@ -12,6 +12,9 @@ use std::io::{BufReader, Cursor, Read};
 use std::path::Path;
 use std::pin::Pin;
 
+// TODO(#36): add fuzz target for CsvLoader -- malformed CSV input
+//   (unbalanced quotes, missing columns, binary data) should not panic.
+//   Add property test: loaded doc count == CSV row count.
 #[derive(Debug, Clone)]
 pub struct CsvLoader<R> {
     reader: R,

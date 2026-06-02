@@ -58,6 +58,8 @@ pub struct CondenseQuestionGeneratorChain {
 }
 
 impl CondenseQuestionGeneratorChain {
+    // FIXME(#88): unwrap in infallible context -- replace .expect() with
+    //   proper Result propagation or document why this cannot fail.
     pub fn new<L: IntoArcLLM>(llm: L) -> Self {
         let condense_question_prompt_template =
             template_jinja2!(DEFAULTCONDENSEQUESTIONTEMPLATE, "chat_history", "question");
@@ -130,6 +132,8 @@ impl<'a> StuffQAPromptBuilder<'a> {
     }
 }
 
+// FIXME(#88): unwrap in load_stuff_qa -- propagate error or use expect()
+//   with documented invariant.
 pub(crate) fn load_stuff_qa<L: IntoArcLLM>(
     llm: L,
     options: Option<ChainCallOptions>,

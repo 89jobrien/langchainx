@@ -140,6 +140,8 @@ impl LanguageParser {
         self.parser_options.parser_threshold = threshold;
     }
 
+    // FIXME(#88): unwrap on parser.parse -- return Result or handle None
+    //   gracefully when tree-sitter fails to parse.
     pub fn parse_code(&mut self, code: &String) -> Vec<Document> {
         let tree = self.parser.parse(code, None).unwrap();
         if self.parser_options.parser_threshold > tree.root_node().end_position().row as u64 {

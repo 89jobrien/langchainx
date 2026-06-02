@@ -37,12 +37,14 @@ pub trait Tool: Send + Sync {
 
     async fn run(&self, input: Value) -> Result<String, ToolError>;
 
+    // TODO(#35): add unit tests for parse_input -- covers JSON extraction
+    //   fallback logic. Add fuzz target for adversarial input strings.
     async fn parse_input(&self, input: &str) -> Value {
         log::info!("Using default implementation: {}", input);
         match serde_json::from_str::<Value>(input) {
             Ok(input) => {
-                if input["input"].is_string() {
-                    Value::String(input["input"].as_str().unwrap().to_string())
+                if let Some(s) = input["input"].as_str() {
+                    Value::String(s.to_string())
                 } else {
                     Value::String(input.to_string())
                 }

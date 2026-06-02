@@ -7,6 +7,9 @@ use langchainx_embedding::Embedder;
 
 use crate::{Index, RouteLayerError, Router};
 
+// TODO(#87): add property tests for AggregationMethod::aggregate --
+//   verify Mean is always between min and max, Sum >= Max, Max <= Sum.
+//   Test with empty slice (currently panics on Mean division by zero).
 pub enum AggregationMethod {
     Mean,
     Max,
@@ -22,7 +25,7 @@ impl AggregationMethod {
             AggregationMethod::Mean => values.iter().sum::<f64>() / values.len() as f64,
             AggregationMethod::Max => *values
                 .iter()
-                .max_by(|a, b| a.partial_cmp(b).unwrap())
+                .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
                 .unwrap_or(&0.0),
         }
     }
@@ -120,6 +123,8 @@ impl RouteLayer {
         (top_route, top_scores)
     }
 
+    // FIXME(#88): .expect() on line 136 -- route_choise is checked for
+    //   None above, but the flow is clearer with if-let or early return.
     /// Call the route layer with a query and return the best route choise.
     /// If route has a tool description, it will also return the tool input.
     pub async fn call<S: Into<String>>(
@@ -135,18 +140,16 @@ impl RouteLayer {
             return Ok(None);
         }
 
-        let router = self
-            .index
-            .get_router(&route_choise.as_ref().unwrap().route) //safe to unwrap
-            .await?;
+        // route_choise confirmed Some above
+        let choice = route_choise.as_ref().expect("checked is_none above");
+        let router = self.index.get_router(&choice.route).await?;
 
-        if router.tool_description.is_none() {
-            return Ok(route_choise);
-        }
+        let description = match router.tool_description {
+            Some(ref desc) => desc,
+            None => return Ok(route_choise),
+        };
 
-        let tool_input = self
-            .generate_tool_input(&query, &router.tool_description.unwrap())
-            .await?;
+        let tool_input = self.generate_tool_input(&query, description).await?;
 
         Ok(route_choise.map(|route| RouteChoise {
             tool_input: Some(tool_input),

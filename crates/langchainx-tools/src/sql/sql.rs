@@ -103,6 +103,7 @@ impl SQLDatabaseBuilder {
 }
 
 impl SQLDatabase {
+    // TODO(#90): add unit tests for dialect() and close().
     pub fn dialect(&self) -> Dialect {
         self.engine.dialect()
     }

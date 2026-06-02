@@ -198,6 +198,8 @@ mod tests {
         assert_eq!(result.unwrap(), "Hello world!");
     }
 
+    // TODO(#85, #90): rename to include SUT, e.g.
+    //   `prompt_args_macro_empty_and_single_entry`.
     #[test]
     fn prompt_args_macro_empty_and_single_entry() {
         let args = prompt_args! {};

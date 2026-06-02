@@ -1,3 +1,5 @@
+// TODO(#89): 480 lines -- consider extracting action
+//   parsing, container config defaults, and tool impl into submodules.
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -225,6 +227,8 @@ pub enum SnapshotAction {
     List,
 }
 
+// TODO(#90): add unit tests for default_tag, default_network,
+//   default_sandbox_image, default_memory_mb, default_timeout.
 fn default_tag() -> String {
     "latest".into()
 }
@@ -601,6 +605,7 @@ mod tests {
         assert!(matches!(action, MiniboxInput::Ps));
     }
 
+    // TODO(#90): rename to `minibox_input_parses_run_action_minimal`.
     #[test]
     fn parses_run_action_minimal() {
         let v = json!({ "action": "run", "image": "alpine" });
@@ -614,6 +619,7 @@ mod tests {
         }
     }
 
+    // TODO(#90): rename to `minibox_input_parses_stop_action`.
     #[test]
     fn parses_stop_action() {
         let v = json!({ "action": "stop", "id": "abc123" });
@@ -621,6 +627,7 @@ mod tests {
         assert!(matches!(action, MiniboxInput::Stop { id } if id == "abc123"));
     }
 
+    // TODO(#90): rename to `minibox_input_parses_rm_all`.
     #[test]
     fn parses_rm_all() {
         let v = json!({ "action": "rm", "all": true });
@@ -647,6 +654,7 @@ mod tests {
         assert!(result.is_err());
     }
 
+    // TODO(#90): rename to `minibox_input_parses_sandbox_defaults`.
     #[test]
     fn parses_sandbox_defaults() {
         let v = json!({ "action": "sandbox", "script": "/tmp/foo.py" });

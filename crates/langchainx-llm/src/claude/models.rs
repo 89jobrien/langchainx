@@ -15,6 +15,9 @@ impl ClaudeMessage {
         }
     }
 
+    // TODO(#92): MessageType match is duplicated across
+    //   Claude, DeepSeek, and Qwen models. Extract a shared role_str() method
+    //   on MessageType or a From<&Message> impl.
     pub fn from_message(message: &Message) -> Self {
         match message.message_type {
             MessageType::SystemMessage => Self::new("system", &message.content),

@@ -14,6 +14,9 @@ use crate::schemas::{messages::Message, prompt::PromptValue};
 
 pub type PromptArgs = HashMap<String, Value>;
 
+// TODO(#85): add unit tests for PromptFromatter::format with missing
+//   variables, empty templates, and special characters. Add property tests
+//   for template_fstring round-trip invariants.
 pub trait PromptFromatter: Send + Sync {
     fn template(&self) -> String;
     fn variables(&self) -> Vec<String>;

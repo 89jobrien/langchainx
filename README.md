@@ -2,9 +2,7 @@
 
 Building applications with LLMs through composability, with Rust.
 
-> **Upstream credit:** This crate is a fork of
-> [langchain-rust](https://github.com/Abraxas-365/langchain-rust) by
-> [Ryo Kanazawa (Abraxas-365)](https://github.com/Abraxas-365), used under the MIT License.
+> **Upstream credit:** This crate is a fork of [langchain-rust](https://github.com/Abraxas-365/langchain-rust) used under the MIT License.
 
 ## What makes this fork different
 
@@ -20,23 +18,22 @@ Building applications with LLMs through composability, with Rust.
 The root `langchainx` crate re-exports everything for convenience; individual crates
 can be used directly for smaller dependency footprints.
 
-| Crate | Contents |
-| --- | --- |
-| `langchainx-core` | Shared schemas, document types, error primitives |
-| `langchainx-llm` | LLM backends (OpenAI, Claude, DeepSeek, Qwen, Ollama) |
-| `langchainx-prompt` | Prompt templates and formatting macros |
-| `langchainx-chain` | Chain types (LLMChain, Conversational, Sequential, SQL, Q&A) |
-| `langchainx-agent` | Agent abstractions and executors (Chat, OpenAI Tools) |
-| `langchainx-memory` | Conversation memory backends (SimpleMemory, WindowBuffer) |
-| `langchainx-embedding` | Embedding backends (OpenAI, Ollama, FastEmbed, MistralAI) |
-| `langchainx-output-parsers` | Output parsers and structured extraction |
-| `langchainx-tools` | Tool trait and built-in tools (search, command, scraper, SQL) |
-| `langchainx-loaders` | Document loaders (PDF, HTML, CSV, Pandoc, Git, source code) |
-| `langchainx-vectorstore` | Vector store backends (Postgres, Qdrant, OpenSearch, SQLite, SurrealDB) |
-| `langchainx-text-splitter` | Text splitting utilities (token-aware, markdown-aware) |
-| `langchainx-macros` | Convenience macros (`tool!`, `llm!`, `prompt!`, `chain!`) |
-| `langchainx-semantic-router` | Semantic routing — static and dynamic (LLM-backed) |
-| `langchainx-macros` | Convenience macros: `tool!`, `llm!`, `prompt!`, `chain!` |
+| Crate                        | Contents                                                                |
+| ---------------------------- | ----------------------------------------------------------------------- |
+| `langchainx-core`            | Shared schemas, document types, error primitives                        |
+| `langchainx-llm`             | LLM backends (OpenAI, Claude, DeepSeek, Qwen, Ollama)                   |
+| `langchainx-prompt`          | Prompt templates and formatting macros                                  |
+| `langchainx-chain`           | Chain types (LLMChain, Conversational, Sequential, SQL, Q&A)            |
+| `langchainx-agent`           | Agent abstractions and executors (Chat, OpenAI Tools)                   |
+| `langchainx-memory`          | Conversation memory backends (SimpleMemory, WindowBuffer)               |
+| `langchainx-embedding`       | Embedding backends (OpenAI, Ollama, FastEmbed, MistralAI)               |
+| `langchainx-output-parsers`  | Output parsers and structured extraction                                |
+| `langchainx-tools`           | Tool trait and built-in tools (search, command, scraper, SQL)           |
+| `langchainx-loaders`         | Document loaders (PDF, HTML, CSV, Pandoc, Git, source code)             |
+| `langchainx-vectorstore`     | Vector store backends (Postgres, Qdrant, OpenSearch, SQLite, SurrealDB) |
+| `langchainx-text-splitter`   | Text splitting utilities (token-aware, markdown-aware)                  |
+| `langchainx-semantic-router` | Semantic routing — static and dynamic (LLM-backed)                      |
+| `langchainx-macros`          | Convenience macros: `tool!`, `llm!`, `prompt!`, `chain!`                |
 
 ## Supported Integrations
 
@@ -115,10 +112,10 @@ Rust, Scala, TypeScript)
 Three-tier e2e test suite. All tiers skip gracefully when prerequisites are
 unavailable.
 
-| Tier | File | Prerequisite | Command |
-| --- | --- | --- | --- |
-| 1 -- Offline | `tests/e2e_offline.rs` | None (FakeLLM / FakeEmbedder) | `cargo test --test e2e_offline` |
-| 2 -- Local LLM | `tests/e2e_local_llm.rs` | Ollama + `qwen2.5:0.5b` | `cargo test --test e2e_local_llm --features ollama` |
+| Tier            | File                      | Prerequisite                                              | Command                                                       |
+| --------------- | ------------------------- | --------------------------------------------------------- | ------------------------------------------------------------- |
+| 1 -- Offline    | `tests/e2e_offline.rs`    | None (FakeLLM / FakeEmbedder)                             | `cargo test --test e2e_offline`                               |
+| 2 -- Local LLM  | `tests/e2e_local_llm.rs`  | Ollama + `qwen2.5:0.5b`                                   | `cargo test --test e2e_local_llm --features ollama`           |
 | 3 -- Containers | `tests/e2e_containers.rs` | [smolvm](https://github.com/smol-machines/smolvm) on PATH | `cargo test --test e2e_containers --features postgres,qdrant` |
 
 Tier 1 always passes in CI. Tier 2 skips when Ollama is unavailable. Tier 3
@@ -168,22 +165,22 @@ SQLite extensions: [sqlite-vss](https://github.com/asg017/sqlite-vss),
 All integrations are opt-in. Default features are empty -- only core
 OpenAI/Claude/DeepSeek/Qwen work without flags.
 
-| Flag | What it enables |
-| --- | --- |
-| `postgres` | Postgres/pgvector vector store + SQL chain |
-| `qdrant` | Qdrant vector store |
-| `surrealdb` | SurrealDB vector store |
-| `opensearch` | OpenSearch vector store |
-| `sqlite-vss` | SQLite vector store (Faiss-based) |
-| `sqlite-vec` | SQLite vector store (pure C, portable) |
-| `ollama` | Ollama LLM + embedding backend |
-| `fastembed` | Local FastEmbed embeddings |
-| `mistralai` | MistralAI embedding backend |
-| `git` | Git commit document loader |
-| `lopdf` / `pdf-extract` | PDF document loaders |
-| `html-to-markdown` | HTML-to-Markdown document loader |
-| `tree-sitter` | Source code loader with 11 language parsers |
-| `rss` / `sitemap` | RSS and sitemap document loaders |
+| Flag                    | What it enables                             |
+| ----------------------- | ------------------------------------------- |
+| `postgres`              | Postgres/pgvector vector store + SQL chain  |
+| `qdrant`                | Qdrant vector store                         |
+| `surrealdb`             | SurrealDB vector store                      |
+| `opensearch`            | OpenSearch vector store                     |
+| `sqlite-vss`            | SQLite vector store (Faiss-based)           |
+| `sqlite-vec`            | SQLite vector store (pure C, portable)      |
+| `ollama`                | Ollama LLM + embedding backend              |
+| `fastembed`             | Local FastEmbed embeddings                  |
+| `mistralai`             | MistralAI embedding backend                 |
+| `git`                   | Git commit document loader                  |
+| `lopdf` / `pdf-extract` | PDF document loaders                        |
+| `html-to-markdown`      | HTML-to-Markdown document loader            |
+| `tree-sitter`           | Source code loader with 11 language parsers |
+| `rss` / `sitemap`       | RSS and sitemap document loaders            |
 
 ## Quick Start
 

@@ -52,7 +52,8 @@ async fn scrape_url(url: &str) -> Result<String, Box<dyn Error>> {
     let res = reqwest::get(url).await?.text().await?;
 
     let document = Html::parse_document(&res);
-    let body_selector = Selector::parse("body").unwrap();
+    let body_selector =
+        Selector::parse("body").map_err(|e| format!("CSS selector error: {e:?}"))?;
 
     let mut text = Vec::new();
     for element in document.select(&body_selector) {
@@ -61,7 +62,7 @@ async fn scrape_url(url: &str) -> Result<String, Box<dyn Error>> {
 
     let joined_text = text.join(" ");
     let cleaned_text = joined_text.replace(['\n', '\t'], " ");
-    let re = Regex::new(r"\s+").unwrap();
+    let re = Regex::new(r"\s+")?;
     let final_text = re.replace_all(&cleaned_text, " ");
     Ok(final_text.to_string())
 }
