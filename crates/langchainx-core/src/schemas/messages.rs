@@ -24,6 +24,20 @@ pub enum MessageType {
     ToolMessage,
 }
 
+impl MessageType {
+    /// Returns the API role string for this message type.
+    ///
+    /// This is the role used by most LLM APIs (OpenAI, Claude, DeepSeek, etc.).
+    pub fn role_str(&self) -> &'static str {
+        match self {
+            MessageType::SystemMessage => "system",
+            MessageType::AIMessage => "assistant",
+            MessageType::HumanMessage => "user",
+            MessageType::ToolMessage => "tool",
+        }
+    }
+}
+
 impl std::fmt::Display for MessageType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
@@ -210,6 +224,14 @@ mod tests {
         assert_eq!(restored.len(), 1);
         assert_eq!(restored[0].content, "ping");
         assert_eq!(restored[0].message_type, MessageType::HumanMessage);
+    }
+
+    #[test]
+    fn message_type_role_str() {
+        assert_eq!(MessageType::SystemMessage.role_str(), "system");
+        assert_eq!(MessageType::AIMessage.role_str(), "assistant");
+        assert_eq!(MessageType::HumanMessage.role_str(), "user");
+        assert_eq!(MessageType::ToolMessage.role_str(), "tool");
     }
 
     #[test]
