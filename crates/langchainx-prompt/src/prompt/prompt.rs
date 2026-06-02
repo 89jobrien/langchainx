@@ -199,7 +199,7 @@ mod tests {
     }
 
     #[test]
-    fn should_prompt_macro_work() {
+    fn prompt_args_macro_empty_and_single_entry() {
         let args = prompt_args! {};
         assert!(args.is_empty());
 
@@ -254,5 +254,50 @@ mod tests {
         // Format the Jinja2 chat template
         let formatted_jinja2 = jinja2_template.format(input_variables_jinja2).unwrap();
         assert_eq!(formatted_jinja2, "Jinja2 Chat: Bob says Hi, Alice!");
+    }
+
+    #[test]
+    fn format_missing_variable_returns_error() {
+        let template = template_fstring!("Hello {name} you are {age}", "name", "age");
+        let args = prompt_args! { "name" => "Alice" };
+        let result = template.format(args);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(
+            matches!(err, PromptError::MissingVariable(ref v) if v == "age"),
+            "expected MissingVariable(age), got: {err:?}"
+        );
+    }
+
+    #[test]
+    fn format_empty_template_returns_empty_string() {
+        let template = template_fstring!("",);
+        let args = prompt_args! {};
+        let result = template.format(args).unwrap();
+        assert_eq!(result, "");
+    }
+
+    #[test]
+    fn format_with_unicode_and_special_chars() {
+        let template = template_fstring!("Caf\u{00e9} {drink} \u{1F600}", "drink");
+        let args = prompt_args! { "drink" => "latte" };
+        let result = template.format(args).unwrap();
+        assert_eq!(result, "Caf\u{00e9} latte \u{1F600}");
+    }
+
+    mod proptests {
+        use super::*;
+        use proptest::prelude::*;
+
+        proptest! {
+            #[test]
+            fn fstring_roundtrip_preserves_literal(s in "[^{}]*") {
+                // A template with no variables should format to itself.
+                let template = template_fstring!(&s,);
+                let args = prompt_args! {};
+                let result = template.format(args).unwrap();
+                prop_assert_eq!(result, s);
+            }
+        }
     }
 }
