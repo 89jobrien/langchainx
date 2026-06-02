@@ -60,10 +60,13 @@ impl ConversationalChain {
 
 #[async_trait]
 impl Chain for ConversationalChain {
+    fn required_keys(&self) -> Vec<String> {
+        vec![self.input_key.clone()]
+    }
+
     async fn call(&self, input_variables: PromptArgs) -> Result<GenerateResult, ChainError> {
-        let input_variable = &input_variables
-            .get(&self.input_key)
-            .ok_or(ChainError::MissingInputVariable(self.input_key.clone()))?;
+        self.validate_input(&input_variables)?;
+        let input_variable = &input_variables[&self.input_key];
         let human_message = Message::new_human_message(input_variable);
 
         let history = {
@@ -85,9 +88,8 @@ impl Chain for ConversationalChain {
         input_variables: PromptArgs,
     ) -> Result<Pin<Box<dyn Stream<Item = Result<StreamData, ChainError>> + Send>>, ChainError>
     {
-        let input_variable = &input_variables
-            .get(&self.input_key)
-            .ok_or(ChainError::MissingInputVariable(self.input_key.clone()))?;
+        self.validate_input(&input_variables)?;
+        let input_variable = &input_variables[&self.input_key];
         let human_message = Message::new_human_message(input_variable);
 
         let history = {
@@ -137,7 +139,7 @@ impl Chain for ConversationalChain {
 #[cfg(test)]
 mod tests {
     use crate::{
-        chain::{Chain, conversational::builder::ConversationalChainBuilder},
+        chain::{Chain, ChainError, conversational::builder::ConversationalChainBuilder},
         prompt_args,
         test_utils::FakeLLM,
     };
@@ -192,6 +194,9 @@ mod tests {
             .expect("failed to build ConversationalChain");
 
         let result = chain.invoke(prompt_args! { "wrong_key" => "val" }).await;
-        assert!(result.is_err());
+        assert!(matches!(
+            result,
+            Err(ChainError::MissingInputVariable { ref key, .. }) if key == "input"
+        ));
     }
 }

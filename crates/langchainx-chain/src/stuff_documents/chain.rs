@@ -119,10 +119,13 @@ impl StuffDocument {
 
 #[async_trait]
 impl Chain for StuffDocument {
+    fn required_keys(&self) -> Vec<String> {
+        vec![self.input_key.clone()]
+    }
+
     async fn call(&self, input_variables: PromptArgs) -> Result<GenerateResult, ChainError> {
-        let docs = input_variables
-            .get(&self.input_key)
-            .ok_or_else(|| ChainError::MissingInputVariable(self.input_key.clone()))?;
+        self.validate_input(&input_variables)?;
+        let docs = &input_variables[&self.input_key];
 
         let documents: Vec<Document> = serde_json::from_value(docs.clone()).map_err(|e| {
             ChainError::IncorrectInputVariable {
@@ -145,9 +148,8 @@ impl Chain for StuffDocument {
         input_variables: PromptArgs,
     ) -> Result<Pin<Box<dyn Stream<Item = Result<StreamData, ChainError>> + Send>>, ChainError>
     {
-        let docs = input_variables
-            .get(&self.input_key)
-            .ok_or_else(|| ChainError::MissingInputVariable(self.input_key.clone()))?;
+        self.validate_input(&input_variables)?;
+        let docs = &input_variables[&self.input_key];
 
         let documents: Vec<Document> = serde_json::from_value(docs.clone()).map_err(|e| {
             ChainError::IncorrectInputVariable {
@@ -236,7 +238,11 @@ mod tests {
         let input = prompt_args! { "wrong_key" => "value" };
         let result = chain.call(input).await;
         assert!(
-            matches!(result, Err(ChainError::MissingInputVariable(ref k)) if k == "input_documents"),
+            matches!(
+                result,
+                Err(ChainError::MissingInputVariable { ref key, .. })
+                    if key == "input_documents"
+            ),
             "expected MissingInputVariable error, got: {:?}",
             result
         );

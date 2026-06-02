@@ -19,11 +19,21 @@ pub struct SequentialChain {
 
 #[async_trait]
 impl Chain for SequentialChain {
+    fn required_keys(&self) -> Vec<String> {
+        // Only require keys that aren't produced by earlier chains in the sequence
+        self.input_keys.difference(&self.outputs).cloned().collect()
+    }
+
     async fn call(&self, input_variables: PromptArgs) -> Result<GenerateResult, ChainError> {
+        self.validate_input(&input_variables)?;
         let output = self.execute(input_variables).await?;
         let result = output
             .get(DEFAULT_RESULT_KEY)
-            .ok_or_else(|| ChainError::MissingInputVariable(DEFAULT_RESULT_KEY.to_string()))?
+            .ok_or_else(|| ChainError::MissingInputVariable {
+                key: DEFAULT_RESULT_KEY.to_string(),
+                expected: vec![DEFAULT_RESULT_KEY.to_string()],
+                provided: output.keys().cloned().collect(),
+            })?
             .clone();
         let result: GenerateResult = serde_json::from_value(result)?;
         Ok(result)
@@ -41,6 +51,7 @@ impl Chain for SequentialChain {
         &self,
         input_variables: PromptArgs,
     ) -> Result<HashMap<String, Value>, ChainError> {
+        self.validate_input(&input_variables)?;
         let mut input_variables = input_variables;
         let mut final_token_usage: Option<TokenUsage> = None;
         let mut output_result = HashMap::new();

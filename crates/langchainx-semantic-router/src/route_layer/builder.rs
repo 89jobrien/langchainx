@@ -131,7 +131,9 @@ Tool Input:
 
     pub async fn build(mut self) -> Result<RouteLayer, RouteLayerBuilderError> {
         const DEFAULT_THRESHOLD: f64 = 0.82;
-        let embedder = self.embedder.ok_or(RouteLayerBuilderError::MissingEmbedder)?;
+        let embedder = self
+            .embedder
+            .ok_or(RouteLayerBuilderError::MissingEmbedder)?;
         let index = self.index.ok_or(RouteLayerBuilderError::MissingIndex)?;
         let llm = self.llm.ok_or(RouteLayerBuilderError::MissingLLM)?;
         let mut router = RouteLayer {

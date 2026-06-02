@@ -144,6 +144,7 @@ impl Chain for LLMChain {
         input_variables: PromptArgs,
     ) -> Result<Pin<Box<dyn Stream<Item = Result<StreamData, ChainError>> + Send>>, ChainError>
     {
+        self.validate_input(&input_variables)?;
         let prompt = self.prompt.format_prompt(input_variables.clone())?;
         log::debug!("Prompt: {:?}", prompt);
         let llm_stream = self.llm.stream(&prompt.to_chat_messages()).await?;
@@ -197,7 +198,29 @@ mod tests {
         let chain = make_chain(vec!["x".into()]);
         // "input" key is required by the prompt but not provided
         let result = chain.invoke(prompt_args! { "wrong_key" => "val" }).await;
-        assert!(result.is_err());
+        let err = result.unwrap_err();
+        match &err {
+            ChainError::MissingInputVariable {
+                key,
+                expected,
+                provided,
+            } => {
+                assert_eq!(key, "input");
+                assert!(expected.contains(&"input".to_string()));
+                assert!(provided.contains(&"wrong_key".to_string()));
+            }
+            other => panic!("expected MissingInputVariable, got: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn stream_validates_input_keys() {
+        let chain = make_chain(vec!["x".into()]);
+        let result = chain.stream(prompt_args! { "wrong" => "val" }).await;
+        assert!(matches!(
+            result,
+            Err(ChainError::MissingInputVariable { ref key, .. }) if key == "input"
+        ));
     }
 
     #[tokio::test]

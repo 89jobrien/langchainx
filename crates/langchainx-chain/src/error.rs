@@ -19,8 +19,12 @@ pub enum ChainError {
     #[error("Missing Object On Builder: {0}")]
     MissingObject(String),
 
-    #[error("Missing input variable: {0}")]
-    MissingInputVariable(String),
+    #[error("Missing input variable `{key}`: expected {expected:?}, got {provided:?}")]
+    MissingInputVariable {
+        key: String,
+        expected: Vec<String>,
+        provided: Vec<String>,
+    },
 
     #[error("Serde json error: {0}")]
     SerdeJsonError(#[from] serde_json::Error),

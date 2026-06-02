@@ -68,6 +68,10 @@ impl ConversationalRetrieverChain {
 
 #[async_trait]
 impl Chain for ConversationalRetrieverChain {
+    fn required_keys(&self) -> Vec<String> {
+        vec![self.input_key.clone()]
+    }
+
     async fn call(&self, input_variables: PromptArgs) -> Result<GenerateResult, ChainError> {
         let output = self.execute(input_variables).await?;
         let result: GenerateResult = serde_json::from_value(output[DEFAULT_RESULT_KEY].clone())?;
@@ -80,9 +84,8 @@ impl Chain for ConversationalRetrieverChain {
         input_variables: PromptArgs,
     ) -> Result<HashMap<String, Value>, ChainError> {
         let mut token_usage: Option<TokenUsage> = None;
-        let input_variable = &input_variables
-            .get(&self.input_key)
-            .ok_or(ChainError::MissingInputVariable(self.input_key.clone()))?;
+        self.validate_input(&input_variables)?;
+        let input_variable = &input_variables[&self.input_key];
 
         let human_message = Message::new_human_message(input_variable);
         let history = {
@@ -151,9 +154,8 @@ impl Chain for ConversationalRetrieverChain {
         input_variables: PromptArgs,
     ) -> Result<Pin<Box<dyn Stream<Item = Result<StreamData, ChainError>> + Send>>, ChainError>
     {
-        let input_variable = &input_variables
-            .get(&self.input_key)
-            .ok_or(ChainError::MissingInputVariable(self.input_key.clone()))?;
+        self.validate_input(&input_variables)?;
+        let input_variable = &input_variables[&self.input_key];
 
         let human_message = Message::new_human_message(input_variable);
         let history = {

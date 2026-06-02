@@ -189,9 +189,14 @@ pub trait Chain: Sync + Send {
     /// Validates that all required keys are present in input_variables.
     /// Returns `Err(ChainError::MissingInputVariable)` for the first missing key.
     fn validate_input(&self, input_variables: &PromptArgs) -> Result<(), ChainError> {
-        for key in self.required_keys() {
-            if !input_variables.contains_key(&key) {
-                return Err(ChainError::MissingInputVariable(key));
+        let required = self.required_keys();
+        for key in &required {
+            if !input_variables.contains_key(key) {
+                return Err(ChainError::MissingInputVariable {
+                    key: key.clone(),
+                    expected: required.clone(),
+                    provided: input_variables.keys().cloned().collect(),
+                });
             }
         }
         Ok(())

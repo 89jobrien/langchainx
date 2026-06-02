@@ -94,12 +94,8 @@ impl SQLDatabaseChain {
     ) -> Result<(PromptArgs, Option<TokenUsage>), ChainError> {
         let mut token_usage: Option<TokenUsage> = None;
 
-        let query = input_variables
-            .get(SQL_CHAIN_DEFAULT_INPUT_KEY_QUERY)
-            .ok_or_else(|| {
-                ChainError::MissingInputVariable(SQL_CHAIN_DEFAULT_INPUT_KEY_QUERY.to_string())
-            })?
-            .to_string();
+        self.validate_input(input_variables)?;
+        let query = input_variables[SQL_CHAIN_DEFAULT_INPUT_KEY_QUERY].to_string();
 
         let mut tables: Vec<String> = Vec::new();
         if let Some(value) = input_variables.get(SQL_CHAIN_DEFAULT_INPUT_KEY_TABLE_NAMES)
@@ -152,6 +148,10 @@ impl SQLDatabaseChain {
 
 #[async_trait]
 impl Chain for SQLDatabaseChain {
+    fn required_keys(&self) -> Vec<String> {
+        vec![SQL_CHAIN_DEFAULT_INPUT_KEY_QUERY.to_string()]
+    }
+
     fn get_input_keys(&self) -> Vec<String> {
         self.llmchain.get_input_keys()
     }

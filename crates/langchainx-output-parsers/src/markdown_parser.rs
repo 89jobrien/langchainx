@@ -86,8 +86,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_custom_expresion_is_used() {
-        let parser =
-            MarkdownParser::new().with_custom_expresion(r"<code>(.*?)</code>");
+        let parser = MarkdownParser::new().with_custom_expresion(r"<code>(.*?)</code>");
         let result = parser.parse("<code>hello</code>").await.unwrap();
         assert_eq!(result, "hello");
     }

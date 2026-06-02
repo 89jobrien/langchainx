@@ -1,7 +1,4 @@
-use crate::{
-    QwenError,
-    language_models::LLMError,
-};
+use crate::{QwenError, language_models::LLMError};
 use serde_json::Value;
 use std::str::from_utf8;
 
