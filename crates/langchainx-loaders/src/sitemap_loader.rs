@@ -264,4 +264,147 @@ mod tests {
 
         assert!(result.is_err());
     }
+
+    #[test]
+    fn extract_locs_returns_empty_for_no_loc_tags() {
+        let xml = r#"<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>"#;
+        let locs = SitemapLoader::extract_locs(xml, "urlset").unwrap();
+        assert!(locs.is_empty());
+    }
+
+    #[test]
+    fn extract_locs_parses_multiple_urls() {
+        let xml = r#"<?xml version="1.0"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://example.com/a</loc></url>
+  <url><loc>https://example.com/b</loc></url>
+  <url><loc>https://example.com/c</loc></url>
+</urlset>"#;
+        let locs = SitemapLoader::extract_locs(xml, "urlset").unwrap();
+        assert_eq!(locs.len(), 3);
+        assert!(locs.contains(&"https://example.com/a".to_string()));
+        assert!(locs.contains(&"https://example.com/c".to_string()));
+    }
+
+    #[tokio::test]
+    async fn page_fetch_failure_is_skipped_not_propagated() {
+        // Page 2 returns 500 — loader should skip it and still produce docs for page 1.
+        let mut server = Server::new_async().await;
+        let base = server.url();
+
+        let page1_mock = server
+            .mock("GET", "/page1")
+            .with_status(200)
+            .with_header("content-type", "text/html")
+            .with_body(html_page("Page One"))
+            .create_async()
+            .await;
+
+        let _page2_error = server
+            .mock("GET", "/page2")
+            .with_status(500)
+            .create_async()
+            .await;
+
+        let sitemap_xml = format!(
+            r#"<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>{base}/page1</loc></url>
+  <url><loc>{base}/page2</loc></url>
+</urlset>"#
+        );
+
+        let _sitemap_mock = server
+            .mock("GET", "/sitemap.xml")
+            .with_status(200)
+            .with_header("content-type", "application/xml")
+            .with_body(sitemap_xml)
+            .create_async()
+            .await;
+
+        let loader =
+            SitemapLoader::new(format!("{base}/sitemap.xml")).with_client(reqwest::Client::new());
+
+        let docs: Vec<Document> = loader
+            .load()
+            .await
+            .unwrap()
+            .filter_map(|r| async move { r.ok() })
+            .collect()
+            .await;
+
+        // Only page 1 should be present; page 2 failure is silently skipped.
+        assert_eq!(docs.len(), 1);
+        assert_eq!(
+            docs[0].metadata["source"].as_str().unwrap(),
+            format!("{base}/page1")
+        );
+
+        page1_mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn sitemapindex_with_failing_child_skips_that_child() {
+        let mut server = Server::new_async().await;
+        let base = server.url();
+
+        // Good child sitemap + page
+        let good_page = server
+            .mock("GET", "/good-page")
+            .with_status(200)
+            .with_header("content-type", "text/html")
+            .with_body(html_page("Good"))
+            .create_async()
+            .await;
+
+        let good_child_xml = format!(
+            r#"<?xml version="1.0"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>{base}/good-page</loc></url>
+</urlset>"#
+        );
+
+        let _good_child = server
+            .mock("GET", "/child1.xml")
+            .with_status(200)
+            .with_header("content-type", "application/xml")
+            .with_body(good_child_xml)
+            .create_async()
+            .await;
+
+        // Bad child sitemap returns 503
+        let _bad_child = server
+            .mock("GET", "/child2.xml")
+            .with_status(503)
+            .create_async()
+            .await;
+
+        let index_xml = format!(
+            r#"<?xml version="1.0"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap><loc>{base}/child1.xml</loc></sitemap>
+  <sitemap><loc>{base}/child2.xml</loc></sitemap>
+</sitemapindex>"#
+        );
+
+        let _index_mock = server
+            .mock("GET", "/index.xml")
+            .with_status(200)
+            .with_header("content-type", "application/xml")
+            .with_body(index_xml)
+            .create_async()
+            .await;
+
+        let loader =
+            SitemapLoader::new(format!("{base}/index.xml")).with_client(reqwest::Client::new());
+
+        // The failing child sitemap fetch should propagate as an error from load()
+        let result = loader.load().await;
+        assert!(
+            result.is_err(),
+            "expected Err when child sitemap fetch fails"
+        );
+
+        good_page.expect(0);
+    }
 }

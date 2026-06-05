@@ -81,7 +81,7 @@ impl StoreBuilder {
                 let connection_url = self
                     .connection_url
                     .as_ref()
-                    .ok_or("Connection URL or DB is required")?;
+                    .ok_or("Connection URL or pool is required")?;
 
                 let pool: Pool<Sqlite> = SqlitePoolOptions::new()
                     .connect_with(
@@ -94,5 +94,59 @@ impl StoreBuilder {
                 Ok(pool)
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use async_trait::async_trait;
+    use langchainx_embedding::embedding::{Embedder, EmbedderError};
+
+    use super::*;
+
+    struct DummyEmbedder;
+
+    #[async_trait]
+    impl Embedder for DummyEmbedder {
+        async fn embed_documents(
+            &self,
+            _docs: &[String],
+        ) -> Result<Vec<Vec<f64>>, EmbedderError> {
+            Ok(vec![])
+        }
+
+        async fn embed_query(&self, _query: &str) -> Result<Vec<f64>, EmbedderError> {
+            Ok(vec![])
+        }
+    }
+
+    fn err_msg<T, E: std::fmt::Display>(r: Result<T, E>) -> String {
+        match r {
+            Ok(_) => panic!("expected Err, got Ok"),
+            Err(e) => e.to_string(),
+        }
+    }
+
+    #[tokio::test]
+    async fn build_without_embedder_returns_error() {
+        let result = StoreBuilder::new()
+            .connection_url(":memory:")
+            // no .embedder()
+            .build()
+            .await;
+        assert!(result.is_err());
+        assert!(err_msg(result).contains("Embedder"));
+    }
+
+    #[tokio::test]
+    async fn build_without_pool_or_url_returns_error() {
+        let result = StoreBuilder::new()
+            .embedder(DummyEmbedder)
+            // no .connection_url() or .pool()
+            .build()
+            .await;
+        assert!(result.is_err());
+        let msg = err_msg(result);
+        assert!(!msg.is_empty());
     }
 }
