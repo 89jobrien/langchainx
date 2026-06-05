@@ -115,7 +115,7 @@ impl<C: Connection> StoreBuilder<C> {
         self
     }
 
-    // Finalize the builder and construct the Store object
+    /// Build the Store. Returns `Err` if embedder or db is missing.
     pub async fn build(self) -> Result<Store<C>, Box<dyn Error>> {
         if self.embedder.is_none() {
             return Err("Embedder is required".into());
@@ -134,5 +134,65 @@ impl<C: Connection> StoreBuilder<C> {
             embedder: self.embedder.unwrap(),
             schemafull: self.schemafull,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use async_trait::async_trait;
+    use langchainx_embedding::embedding::{Embedder, EmbedderError};
+    use surrealdb::engine::any::Any;
+
+    use super::*;
+
+    struct DummyEmbedder;
+
+    #[async_trait]
+    impl Embedder for DummyEmbedder {
+        async fn embed_documents(
+            &self,
+            _docs: &[String],
+        ) -> Result<Vec<Vec<f64>>, EmbedderError> {
+            Ok(vec![])
+        }
+
+        async fn embed_query(&self, _query: &str) -> Result<Vec<f64>, EmbedderError> {
+            Ok(vec![])
+        }
+    }
+
+    fn err_msg<T, E: std::fmt::Display>(r: Result<T, E>) -> String {
+        match r {
+            Ok(_) => panic!("expected Err, got Ok"),
+            Err(e) => e.to_string(),
+        }
+    }
+
+    #[tokio::test]
+    async fn build_without_embedder_returns_error() {
+        let result = StoreBuilder::<Any>::new()
+            // no .embedder(), no .db()
+            .build()
+            .await;
+        assert!(result.is_err());
+        assert!(err_msg(result).contains("Embedder"));
+    }
+
+    #[tokio::test]
+    async fn build_without_db_returns_error() {
+        let result = StoreBuilder::<Any>::new()
+            .embedder(DummyEmbedder)
+            // no .db()
+            .build()
+            .await;
+        assert!(result.is_err());
+        assert!(err_msg(result).contains("Db"));
+    }
+
+    #[test]
+    fn new_with_compatibility_sets_expected_defaults() {
+        let builder = StoreBuilder::<Any>::new_with_compatiblity();
+        assert_eq!(builder.collection_name, "documents");
+        assert!(!builder.schemafull);
     }
 }

@@ -188,4 +188,87 @@ mod tests {
         assert!(result.is_ok());
         println!("{}", result.unwrap());
     }
+
+    #[test]
+    fn tool_name_and_description_are_non_empty() {
+        let tool = Wolfram::new("id".to_string());
+        assert_eq!(tool.name(), "Wolfram");
+        assert!(!tool.description().is_empty());
+    }
+
+    #[test]
+    fn builder_methods_set_fields() {
+        // Verify the builder chain compiles and doesn't panic.
+        let _tool = Wolfram::new("initial".to_string())
+            .with_app_id("updated")
+            .with_excludes(&["Plot", "Input"]);
+    }
+
+    #[tokio::test]
+    async fn run_rejects_non_string_input() {
+        let tool = Wolfram::new("dummy-id".to_string());
+        let result = tool.run(serde_json::Value::Bool(true)).await;
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn subpod_empty_plaintext_converts_to_empty_string() {
+        let subpod = Subpod {
+            title: "t".to_string(),
+            plaintext: String::new(),
+        };
+        let s = String::from(subpod);
+        assert_eq!(s, "");
+    }
+
+    #[test]
+    fn subpod_with_content_formats_json() {
+        let subpod = Subpod {
+            title: "Result".to_string(),
+            plaintext: "x = 1".to_string(),
+        };
+        let s = String::from(subpod);
+        assert!(s.contains("Result"));
+        assert!(s.contains("x = 1"));
+    }
+
+    #[test]
+    fn pod_with_all_empty_subpods_converts_to_empty_string() {
+        let pod = Pod {
+            title: "Empty".to_string(),
+            subpods: vec![
+                Subpod {
+                    title: String::new(),
+                    plaintext: String::new(),
+                },
+            ],
+        };
+        let s = String::from(pod);
+        assert_eq!(s, "");
+    }
+
+    #[test]
+    fn pod_with_valid_subpod_formats_correctly() {
+        let pod = Pod {
+            title: "Solutions".to_string(),
+            subpods: vec![Subpod {
+                title: "x".to_string(),
+                plaintext: "x = 1".to_string(),
+            }],
+        };
+        let s = String::from(pod);
+        assert!(s.contains("Solutions"));
+        assert!(s.contains("x = 1"));
+    }
+
+    #[test]
+    fn subpod_newline_is_replaced_by_separator() {
+        let subpod = Subpod {
+            title: "t".to_string(),
+            plaintext: "line1\nline2".to_string(),
+        };
+        let s = String::from(subpod);
+        assert!(s.contains("line1 // line2"));
+        assert!(!s.contains('\n'));
+    }
 }

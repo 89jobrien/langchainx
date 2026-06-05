@@ -156,6 +156,34 @@ mod tests {
         }
     }
 
+    #[test]
+    fn tool_name_and_description_are_non_empty() {
+        let tool = Text2SpeechOpenAI::default();
+        assert_eq!(tool.name(), "Text2SpeechOpenAI");
+        assert!(!tool.description().is_empty());
+    }
+
+    #[tokio::test]
+    async fn run_rejects_non_string_input() {
+        // Use a mock server — the request should be rejected before hitting the network.
+        let mut server = mockito::Server::new_async().await;
+        let _mock = server
+            .mock("POST", "/audio/speech")
+            .with_status(200)
+            .with_header("content-type", "audio/mpeg")
+            .with_body(b"bytes".as_ref())
+            .create_async()
+            .await;
+
+        let config = async_openai::config::OpenAIConfig::default()
+            .with_api_base(server.url())
+            .with_api_key("test-key");
+        let tool = Text2SpeechOpenAI::new(config).with_path("/tmp/out.mp3");
+
+        let result = tool.run(serde_json::Value::Number(42.into())).await;
+        assert!(result.is_err());
+    }
+
     #[tokio::test]
     async fn run_uses_configured_openai_client() {
         let mut server = mockito::Server::new_async().await;

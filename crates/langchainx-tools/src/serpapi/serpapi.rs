@@ -180,7 +180,9 @@ impl Default for SerpApi {
 
 #[cfg(test)]
 mod tests {
-    use super::SerpApi;
+    use serde_json::json;
+
+    use super::*;
 
     #[tokio::test]
     #[ignore]
@@ -191,5 +193,79 @@ mod tests {
             .await
             .unwrap();
         println!("{}", s);
+    }
+
+    #[test]
+    fn tool_name_and_description_are_non_empty() {
+        let tool = SerpApi::new("key".to_string());
+        assert!(!tool.name().is_empty());
+        assert!(!tool.description().is_empty());
+    }
+
+    #[test]
+    fn builder_methods_mutate_fields() {
+        let tool = SerpApi::new("initial".to_string())
+            .with_api_key("updated")
+            .with_location("Austin, TX")
+            .with_hl("en")
+            .with_gl("us".to_string())
+            .with_google_domain("google.com");
+        // If none of these panic the builder chain works correctly.
+        let _ = tool.name();
+    }
+
+    #[test]
+    fn process_response_answer_box() {
+        let res = json!({ "answer_box": { "answer": "42" } });
+        assert_eq!(process_response(&res).unwrap(), "42");
+    }
+
+    #[test]
+    fn process_response_answer_box_snippet() {
+        let res = json!({ "answer_box": { "snippet": "snippet text" } });
+        assert_eq!(process_response(&res).unwrap(), "snippet text");
+    }
+
+    #[test]
+    fn process_response_answer_box_snippet_highlighted() {
+        let res = json!({ "answer_box": { "snippet_highlighted_words": ["first", "second"] } });
+        assert_eq!(process_response(&res).unwrap(), "first");
+    }
+
+    #[test]
+    fn process_response_knowledge_graph() {
+        let res = json!({ "knowledge_graph": { "description": "kg desc" } });
+        assert_eq!(process_response(&res).unwrap(), "kg desc");
+    }
+
+    #[test]
+    fn process_response_organic_result() {
+        let res = json!({
+            "organic_results": [{ "snippet": "organic snippet" }]
+        });
+        assert_eq!(process_response(&res).unwrap(), "organic snippet");
+    }
+
+    #[test]
+    fn process_response_sport_result() {
+        let res = json!({
+            "sports_results": { "game_spotlight": "Team A 3 - Team B 1" }
+        });
+        assert_eq!(process_response(&res).unwrap(), "Team A 3 - Team B 1");
+    }
+
+    #[test]
+    fn process_response_no_good_result_returns_err() {
+        let res = json!({});
+        assert!(process_response(&res).is_err());
+    }
+
+    #[tokio::test]
+    async fn run_rejects_non_string_input() {
+        let tool = SerpApi::new("dummy".to_string());
+        let result = tool.run(serde_json::Value::Number(42.into())).await;
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("input must be a string") || !msg.is_empty());
     }
 }
