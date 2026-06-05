@@ -1,4 +1,9 @@
-#[cfg(any(test, feature = "test-utils"))]
+// langchainx — thin re-export facade over extracted crates.
+// All original source code lives in crates/langchainx-*.
+// Each module below is a single-line glob re-export delegating to the
+// corresponding langchainx-* crate.
+
+#[cfg(feature = "test-utils")]
 pub mod test_utils;
 
 pub mod agent;
@@ -25,3 +30,6 @@ pub use langchainx_prompt::{
 };
 pub use langchainx_vectorstore::{add_documents, similarity_search};
 pub use url;
+
+#[cfg(feature = "ollama")]
+pub use langchainx_llm::ollama;
