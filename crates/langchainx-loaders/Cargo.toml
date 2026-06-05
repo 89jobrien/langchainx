@@ -71,6 +71,7 @@ lopdf = ["dep:lopdf"]
 pdf-extract = ["dep:lopdf", "dep:pdf-extract"]
 rss = ["dep:rss"]
 sitemap = ["dep:quick-xml"]
+google-drive = []
 tree-sitter = [
     "cc",
     "dep:tree-sitter",
