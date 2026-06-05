@@ -60,3 +60,8 @@ pub use source_code_loader::*;
 pub mod rss_loader;
 #[cfg(feature = "rss")]
 pub use rss_loader::*;
+
+#[cfg(feature = "google-drive")]
+pub mod google_drive_loader;
+#[cfg(feature = "google-drive")]
+pub use google_drive_loader::*;

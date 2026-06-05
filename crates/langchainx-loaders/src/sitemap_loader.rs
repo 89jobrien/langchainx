@@ -47,6 +47,7 @@ impl SitemapLoader {
             .map_err(|e| LoaderError::OtherError(e.to_string()))
     }
 
+    #[allow(clippy::result_large_err)] // LoaderError contains large foreign variants; boxing requires API change
     fn extract_locs(xml: &str, tag: &str) -> Result<Vec<String>, LoaderError> {
         use quick_xml::Reader;
         use quick_xml::events::Event;
