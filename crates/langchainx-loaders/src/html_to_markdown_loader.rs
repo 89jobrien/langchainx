@@ -58,6 +58,7 @@ impl<R: Read> HtmlToMarkdownLoader<R> {
     }
 }
 
+#[allow(clippy::result_large_err)] // LoaderError contains large foreign variants; boxing requires API change
 impl HtmlToMarkdownLoader<BufReader<File>> {
     pub fn from_path<P: AsRef<Path>>(
         path: P,

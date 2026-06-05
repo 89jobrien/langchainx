@@ -1,6 +1,3 @@
-// Crate uses mod.rs + same-name child pattern for re-exports throughout
-#![allow(clippy::module_inception)]
-
 pub use langchainx_core::tools::{Tool, ToolError};
 
 pub mod wolfram;

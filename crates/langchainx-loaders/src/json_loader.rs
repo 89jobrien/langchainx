@@ -177,6 +177,7 @@ impl<R: BufRead + Send + Sync + 'static> Loader for JsonlLoader<R> {
 
 // ──────────────────────────────── helpers ───────────────────────────────────
 
+#[allow(clippy::result_large_err)] // LoaderError contains large foreign variants; boxing requires API change
 fn doc_from_value(value: Value, content_key: Option<&str>) -> Result<Document, LoaderError> {
     match content_key {
         None => {

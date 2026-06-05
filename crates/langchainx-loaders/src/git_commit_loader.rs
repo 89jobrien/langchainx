@@ -14,6 +14,7 @@ pub struct GitCommitLoader {
     repo: ThreadSafeRepository,
 }
 
+#[allow(clippy::result_large_err)] // LoaderError contains large foreign variants; boxing requires API change
 impl GitCommitLoader {
     pub fn new(repo: ThreadSafeRepository) -> Self {
         Self { repo }

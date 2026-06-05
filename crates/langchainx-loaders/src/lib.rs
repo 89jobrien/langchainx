@@ -1,6 +1,3 @@
-// LoaderError contains large variants (e.g. reqwest::Error); boxing requires API change
-#![allow(clippy::result_large_err)]
-
 mod document_loader;
 pub use document_loader::*;
 

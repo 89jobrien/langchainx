@@ -35,6 +35,7 @@ impl CsvLoader<Cursor<Vec<u8>>> {
     }
 }
 
+#[allow(clippy::result_large_err)] // LoaderError contains large foreign variants; boxing requires API change
 impl CsvLoader<BufReader<File>> {
     pub fn from_path<P: AsRef<Path>>(path: P, columns: Vec<String>) -> Result<Self, LoaderError> {
         let file = File::open(path)?;

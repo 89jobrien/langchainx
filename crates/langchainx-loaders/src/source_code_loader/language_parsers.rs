@@ -75,6 +75,7 @@ impl Clone for LanguageParser {
     }
 }
 
+#[allow(clippy::result_large_err)] // LoaderError contains large foreign variants; boxing requires API change
 pub fn get_language_by_filename(name: &str) -> Result<Language, LoaderError> {
     let extension = name.rsplit('.').next().ok_or_else(|| {
         LoaderError::OtherError(format!("Unable to determine source language for {name}"))
