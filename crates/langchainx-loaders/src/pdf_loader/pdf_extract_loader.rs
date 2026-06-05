@@ -14,6 +14,7 @@ pub struct PdfExtractLoader {
     document: pdf_extract::Document,
 }
 
+#[allow(clippy::result_large_err)] // LoaderError contains large foreign variants; boxing requires API change
 impl PdfExtractLoader {
     pub fn new<R: Read>(reader: R) -> Result<Self, LoaderError> {
         let document = pdf_extract::Document::load_from(reader)?;

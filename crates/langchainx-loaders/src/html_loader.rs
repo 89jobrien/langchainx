@@ -37,6 +37,7 @@ impl<R: Read> HtmlLoader<R> {
     }
 }
 
+#[allow(clippy::result_large_err)] // LoaderError contains large foreign variants; boxing requires API change
 impl HtmlLoader<BufReader<File>> {
     pub fn from_path<P: AsRef<Path>>(path: P, url: Url) -> Result<Self, LoaderError> {
         let file = File::open(path)?;

@@ -14,6 +14,7 @@ pub struct LoPdfLoader {
     document: lopdf::Document,
 }
 
+#[allow(clippy::result_large_err)] // LoaderError contains large foreign variants; boxing requires API change
 impl LoPdfLoader {
     pub fn new<R: Read>(reader: R) -> Result<Self, LoaderError> {
         let document = lopdf::Document::load_from(reader)?;
