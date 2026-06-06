@@ -1,16 +1,19 @@
-// TODO(#89): 480 lines -- consider extracting action
-//   parsing, container config defaults, and tool impl into submodules.
+mod input;
+
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
+use input::{MiniboxInput, SnapshotAction};
 use serde_json::{Value, json};
 use std::path::PathBuf;
-use std::process::Command;
+use std::time::Duration;
+use tokio::process::Command;
 
 use crate::{Tool, ToolError};
 
+const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
+
 /// A langchainx tool that wraps the `mbx` CLI for the minibox container runtime.
 ///
-/// Supports: run, ps, stop, pause, resume, rm, pull, exec, logs, sandbox, prune, rmi, snapshot.
+/// Supports: run, ps, stop, pause, resume, rm, exec, logs, sandbox, prune, rmi, snapshot.
 ///
 /// # Example
 /// ```rust,ignore
@@ -21,6 +24,7 @@ use crate::{Tool, ToolError};
 pub struct MiniboxTool {
     mbx_path: PathBuf,
     socket_path: Option<PathBuf>,
+    timeout: Duration,
 }
 
 impl MiniboxTool {
@@ -28,6 +32,7 @@ impl MiniboxTool {
         Self {
             mbx_path: PathBuf::from("mbx"),
             socket_path: None,
+            timeout: DEFAULT_TIMEOUT,
         }
     }
 
@@ -44,12 +49,18 @@ impl MiniboxTool {
     }
 
     // qual:allow(iosp) reason: "subprocess I/O boundary"
-    fn run_command(&self, args: &[&str]) -> Result<String, ToolError> {
+    async fn run_command(&self, args: &[&str]) -> Result<String, ToolError> {
         let mut cmd = self.build_command();
         cmd.args(args);
 
-        let output = cmd
-            .output()
+        let output = tokio::time::timeout(self.timeout, cmd.output())
+            .await
+            .map_err(|_| {
+                ToolError::ExecutionFailed(format!(
+                    "mbx timed out after {}s",
+                    self.timeout.as_secs()
+                ))
+            })?
             .map_err(|e| ToolError::ExecutionFailed(format!("failed to spawn mbx: {e}")))?;
 
         let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
@@ -78,12 +89,13 @@ impl Default for MiniboxTool {
     }
 }
 
-// ── Builder ──────────────────────────────────────────────────────────────────
+// -- Builder -----------------------------------------------------------------
 
 #[derive(Default)]
 pub struct MiniboxToolBuilder {
     mbx_path: Option<PathBuf>,
     socket_path: Option<PathBuf>,
+    timeout: Option<Duration>,
 }
 
 impl MiniboxToolBuilder {
@@ -97,159 +109,21 @@ impl MiniboxToolBuilder {
         self
     }
 
+    pub fn timeout(mut self, timeout: Duration) -> Self {
+        self.timeout = Some(timeout);
+        self
+    }
+
     pub fn build(self) -> MiniboxTool {
         MiniboxTool {
             mbx_path: self.mbx_path.unwrap_or_else(|| PathBuf::from("mbx")),
             socket_path: self.socket_path,
+            timeout: self.timeout.unwrap_or(DEFAULT_TIMEOUT),
         }
     }
 }
 
-// ── Input types ───────────────────────────────────────────────────────────────
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(tag = "action", rename_all = "snake_case")]
-enum MiniboxInput {
-    /// List all containers.
-    Ps,
-
-    /// Pull an image from Docker Hub.
-    Pull {
-        image: String,
-        #[serde(default = "default_tag")]
-        tag: String,
-        #[serde(default)]
-        platform: Option<String>,
-    },
-
-    /// Run a container.
-    Run {
-        image: String,
-        #[serde(default = "default_tag")]
-        tag: String,
-        #[serde(default)]
-        command: Vec<String>,
-        #[serde(default)]
-        memory: Option<u64>,
-        #[serde(default)]
-        cpu_weight: Option<u64>,
-        #[serde(default = "default_network")]
-        network: String,
-        #[serde(default)]
-        privileged: bool,
-        #[serde(default)]
-        volumes: Vec<String>,
-        #[serde(default)]
-        env: Vec<String>,
-        #[serde(default)]
-        name: Option<String>,
-        #[serde(default)]
-        platform: Option<String>,
-        #[serde(default)]
-        rm: bool,
-    },
-
-    /// Stop a running container.
-    Stop { id: String },
-
-    /// Pause a running container.
-    Pause { id: String },
-
-    /// Resume a paused container.
-    Resume { id: String },
-
-    /// Remove a stopped container.
-    Rm {
-        #[serde(default)]
-        id: Option<String>,
-        #[serde(default)]
-        all: bool,
-    },
-
-    /// Execute a command in a running container.
-    Exec {
-        container_id: String,
-        cmd: Vec<String>,
-    },
-
-    /// Fetch log output from a container.
-    Logs {
-        id: String,
-        #[serde(default)]
-        follow: bool,
-    },
-
-    /// Run a script in a sandboxed container.
-    Sandbox {
-        script: String,
-        #[serde(default = "default_sandbox_image")]
-        image: String,
-        #[serde(default = "default_tag")]
-        tag: String,
-        #[serde(default = "default_memory_mb")]
-        memory_mb: u64,
-        #[serde(default = "default_timeout")]
-        timeout: u64,
-        #[serde(default)]
-        volumes: Vec<String>,
-        #[serde(default)]
-        network: bool,
-    },
-
-    /// Remove unused images.
-    Prune {
-        #[serde(default)]
-        dry_run: bool,
-    },
-
-    /// Remove a specific image by reference (e.g. alpine:latest).
-    Rmi { image_ref: String },
-
-    /// Save, restore, or list container snapshots.
-    ///
-    /// Maps to `mbx snapshot save|restore|list`.
-    Snapshot {
-        sub_action: SnapshotAction,
-        /// Container ID or name.
-        container_id: String,
-        /// Snapshot name (required for save/restore, ignored for list).
-        #[serde(default)]
-        name: Option<String>,
-    },
-}
-
-/// Sub-action for the `snapshot` command.
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub enum SnapshotAction {
-    Save,
-    Restore,
-    List,
-}
-
-// TODO(#90): add unit tests for default_tag, default_network,
-//   default_sandbox_image, default_memory_mb, default_timeout.
-fn default_tag() -> String {
-    "latest".into()
-}
-
-fn default_network() -> String {
-    "none".into()
-}
-
-fn default_sandbox_image() -> String {
-    "minibox-sandbox".into()
-}
-
-fn default_memory_mb() -> u64 {
-    512
-}
-
-fn default_timeout() -> u64 {
-    60
-}
-
-// ── Tool impl ─────────────────────────────────────────────────────────────────
+// -- Tool impl ---------------------------------------------------------------
 
 #[async_trait]
 impl Tool for MiniboxTool {
@@ -392,7 +266,7 @@ impl Tool for MiniboxTool {
             serde_json::from_value(input).map_err(|e| ToolError::InvalidInput(e.to_string()))?;
 
         match action {
-            MiniboxInput::Ps => self.run_command(&["ps"]),
+            MiniboxInput::Ps => self.run_command(&["ps"]).await,
 
             MiniboxInput::Pull {
                 image,
@@ -405,6 +279,7 @@ impl Tool for MiniboxTool {
                     args.push(p);
                 }
                 self.run_command(&args.iter().map(String::as_str).collect::<Vec<_>>())
+                    .await
             }
 
             MiniboxInput::Run {
@@ -464,19 +339,20 @@ impl Tool for MiniboxTool {
                     args.extend(command);
                 }
                 self.run_command(&args.iter().map(String::as_str).collect::<Vec<_>>())
+                    .await
             }
 
-            MiniboxInput::Stop { id } => self.run_command(&["stop", &id]),
+            MiniboxInput::Stop { id } => self.run_command(&["stop", &id]).await,
 
-            MiniboxInput::Pause { id } => self.run_command(&["pause", &id]),
+            MiniboxInput::Pause { id } => self.run_command(&["pause", &id]).await,
 
-            MiniboxInput::Resume { id } => self.run_command(&["resume", &id]),
+            MiniboxInput::Resume { id } => self.run_command(&["resume", &id]).await,
 
             MiniboxInput::Rm { id, all } => {
                 if all {
-                    self.run_command(&["rm", "--all"])
+                    self.run_command(&["rm", "--all"]).await
                 } else if let Some(id) = id {
-                    self.run_command(&["rm", &id])
+                    self.run_command(&["rm", &id]).await
                 } else {
                     Err(ToolError::InvalidInput(
                         "rm requires either 'id' or 'all: true'".into(),
@@ -493,6 +369,7 @@ impl Tool for MiniboxTool {
                 let mut args = vec!["exec".to_string(), container_id, "--".to_string()];
                 args.extend(cmd);
                 self.run_command(&args.iter().map(String::as_str).collect::<Vec<_>>())
+                    .await
             }
 
             MiniboxInput::Logs { id, follow } => {
@@ -501,6 +378,7 @@ impl Tool for MiniboxTool {
                     args.push("--follow".to_string());
                 }
                 self.run_command(&args.iter().map(String::as_str).collect::<Vec<_>>())
+                    .await
             }
 
             MiniboxInput::Sandbox {
@@ -532,24 +410,27 @@ impl Tool for MiniboxTool {
                     args.push("--network".to_string());
                 }
                 self.run_command(&args.iter().map(String::as_str).collect::<Vec<_>>())
+                    .await
             }
 
             MiniboxInput::Prune { dry_run } => {
                 if dry_run {
-                    self.run_command(&["prune", "--dry-run"])
+                    self.run_command(&["prune", "--dry-run"]).await
                 } else {
-                    self.run_command(&["prune"])
+                    self.run_command(&["prune"]).await
                 }
             }
 
-            MiniboxInput::Rmi { image_ref } => self.run_command(&["rmi", &image_ref]),
+            MiniboxInput::Rmi { image_ref } => self.run_command(&["rmi", &image_ref]).await,
 
             MiniboxInput::Snapshot {
                 sub_action,
                 container_id,
                 name,
             } => match sub_action {
-                SnapshotAction::List => self.run_command(&["snapshot", "list", &container_id]),
+                SnapshotAction::List => {
+                    self.run_command(&["snapshot", "list", &container_id]).await
+                }
                 SnapshotAction::Save => {
                     let mut args = vec!["snapshot", "save", &container_id];
                     let name_str;
@@ -557,13 +438,14 @@ impl Tool for MiniboxTool {
                         name_str = n.clone();
                         args.push(&name_str);
                     }
-                    self.run_command(&args)
+                    self.run_command(&args).await
                 }
                 SnapshotAction::Restore => {
                     let n = name.ok_or_else(|| {
                         ToolError::InvalidInput("snapshot restore requires a snapshot name".into())
                     })?;
                     self.run_command(&["snapshot", "restore", &container_id, &n])
+                        .await
                 }
             },
         }
@@ -573,7 +455,6 @@ impl Tool for MiniboxTool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
 
     fn tool() -> MiniboxTool {
         MiniboxTool::new()
@@ -599,47 +480,17 @@ mod tests {
     }
 
     #[test]
-    fn parses_ps_action() {
-        let v = json!({ "action": "ps" });
-        let action: MiniboxInput = serde_json::from_value(v).unwrap();
-        assert!(matches!(action, MiniboxInput::Ps));
-    }
-
-    // TODO(#90): rename to `minibox_input_parses_run_action_minimal`.
-    #[test]
-    fn minibox_input_parses_run_action_minimal() {
-        let v = json!({ "action": "run", "image": "alpine" });
-        let action: MiniboxInput = serde_json::from_value(v).unwrap();
-        match action {
-            MiniboxInput::Run { image, tag, .. } => {
-                assert_eq!(image, "alpine");
-                assert_eq!(tag, "latest");
-            }
-            _ => panic!("expected Run"),
-        }
-    }
-
-    // TODO(#90): rename to `minibox_input_parses_stop_action`.
-    #[test]
-    fn minibox_input_parses_stop_action() {
-        let v = json!({ "action": "stop", "id": "abc123" });
-        let action: MiniboxInput = serde_json::from_value(v).unwrap();
-        assert!(matches!(action, MiniboxInput::Stop { id } if id == "abc123"));
-    }
-
-    // TODO(#90): rename to `minibox_input_parses_rm_all`.
-    #[test]
-    fn minibox_input_parses_rm_all() {
-        let v = json!({ "action": "rm", "all": true });
-        let action: MiniboxInput = serde_json::from_value(v).unwrap();
-        assert!(matches!(action, MiniboxInput::Rm { all: true, .. }));
+    fn builder_sets_timeout() {
+        let t = MiniboxTool::builder()
+            .timeout(Duration::from_secs(10))
+            .build();
+        assert_eq!(t.timeout, Duration::from_secs(10));
     }
 
     #[test]
     fn rm_without_id_or_all_errors() {
         let tool = tool();
         let v = json!({ "action": "rm" });
-        // parse succeeds (id=None, all=false), but run() should error
         let rt = tokio::runtime::Runtime::new().unwrap();
         let result = rt.block_on(tool.run(v));
         assert!(result.is_err());
@@ -654,84 +505,11 @@ mod tests {
         assert!(result.is_err());
     }
 
-    // TODO(#90): rename to `minibox_input_parses_sandbox_defaults`.
-    #[test]
-    fn minibox_input_parses_sandbox_defaults() {
-        let v = json!({ "action": "sandbox", "script": "/tmp/foo.py" });
-        let action: MiniboxInput = serde_json::from_value(v).unwrap();
-        match action {
-            MiniboxInput::Sandbox {
-                memory_mb, timeout, ..
-            } => {
-                assert_eq!(memory_mb, 512);
-                assert_eq!(timeout, 60);
-            }
-            _ => panic!("expected Sandbox"),
-        }
-    }
-
     #[tokio::test]
     async fn tool_name_and_description() {
         let t = tool();
         assert_eq!(t.name(), "Minibox");
         assert!(!t.description().is_empty());
-    }
-
-    #[test]
-    fn parses_snapshot_save() {
-        let v = json!({
-            "action": "snapshot",
-            "sub_action": "save",
-            "container_id": "abc123",
-            "name": "snap1"
-        });
-        let action: MiniboxInput = serde_json::from_value(v).unwrap();
-        match action {
-            MiniboxInput::Snapshot {
-                sub_action: SnapshotAction::Save,
-                container_id,
-                name,
-            } => {
-                assert_eq!(container_id, "abc123");
-                assert_eq!(name, Some("snap1".to_string()));
-            }
-            _ => panic!("expected Snapshot/Save"),
-        }
-    }
-
-    #[test]
-    fn parses_snapshot_list() {
-        let v = json!({
-            "action": "snapshot",
-            "sub_action": "list",
-            "container_id": "abc123"
-        });
-        let action: MiniboxInput = serde_json::from_value(v).unwrap();
-        assert!(matches!(
-            action,
-            MiniboxInput::Snapshot {
-                sub_action: SnapshotAction::List,
-                ..
-            }
-        ));
-    }
-
-    #[test]
-    fn parses_snapshot_restore() {
-        let v = json!({
-            "action": "snapshot",
-            "sub_action": "restore",
-            "container_id": "abc123",
-            "name": "snap1"
-        });
-        let action: MiniboxInput = serde_json::from_value(v).unwrap();
-        assert!(matches!(
-            action,
-            MiniboxInput::Snapshot {
-                sub_action: SnapshotAction::Restore,
-                ..
-            }
-        ));
     }
 
     #[test]
