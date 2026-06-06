@@ -155,3 +155,63 @@ impl SQLDatabase {
         self.query(&query).await
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashSet;
+
+    struct StubEngine {
+        dialect: Dialect,
+    }
+
+    #[async_trait]
+    impl Engine for StubEngine {
+        fn dialect(&self) -> Dialect {
+            match self.dialect {
+                Dialect::MySQL => Dialect::MySQL,
+                Dialect::SQLite => Dialect::SQLite,
+                Dialect::PostgreSQL => Dialect::PostgreSQL,
+            }
+        }
+
+        async fn query(
+            &self,
+            _query: &str,
+        ) -> Result<(Vec<String>, Vec<Vec<String>>), Box<dyn Error>> {
+            Ok((vec![], vec![]))
+        }
+
+        async fn table_names(&self) -> Result<Vec<String>, Box<dyn Error>> {
+            Ok(vec![])
+        }
+
+        async fn table_info(&self, _table: &str) -> Result<String, Box<dyn Error>> {
+            Ok(String::new())
+        }
+
+        fn close(&self) -> Result<(), Box<dyn Error>> {
+            Ok(())
+        }
+    }
+
+    fn make_db(dialect: Dialect) -> SQLDatabase {
+        SQLDatabase {
+            engine: Box::new(StubEngine { dialect }),
+            sample_rows_number: 0,
+            all_tables: HashSet::new(),
+        }
+    }
+
+    #[test]
+    fn dialect_returns_engine_dialect() {
+        let db = make_db(Dialect::SQLite);
+        assert!(matches!(db.dialect(), Dialect::SQLite));
+    }
+
+    #[test]
+    fn close_returns_ok_on_stub_engine() {
+        let db = make_db(Dialect::PostgreSQL);
+        assert!(db.close().is_ok());
+    }
+}

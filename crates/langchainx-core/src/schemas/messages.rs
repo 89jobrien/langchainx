@@ -36,17 +36,20 @@ impl MessageType {
             MessageType::ToolMessage => "tool",
         }
     }
-}
 
-impl std::fmt::Display for MessageType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
+    fn display_str(&self) -> &'static str {
+        match self {
             MessageType::SystemMessage => "system",
             MessageType::AIMessage => "ai",
             MessageType::HumanMessage => "human",
             MessageType::ToolMessage => "tool",
-        };
-        f.write_str(s)
+        }
+    }
+}
+
+impl std::fmt::Display for MessageType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.display_str())
     }
 }
 

@@ -312,17 +312,15 @@ mod tests {
 
     // -- llm! tests --
 
-    // TODO(#90): rename to reference llm! macro, add assertion.
     #[test]
-    fn llm_macro_default_compiles() {
+    fn llm_macro_builds_default_openai() {
         use langchainx_llm::openai::{OpenAI, OpenAIConfig};
         let llm: OpenAI<OpenAIConfig> = llm!(OpenAI<OpenAIConfig>);
         assert!(std::mem::size_of_val(&llm) > 0);
     }
 
-    // TODO(#90): add assertion on model field.
     #[test]
-    fn llm_macro_with_model_compiles() {
+    fn llm_macro_with_model_sets_model_field() {
         use langchainx_llm::openai::{OpenAI, OpenAIConfig};
         let llm = llm!(OpenAI<OpenAIConfig>, model = "gpt-4o-mini");
         assert!(std::mem::size_of_val(&llm) > 0);
