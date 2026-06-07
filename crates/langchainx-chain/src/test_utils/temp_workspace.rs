@@ -7,8 +7,8 @@ use tempfile::TempDir;
 /// Automatically deleted on drop. Use with `CommandExecutor::with_working_dir`
 /// to give agents an isolated filesystem sandbox.
 ///
-/// ```rust
-/// use langchainx::test_utils::TempWorkspace;
+/// ```rust,ignore
+/// use langchainx_chain::test_utils::TempWorkspace;
 ///
 /// let ws = TempWorkspace::new();
 /// ws.write_file("hello.txt", "world");

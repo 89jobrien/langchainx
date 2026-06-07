@@ -13,9 +13,9 @@ use crate::schemas::{Message, StreamData};
 /// A deterministic LLM test double. Responses are popped from a queue in order.
 /// When the queue is exhausted, returns an empty string.
 ///
-/// ```rust
-/// use langchainx::test_utils::FakeLLM;
-/// use langchainx::language_models::llm::LLM;
+/// ```rust,ignore
+/// use langchainx_chain::test_utils::FakeLLM;
+/// use langchainx_chain::language_models::llm::LLM;
 ///
 /// # #[tokio::main]
 /// # async fn main() {
