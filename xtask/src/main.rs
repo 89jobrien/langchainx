@@ -12,6 +12,7 @@ use xshell::Shell;
 mod bump;
 pub mod checkpoint;
 mod gates;
+pub(crate) mod session;
 pub(crate) mod trace;
 
 fn main() -> Result<()> {
