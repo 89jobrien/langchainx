@@ -113,7 +113,6 @@ impl Tool for ContainerTool {
         }
     }
 
-    // qual:allow(iosp) reason: "tool dispatch boundary"
     async fn run(&self, input: Value) -> Result<String, ToolError> {
         let action = input["action"]
             .as_str()
@@ -276,8 +275,12 @@ fn parse_sandbox_config(input: &Value) -> Result<SandboxConfig, ToolError> {
             .unwrap_or("minibox-sandbox")
             .to_string(),
         tag: input["tag"].as_str().unwrap_or("latest").to_string(),
-        memory_mb: input["memory_mb"].as_u64().unwrap_or(512),
-        timeout_secs: input["timeout"].as_u64().unwrap_or(60),
+        memory_mb: input["memory_mb"]
+            .as_u64()
+            .unwrap_or(super::DEFAULT_SANDBOX_MEMORY_MB),
+        timeout_secs: input["timeout"]
+            .as_u64()
+            .unwrap_or(super::DEFAULT_SANDBOX_TIMEOUT_SECS),
         volumes: str_array(input, "volumes")?,
         network: input["network"].as_bool().unwrap_or(false),
     })

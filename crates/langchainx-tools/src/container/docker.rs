@@ -30,6 +30,7 @@ impl DockerRuntime {
 
     /// Auto-detect `docker` or `podman` on PATH.
     /// Returns `None` if neither is found.
+    // qual:allow(iosp) reason: "runtime detection inherently mixes probing with selection"
     pub fn detect() -> Option<Self> {
         for name in ["docker", "podman"] {
             if which::which(name).is_ok() {
@@ -48,7 +49,6 @@ impl DockerRuntime {
         self.binary.to_str().unwrap_or("docker")
     }
 
-    // qual:allow(iosp) reason: "CLI adapter I/O boundary"
     async fn cmd(&self, args: &[&str]) -> Result<String, ToolError> {
         run_cli(self.bin(), args, &[], self.timeout).await
     }
@@ -163,7 +163,7 @@ impl ContainerRuntime for DockerRuntime {
             .lines()
             .filter(|l| !l.trim().is_empty())
             .map(|line| {
-                let parts: Vec<&str> = line.splitn(4, '\t').collect();
+                let parts: Vec<&str> = line.splitn(super::PS_COLUMNS, '\t').collect();
                 ContainerInfo {
                     id: parts.first().unwrap_or(&"").to_string(),
                     name: parts.get(1).map(|s| s.to_string()),

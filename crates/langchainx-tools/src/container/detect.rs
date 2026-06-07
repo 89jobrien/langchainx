@@ -7,6 +7,7 @@ use super::{ContainerRuntime, DockerRuntime, MiniboxRuntime};
 /// Priority order: `mbx` > `docker` > `podman`.
 ///
 /// Returns `None` if no supported runtime is found.
+// qual:allow(iosp) reason: "runtime detection inherently mixes probing with selection"
 pub fn detect_runtime() -> Option<Box<dyn ContainerRuntime>> {
     if let Some(rt) = MiniboxRuntime::detect() {
         return Some(Box::new(rt));

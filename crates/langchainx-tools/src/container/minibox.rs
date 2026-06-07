@@ -29,6 +29,7 @@ impl MiniboxRuntime {
     }
 
     /// Auto-detect `mbx` on PATH. Returns `None` if not found.
+    // qual:allow(iosp) reason: "runtime detection inherently mixes probing with selection"
     pub fn detect() -> Option<Self> {
         if which::which("mbx").is_ok() {
             Some(Self::new())
@@ -56,7 +57,6 @@ impl MiniboxRuntime {
         self.mbx_path.to_str().unwrap_or("mbx")
     }
 
-    // qual:allow(iosp) reason: "CLI adapter I/O boundary"
     async fn cmd(&self, args: &[&str]) -> Result<String, ToolError> {
         let env: Vec<(&str, &str)> = self
             .socket_path
@@ -79,7 +79,6 @@ impl ContainerRuntime for MiniboxRuntime {
         "minibox"
     }
 
-    // qual:allow(iosp) reason: "CLI adapter builds args then delegates"
     async fn run(&self, config: &RunConfig) -> Result<ContainerId, ToolError> {
         let tag = if config.tag.is_empty() {
             "latest"
@@ -168,7 +167,7 @@ impl ContainerRuntime for MiniboxRuntime {
             .lines()
             .filter(|l| !l.trim().is_empty())
             .map(|line| {
-                let parts: Vec<&str> = line.splitn(4, '\t').collect();
+                let parts: Vec<&str> = line.splitn(super::PS_COLUMNS, '\t').collect();
                 ContainerInfo {
                     id: parts.first().unwrap_or(&"").to_string(),
                     name: parts.get(1).map(|s| s.to_string()),

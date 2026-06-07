@@ -74,8 +74,8 @@ impl Default for SandboxConfig {
             script: String::new(),
             image: "minibox-sandbox".into(),
             tag: "latest".into(),
-            memory_mb: 512,
-            timeout_secs: 60,
+            memory_mb: DEFAULT_SANDBOX_MEMORY_MB,
+            timeout_secs: DEFAULT_SANDBOX_TIMEOUT_SECS,
             volumes: Vec::new(),
             network: false,
         }
@@ -183,6 +183,15 @@ pub trait ContainerRuntime: Send + Sync {
 
 /// Default command timeout for all container adapters.
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// Default sandbox memory limit in MB.
+pub const DEFAULT_SANDBOX_MEMORY_MB: u64 = 512;
+
+/// Default sandbox timeout in seconds.
+pub const DEFAULT_SANDBOX_TIMEOUT_SECS: u64 = 60;
+
+/// Number of tab-separated columns in ps output.
+const PS_COLUMNS: usize = 4;
 
 /// Run a CLI command with a timeout and return stdout.
 ///
