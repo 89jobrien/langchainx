@@ -10,6 +10,7 @@ use std::{env, path::Path};
 use xshell::Shell;
 
 mod bump;
+pub mod checkpoint;
 mod gates;
 pub(crate) mod trace;
 
