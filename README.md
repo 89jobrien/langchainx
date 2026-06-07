@@ -2,7 +2,7 @@
 
 Building applications with LLMs through composability, with Rust.
 
-> **Upstream credit:** This crate is a fork of [langchain-rust](https://github.com/Abraxas-365/langchain-rust) used under the MIT License.
+> **Upstream credit:** This crate is based on the work in [langchain-rust](https://github.com/Abraxas-365/langchain-rust) and the engineers who work on the official Langchain project.
 
 ## What makes this fork different
 
