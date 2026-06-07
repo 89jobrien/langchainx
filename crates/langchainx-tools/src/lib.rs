@@ -30,6 +30,9 @@ pub mod google;
 #[doc(hidden)]
 pub mod jira;
 
+pub mod container;
+pub use container::{ContainerRuntime, ContainerTool};
+
 pub mod minibox;
 pub use minibox::MiniboxTool;
 

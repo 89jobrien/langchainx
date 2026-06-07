@@ -1,0 +1,268 @@
+//! Runtime-agnostic container abstraction for langchainx agents.
+//!
+//! Provides a [`ContainerRuntime`] trait with adapters for Docker, Podman,
+//! and minibox. Use [`detect_runtime`] to auto-select the best available
+//! runtime, or construct an adapter directly.
+
+mod detect;
+mod docker;
+mod minibox;
+mod tool;
+
+pub use detect::detect_runtime;
+pub use docker::DockerRuntime;
+pub use minibox::MiniboxRuntime;
+pub use tool::ContainerTool;
+
+use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
+use std::time::Duration;
+
+use crate::ToolError;
+
+/// Unique container identifier returned by [`ContainerRuntime::run`].
+pub type ContainerId = String;
+
+/// Container listing entry from [`ContainerRuntime::ps`].
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContainerInfo {
+    pub id: String,
+    pub name: Option<String>,
+    pub image: String,
+    pub status: String,
+}
+
+/// Snapshot metadata from [`ContainerRuntime::snapshot_list`].
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SnapshotInfo {
+    pub name: String,
+    pub container_id: String,
+}
+
+/// Configuration for [`ContainerRuntime::run`].
+#[derive(Debug, Clone, Default)]
+pub struct RunConfig {
+    pub image: String,
+    pub tag: String,
+    pub command: Vec<String>,
+    pub name: Option<String>,
+    pub env: Vec<String>,
+    pub volumes: Vec<String>,
+    pub memory: Option<u64>,
+    pub cpu_weight: Option<u64>,
+    pub network: Option<String>,
+    pub privileged: bool,
+    pub platform: Option<String>,
+    pub auto_remove: bool,
+}
+
+/// Configuration for [`ContainerRuntime::sandbox`].
+#[derive(Debug, Clone)]
+pub struct SandboxConfig {
+    pub script: String,
+    pub image: String,
+    pub tag: String,
+    pub memory_mb: u64,
+    pub timeout_secs: u64,
+    pub volumes: Vec<String>,
+    pub network: bool,
+}
+
+impl Default for SandboxConfig {
+    fn default() -> Self {
+        Self {
+            script: String::new(),
+            image: "minibox-sandbox".into(),
+            tag: "latest".into(),
+            memory_mb: 512,
+            timeout_secs: 60,
+            volumes: Vec::new(),
+            network: false,
+        }
+    }
+}
+
+/// Runtime-agnostic container operations.
+///
+/// Adapters implement this trait to provide container lifecycle management
+/// for any backend (Docker, Podman, minibox).
+#[async_trait]
+pub trait ContainerRuntime: Send + Sync {
+    /// Human-readable runtime name (e.g. "docker", "minibox").
+    fn name(&self) -> &str;
+
+    // -- Lifecycle -----------------------------------------------------------
+
+    /// Create and start a container. Returns its ID.
+    async fn run(&self, config: &RunConfig) -> Result<ContainerId, ToolError>;
+
+    /// Stop a running container.
+    async fn stop(&self, id: &str) -> Result<(), ToolError>;
+
+    /// Pause a running container.
+    async fn pause(&self, id: &str) -> Result<(), ToolError>;
+
+    /// Resume a paused container.
+    async fn resume(&self, id: &str) -> Result<(), ToolError>;
+
+    /// Remove a stopped container.
+    async fn rm(&self, id: &str) -> Result<(), ToolError>;
+
+    /// Remove all stopped containers.
+    async fn rm_all(&self) -> Result<(), ToolError>;
+
+    /// List containers.
+    async fn ps(&self) -> Result<Vec<ContainerInfo>, ToolError>;
+
+    // -- Execution -----------------------------------------------------------
+
+    /// Execute a command inside a running container.
+    async fn exec(&self, id: &str, cmd: &[&str]) -> Result<String, ToolError>;
+
+    /// Fetch log output from a container.
+    async fn logs(&self, id: &str) -> Result<String, ToolError>;
+
+    // -- Images --------------------------------------------------------------
+
+    /// Pull an image from the registry.
+    async fn pull(&self, image: &str, tag: &str) -> Result<(), ToolError>;
+
+    /// Remove a local image.
+    async fn rmi(&self, image_ref: &str) -> Result<(), ToolError>;
+
+    /// Remove unused images.
+    async fn prune(&self, dry_run: bool) -> Result<String, ToolError>;
+
+    // -- Sandbox -------------------------------------------------------------
+
+    /// Run a script in a sandboxed container with resource limits.
+    ///
+    /// Returns `ToolError::ExecutionFailed` with "unsupported" if the
+    /// runtime does not support sandboxing.
+    async fn sandbox(&self, _config: &SandboxConfig) -> Result<String, ToolError> {
+        Err(ToolError::ExecutionFailed(format!(
+            "{} does not support sandbox",
+            self.name()
+        )))
+    }
+
+    // -- Snapshots -----------------------------------------------------------
+
+    /// Save a snapshot of a container's state.
+    async fn snapshot_save(
+        &self,
+        _id: &str,
+        _name: Option<&str>,
+    ) -> Result<String, ToolError> {
+        Err(ToolError::ExecutionFailed(format!(
+            "{} does not support snapshots",
+            self.name()
+        )))
+    }
+
+    /// Restore a container to a saved snapshot.
+    async fn snapshot_restore(
+        &self,
+        _id: &str,
+        _name: &str,
+    ) -> Result<String, ToolError> {
+        Err(ToolError::ExecutionFailed(format!(
+            "{} does not support snapshots",
+            self.name()
+        )))
+    }
+
+    /// List snapshots for a container.
+    async fn snapshot_list(&self, _id: &str) -> Result<Vec<SnapshotInfo>, ToolError> {
+        Err(ToolError::ExecutionFailed(format!(
+            "{} does not support snapshots",
+            self.name()
+        )))
+    }
+}
+
+/// Default command timeout for all container adapters.
+pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// Run a CLI command with a timeout and return stdout.
+///
+/// Shared helper used by all CLI-based adapters.
+// qual:allow(iosp) reason: "subprocess I/O boundary"
+pub(crate) async fn run_cli(
+    program: &str,
+    args: &[&str],
+    env: &[(&str, &str)],
+    timeout: Duration,
+) -> Result<String, ToolError> {
+    use tokio::process::Command;
+
+    let mut cmd = Command::new(program);
+    cmd.args(args);
+    for (k, v) in env {
+        cmd.env(k, v);
+    }
+
+    let output = tokio::time::timeout(timeout, cmd.output())
+        .await
+        .map_err(|_| {
+            ToolError::ExecutionFailed(format!(
+                "{program} timed out after {}s",
+                timeout.as_secs()
+            ))
+        })?
+        .map_err(|e| {
+            ToolError::ExecutionFailed(format!("failed to spawn {program}: {e}"))
+        })?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+
+    if output.status.success() {
+        if stdout.is_empty() && !stderr.is_empty() {
+            Ok(stderr)
+        } else {
+            Ok(stdout)
+        }
+    } else {
+        let combined = if stderr.is_empty() { stdout } else { stderr };
+        Err(ToolError::ExecutionFailed(format!(
+            "{program} exited {}: {}",
+            output.status,
+            combined.trim()
+        )))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn run_config_default_has_empty_image() {
+        let cfg = RunConfig::default();
+        assert!(cfg.image.is_empty());
+        assert!(!cfg.privileged);
+        assert!(!cfg.auto_remove);
+    }
+
+    #[test]
+    fn sandbox_config_default_values() {
+        let cfg = SandboxConfig::default();
+        assert_eq!(cfg.memory_mb, 512);
+        assert_eq!(cfg.timeout_secs, 60);
+        assert_eq!(cfg.tag, "latest");
+        assert!(!cfg.network);
+    }
+
+    #[test]
+    fn container_info_serializes_to_json() {
+        let info = ContainerInfo {
+            id: "abc123".into(),
+            name: Some("test".into()),
+            image: "alpine:latest".into(),
+            status: "running".into(),
+        };
+        let json = serde_json::to_string(&info).unwrap();
+        assert!(json.contains("abc123"));
+    }
+}
