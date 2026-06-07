@@ -11,6 +11,7 @@ use xshell::Shell;
 
 mod bump;
 mod gates;
+pub(crate) mod session;
 pub(crate) mod trace;
 
 fn main() -> Result<()> {
