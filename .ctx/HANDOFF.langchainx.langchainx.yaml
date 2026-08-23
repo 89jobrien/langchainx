@@ -1,8 +1,13 @@
 project: langchainx
 id: langcha
-updated: 2026-06-06
+updated: 2026-08-23
 items: []
 log:
+- date: 2026-08-23
+  summary: refactoring in progress — container tools and vectorstore builders (16 files dirty)
+  commits:
+  - 93f9512 Merge branch 'develop' of https://github.com/89jobrien/langchainx into develop
+  - 3c0b98b Update upstream credit wording in README.md
 - date: 2026-05-07
   summary: session closed
   commits: []
