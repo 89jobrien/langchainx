@@ -1,3 +1,4 @@
+//! DeepSeek chat-completions implementation of the language-model interface.
 use crate::{
     DeepseekError,
     language_models::{GenerateResult, LLMError, TokenUsage, llm::LLM, options::CallOptions},
@@ -14,8 +15,11 @@ use super::models::{ApiResponse, DeepseekMessage, Payload, ResponseFormat};
 const PENALTY_RANGE_MIN: f32 = -2.0;
 const PENALTY_RANGE_MAX: f32 = 2.0;
 
+/// DeepSeek model identifiers supported by the convenience enum.
 pub enum DeepseekModel {
+    /// General-purpose DeepSeek chat model.
     DeepseekChat,
+    /// DeepSeek reasoning model.
     DeepseekReasoner,
 }
 
@@ -30,6 +34,7 @@ impl fmt::Display for DeepseekModel {
 }
 
 #[derive(Clone)]
+/// A client for generating and streaming responses from DeepSeek.
 pub struct Deepseek {
     model: String,
     options: CallOptions,
@@ -46,6 +51,7 @@ impl Default for Deepseek {
 }
 
 impl Deepseek {
+    /// Creates a client using `DEEPSEEK_API_KEY` and the default chat model.
     pub fn new() -> Self {
         Self {
             model: DeepseekModel::DeepseekChat.to_string(),
@@ -57,31 +63,37 @@ impl Deepseek {
         }
     }
 
+    /// Sets the DeepSeek model identifier.
     pub fn with_model<S: Into<String>>(mut self, model: S) -> Self {
         self.model = model.into();
         self
     }
 
+    /// Replaces the model call options.
     pub fn with_options(mut self, options: CallOptions) -> Self {
         self.options = options;
         self
     }
 
+    /// Sets the DeepSeek API key.
     pub fn with_api_key<S: Into<String>>(mut self, api_key: S) -> Self {
         self.api_key = api_key.into();
         self
     }
 
+    /// Sets the API base URL.
     pub fn with_base_url<S: Into<String>>(mut self, base_url: S) -> Self {
         self.base_url = base_url.into();
         self
     }
 
+    /// Enables or disables JSON-object response mode.
     pub fn with_json_mode(mut self, json_mode: bool) -> Self {
         self.json_mode = json_mode;
         self
     }
 
+    /// Controls whether reasoner output includes reasoning content.
     pub fn with_include_reasoning(mut self, include_reasoning: bool) -> Self {
         self.include_reasoning = include_reasoning;
         self

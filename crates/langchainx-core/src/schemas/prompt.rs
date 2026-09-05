@@ -1,20 +1,25 @@
+//! A formatted prompt represented as an ordered list of messages.
 use super::messages::Message;
 
 #[derive(Debug, Clone)]
+/// Message-based prompt value ready for a chat model.
 pub struct PromptValue {
     messages: Vec<Message>,
 }
 impl PromptValue {
+    /// Creates a prompt containing one human message.
     pub fn from_string(text: &str) -> Self {
         let message = Message::new_human_message(text);
         Self {
             messages: vec![message],
         }
     }
+    /// Creates a prompt from an ordered message list.
     pub fn from_messages(messages: Vec<Message>) -> Self {
         Self { messages }
     }
 
+    /// Returns a copy of the prompt's messages.
     pub fn to_chat_messages(&self) -> Vec<Message> {
         self.messages.clone()
     }

@@ -4,10 +4,7 @@ use async_trait::async_trait;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use super::{
-    ContainerId, ContainerInfo, ContainerRuntime, RunConfig, DEFAULT_TIMEOUT,
-    run_cli,
-};
+use super::{ContainerId, ContainerInfo, ContainerRuntime, DEFAULT_TIMEOUT, RunConfig, run_cli};
 use crate::ToolError;
 
 /// Container runtime adapter that shells out to `docker` or `podman`.
@@ -40,6 +37,7 @@ impl DockerRuntime {
         None
     }
 
+    /// Sets the timeout for each Docker or Podman command.
     pub fn with_timeout(mut self, timeout: Duration) -> Self {
         self.timeout = timeout;
         self
@@ -97,14 +95,12 @@ impl ContainerRuntime for DockerRuntime {
             args.push("--rm");
         }
 
-        let vol_flags: Vec<String> =
-            config.volumes.iter().map(|v| format!("-v={v}")).collect();
+        let vol_flags: Vec<String> = config.volumes.iter().map(|v| format!("-v={v}")).collect();
         for v in &vol_flags {
             args.push(v);
         }
 
-        let env_flags: Vec<String> =
-            config.env.iter().map(|e| format!("-e={e}")).collect();
+        let env_flags: Vec<String> = config.env.iter().map(|e| format!("-e={e}")).collect();
         for e in &env_flags {
             args.push(e);
         }

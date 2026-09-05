@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # Plan: Automatic `validate_input` with Actionable Errors
 
 ## Goal

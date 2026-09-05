@@ -1,3 +1,5 @@
+//! Built-in agent tools for search, databases, files, commands, containers, and analysis.
+#![deny(missing_docs)]
 pub use langchainx_core::tools::{Tool, ToolError};
 
 pub mod wolfram;
@@ -37,6 +39,9 @@ pub mod minibox;
 pub use minibox::MiniboxTool;
 
 pub mod shell;
+
+#[cfg(any(feature = "openapi-toolkit", feature = "mcp-toolkit"))]
+pub mod toolkits;
 
 pub mod cargo;
 pub use cargo::{CargoTestTool, ClippyTool};

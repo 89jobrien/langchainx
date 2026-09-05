@@ -1,3 +1,4 @@
+//! Chain implementation that executes a pipeline of child chains.
 use std::collections::{HashMap, HashSet};
 
 use async_trait::async_trait;
@@ -10,6 +11,7 @@ use crate::{
 };
 
 //THIS IS EXPERIMENTAL
+/// Executes child chains in order, exposing each generation to later steps by output key.
 pub struct SequentialChain {
     pub(crate) chains: Vec<Box<dyn Chain>>,
     #[allow(dead_code)] // Planned for input validation in SequentialChain

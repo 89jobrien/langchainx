@@ -1,3 +1,4 @@
+//! LLM backends and their provider-specific configuration.
 pub use langchainx_llm::claude;
 pub use langchainx_llm::deepseek;
 pub use langchainx_llm::openai;

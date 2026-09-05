@@ -1,3 +1,4 @@
+//! Common interface for splitting text and documents.
 use std::collections::HashMap;
 
 use async_trait::async_trait;
@@ -7,9 +8,12 @@ use serde_json::Value;
 use crate::TextSplitterError;
 
 #[async_trait]
+/// Splits text and documents into smaller chunks.
 pub trait TextSplitter: Send + Sync {
+    /// Splits one string into ordered chunks.
     async fn split_text(&self, text: &str) -> Result<Vec<String>, TextSplitterError>;
 
+    /// Splits documents while preserving their metadata.
     async fn split_documents(
         &self,
         documents: &[Document],
@@ -23,6 +27,7 @@ pub trait TextSplitter: Send + Sync {
         self.create_documents(&texts, &metadatas).await
     }
 
+    /// Creates documents by splitting text and pairing chunks with metadata.
     async fn create_documents(
         &self,
         text: &[String],

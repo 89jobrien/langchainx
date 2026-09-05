@@ -1,3 +1,4 @@
+//! Stateful conversation chain that injects and updates chat history.
 use std::{pin::Pin, sync::Arc};
 
 use async_stream::stream;
@@ -20,24 +21,27 @@ use super::{ChainError, chain_trait::Chain, llm_chain::LLMChain};
 pub mod builder;
 mod prompt;
 
-///This is only usefull when you dont modify the original prompt
+/// Builds inputs for the default conversational prompt.
 pub struct ConversationalChainPromptBuilder {
     input: String,
 }
 
 #[allow(clippy::new_without_default)] // Builder pattern
 impl ConversationalChainPromptBuilder {
+    /// Creates a builder with empty user input.
     pub fn new() -> Self {
         Self {
             input: "".to_string(),
         }
     }
 
+    /// Sets the user's next message.
     pub fn input<S: Into<String>>(mut self, input: S) -> Self {
         self.input = input.into();
         self
     }
 
+    /// Produces prompt arguments using the default `input` key.
     pub fn build(self) -> PromptArgs {
         prompt_args! {
             DEFAULT_INPUT_VARIABLE => self.input,
@@ -45,14 +49,17 @@ impl ConversationalChainPromptBuilder {
     }
 }
 
+/// Calls an LLM with prior chat history and records each completed turn.
 pub struct ConversationalChain {
     llm: LLMChain,
     input_key: String,
+    /// Shared conversation history read before each call and updated afterward.
     pub memory: Arc<Mutex<dyn BaseMemory>>,
 }
 
 //Conversational Chain is a simple chain to interact with ai as a string of messages
 impl ConversationalChain {
+    /// Creates an input builder for the default conversational prompt.
     pub fn prompt_builder(&self) -> ConversationalChainPromptBuilder {
         ConversationalChainPromptBuilder::new()
     }

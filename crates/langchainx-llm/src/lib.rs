@@ -1,3 +1,5 @@
+//! Language-model interfaces, request options, schemas, and provider clients.
+#![deny(missing_docs)]
 pub mod language_models;
 pub mod schemas;
 

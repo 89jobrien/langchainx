@@ -1,3 +1,4 @@
+//! Prompt builders and chains used by conversational document question answering.
 use std::pin::Pin;
 
 use async_trait::async_trait;
@@ -22,12 +23,14 @@ Chat History:
 Follow Up Input: {{question}}
 Standalone question:"#;
 
+/// Builds inputs for a chain that rewrites a follow-up question using chat history.
 pub struct CondenseQuestionPromptBuilder {
     chat_history: String,
     question: String,
 }
 #[allow(clippy::new_without_default)] // Builder pattern
 impl CondenseQuestionPromptBuilder {
+    /// Creates a builder with empty history and question text.
     pub fn new() -> Self {
         Self {
             chat_history: "".to_string(),
@@ -35,16 +38,19 @@ impl CondenseQuestionPromptBuilder {
         }
     }
 
+    /// Sets the follow-up question to rewrite.
     pub fn question<S: Into<String>>(mut self, question: S) -> Self {
         self.question = question.into();
         self
     }
 
+    /// Serializes the conversation used to contextualize the question.
     pub fn chat_history(mut self, chat_history: &[Message]) -> Self {
         self.chat_history = Message::messages_to_string(chat_history);
         self
     }
 
+    /// Produces prompt arguments keyed by `chat_history` and `question`.
     pub fn build(self) -> PromptArgs {
         prompt_args! {
             "chat_history" => self.chat_history,
@@ -53,13 +59,13 @@ impl CondenseQuestionPromptBuilder {
     }
 }
 
+/// Rewrites follow-up questions as standalone questions using an LLM.
 pub struct CondenseQuestionGeneratorChain {
     chain: LLMChain,
 }
 
 impl CondenseQuestionGeneratorChain {
-    // FIXME(#88): unwrap in infallible context -- replace .expect() with
-    //   proper Result propagation or document why this cannot fail.
+    /// Creates a chain with the default question-condensing prompt.
     pub fn new<L: IntoArcLLM>(llm: L) -> Self {
         let condense_question_prompt_template =
             template_jinja2!(DEFAULTCONDENSEQUESTIONTEMPLATE, "chat_history", "question");
@@ -73,6 +79,7 @@ impl CondenseQuestionGeneratorChain {
         Self { chain }
     }
 
+    /// Creates an input builder for the default condensing prompt.
     pub fn prompt_builder(&self) -> CondenseQuestionPromptBuilder {
         CondenseQuestionPromptBuilder::new()
     }
@@ -101,6 +108,7 @@ Question:{{question}}
 Helpful Answer:
 "#;
 
+/// Builds document and question inputs for the default stuff-QA prompt.
 pub struct StuffQAPromptBuilder<'a> {
     input_documents: Vec<&'a Document>,
     question: String,
@@ -108,6 +116,7 @@ pub struct StuffQAPromptBuilder<'a> {
 
 #[allow(clippy::new_without_default)] // Builder pattern
 impl<'a> StuffQAPromptBuilder<'a> {
+    /// Creates a builder with no documents and an empty question.
     pub fn new() -> Self {
         Self {
             input_documents: vec![],
@@ -115,16 +124,19 @@ impl<'a> StuffQAPromptBuilder<'a> {
         }
     }
 
+    /// Sets the documents supplied as answer context.
     pub fn documents(mut self, documents: &'a [Document]) -> Self {
         self.input_documents = documents.iter().collect();
         self
     }
 
+    /// Sets the question to answer from the documents.
     pub fn question<S: Into<String>>(mut self, question: S) -> Self {
         self.question = question.into();
         self
     }
 
+    /// Produces prompt arguments keyed by `input_documents` and `question`.
     pub fn build(self) -> PromptArgs {
         prompt_args! {
             "input_documents" => self.input_documents,
@@ -133,8 +145,6 @@ impl<'a> StuffQAPromptBuilder<'a> {
     }
 }
 
-// FIXME(#88): unwrap in load_stuff_qa -- propagate error or use expect()
-//   with documented invariant.
 pub(crate) fn load_stuff_qa<L: IntoArcLLM>(
     llm: L,
     options: Option<ChainCallOptions>,

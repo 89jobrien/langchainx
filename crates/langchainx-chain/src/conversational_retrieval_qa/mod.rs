@@ -1,3 +1,4 @@
+//! Retrieval-augmented question answering with conversation memory.
 mod builder;
 pub use builder::*;
 

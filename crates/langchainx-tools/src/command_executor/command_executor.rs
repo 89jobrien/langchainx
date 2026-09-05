@@ -1,3 +1,4 @@
+//! Structured execution of command-and-argument lists.
 use std::path::PathBuf;
 
 use async_trait::async_trait;
@@ -6,12 +7,14 @@ use serde_json::{Value, json};
 
 use crate::{Tool, ToolError};
 
+/// Executes commands sequentially for a declared target platform.
 pub struct CommandExecutor {
     platform: String,
     working_dir: Option<PathBuf>,
 }
 
 impl CommandExecutor {
+    /// Creates an executor labeled for the supplied platform.
     pub fn new<S: Into<String>>(platform: S) -> Self {
         Self {
             platform: platform.into(),

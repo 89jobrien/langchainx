@@ -10,7 +10,7 @@
 //! |---|---|
 //! | `application/vnd.google-apps.document` | Export as `text/plain` |
 //! | `application/vnd.google-apps.spreadsheet` | Export as `text/csv` |
-//! | `application/pdf` | Download binary bytes |
+//! | `application/pdf` | Download bytes and decode them as UTF-8 text |
 //! | Everything else | Skipped with a `warn!` log |
 //!
 //! # Feature flag
@@ -120,7 +120,7 @@ pub struct GoogleDriveLoader {
 }
 
 impl GoogleDriveLoader {
-    /// Create a new loader.
+    /// Creates a loader with a new default HTTP client.
     ///
     /// - `token` — A valid OAuth2 or service-account bearer token.
     /// - `source` — Which files to load (folder ID or arbitrary Drive query).
@@ -132,10 +132,13 @@ impl GoogleDriveLoader {
         }
     }
 
-    /// Create a new loader with a custom [`reqwest::Client`] (useful for
-    /// injecting a mock server base URL in tests).
+    /// Creates a loader with a caller-provided HTTP client.
     pub fn with_client(token: String, source: DriveSource, client: Client) -> Self {
-        Self { token, source, client }
+        Self {
+            token,
+            source,
+            client,
+        }
     }
 
     // ------------------------------------------------------------------
@@ -260,7 +263,10 @@ impl GoogleDriveLoader {
         let mut m = HashMap::new();
         m.insert("source".to_string(), Value::String(source_url));
         m.insert("title".to_string(), Value::String(file.name.clone()));
-        m.insert("mime_type".to_string(), Value::String(file.mime_type.clone()));
+        m.insert(
+            "mime_type".to_string(),
+            Value::String(file.mime_type.clone()),
+        );
         if let Some(ref t) = file.modified_time {
             m.insert("modified_time".to_string(), Value::String(t.clone()));
         }
@@ -435,13 +441,15 @@ mod tests {
             docs[0].metadata.get("mime_type").unwrap(),
             &Value::String(MIME_GDOC.into())
         );
-        assert!(docs[0]
-            .metadata
-            .get("source")
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .contains("doc1"));
+        assert!(
+            docs[0]
+                .metadata
+                .get("source")
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .contains("doc1")
+        );
     }
 
     #[tokio::test]
@@ -472,8 +480,7 @@ mod tests {
             .create_async()
             .await;
 
-        let loader =
-            make_test_loader("fake-token", &base, DriveSource::FolderId("folder1".into()));
+        let loader = make_test_loader("fake-token", &base, DriveSource::FolderId("folder1".into()));
         let docs: Vec<_> = loader
             .load()
             .await
@@ -514,8 +521,7 @@ mod tests {
             .create_async()
             .await;
 
-        let loader =
-            make_test_loader("fake-token", &base, DriveSource::FolderId("folder1".into()));
+        let loader = make_test_loader("fake-token", &base, DriveSource::FolderId("folder1".into()));
         let docs: Vec<_> = loader
             .load()
             .await
@@ -547,8 +553,7 @@ mod tests {
             .create_async()
             .await;
 
-        let loader =
-            make_test_loader("fake-token", &base, DriveSource::FolderId("folder1".into()));
+        let loader = make_test_loader("fake-token", &base, DriveSource::FolderId("folder1".into()));
         let docs: Vec<_> = loader
             .load()
             .await
@@ -587,8 +592,7 @@ mod tests {
             .create_async()
             .await;
 
-        let loader =
-            make_test_loader("fake-token", &base, DriveSource::FolderId("folder1".into()));
+        let loader = make_test_loader("fake-token", &base, DriveSource::FolderId("folder1".into()));
         let docs: Vec<_> = loader
             .load()
             .await
@@ -611,12 +615,13 @@ mod tests {
             meta.get("modified_time").unwrap(),
             &Value::String("2024-05-15T10:30:00Z".into())
         );
-        assert!(meta
-            .get("source")
-            .unwrap()
-            .as_str()
-            .unwrap()
-            .contains("docX"));
+        assert!(
+            meta.get("source")
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .contains("docX")
+        );
     }
 
     #[tokio::test]
@@ -632,8 +637,7 @@ mod tests {
             .create_async()
             .await;
 
-        let loader =
-            make_test_loader("bad-token", &base, DriveSource::FolderId("folder1".into()));
+        let loader = make_test_loader("bad-token", &base, DriveSource::FolderId("folder1".into()));
         let result = loader.load().await;
         assert!(result.is_err(), "expected error on 403 response");
     }
@@ -683,7 +687,10 @@ mod tests {
                     .bearer_auth(&self.token)
                     .query(&[
                         ("q", q.as_str()),
-                        ("fields", "nextPageToken,files(id,name,mimeType,modifiedTime)"),
+                        (
+                            "fields",
+                            "nextPageToken,files(id,name,mimeType,modifiedTime)",
+                        ),
                         ("pageSize", "100"),
                     ]);
 
@@ -721,7 +728,11 @@ mod tests {
             Ok(files)
         }
 
-        async fn fetch_text(&self, url: &str, query: &[(&str, &str)]) -> Result<String, LoaderError> {
+        async fn fetch_text(
+            &self,
+            url: &str,
+            query: &[(&str, &str)],
+        ) -> Result<String, LoaderError> {
             let resp = self
                 .client
                 .get(url)
@@ -742,7 +753,11 @@ mod tests {
                 .map_err(|e| LoaderError::LoadDocumentError(e.to_string()))
         }
 
-        async fn fetch_bytes(&self, url: &str, query: &[(&str, &str)]) -> Result<Vec<u8>, LoaderError> {
+        async fn fetch_bytes(
+            &self,
+            url: &str,
+            query: &[(&str, &str)],
+        ) -> Result<Vec<u8>, LoaderError> {
             let resp = self
                 .client
                 .get(url)

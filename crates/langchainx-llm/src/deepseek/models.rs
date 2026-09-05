@@ -1,3 +1,4 @@
+//! Internal DeepSeek request and response payloads.
 use crate::schemas::Message;
 use serde::{Deserialize, Serialize};
 

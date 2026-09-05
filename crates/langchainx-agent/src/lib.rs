@@ -1,3 +1,5 @@
+//! Agents that plan tool calls and executors that run them as chains.
+#![deny(missing_docs)]
 mod agent;
 pub use agent::*;
 

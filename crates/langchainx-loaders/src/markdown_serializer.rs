@@ -1,33 +1,45 @@
+//! Parsing and serialization of Markdown headings and frontmatter.
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
+/// Errors produced while serializing a parsed Markdown document.
 pub enum MarkdownSerializerError {
     #[error("JSON serialization error: {0}")]
+    /// JSON serialization failed.
     Json(#[from] serde_json::Error),
 
     #[cfg(feature = "yaml")]
     #[error("YAML serialization error: {0}")]
+    /// YAML serialization failed.
     Yaml(#[from] serde_yaml::Error),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+/// A Markdown heading and the content nested below it.
 pub struct Section {
+    /// Heading depth from 1 through 6.
     pub level: u8,
+    /// Heading text without leading hash characters.
     pub title: String,
+    /// Text belonging directly to this heading.
     pub content: String,
+    /// Nested headings in document order.
     pub children: Vec<Section>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+/// Parsed Markdown frontmatter and heading hierarchy.
 pub struct MarkdownDocument {
+    /// Frontmatter fields parsed as string values.
     pub frontmatter: HashMap<String, serde_json::Value>,
+    /// Top-level heading sections.
     pub sections: Vec<Section>,
 }
 
-/// Splits YAML frontmatter (delimited by `---`) from body.
+/// Splits leading `---`-delimited string frontmatter from the body.
 /// Returns `(metadata_map, body)`.
 ///
 /// # Example
@@ -168,7 +180,7 @@ pub(crate) fn parse_sections(body: &str) -> Vec<Section> {
 }
 
 impl MarkdownDocument {
-    /// Parse a markdown string into a `MarkdownDocument`.
+    /// Parses Markdown into frontmatter and a nested heading hierarchy.
     ///
     /// **Note:** content before the first heading is silently dropped.
     pub fn parse_markdown(src: &str) -> Result<Self, MarkdownSerializerError> {
@@ -180,17 +192,19 @@ impl MarkdownDocument {
         })
     }
 
-    /// Alias for `parse_markdown`.
+    /// Parses Markdown into a structured document.
     #[deprecated(since = "0.1.0", note = "use FromStr or parse_markdown instead")]
     pub fn parse(src: &str) -> Result<Self, MarkdownSerializerError> {
         Self::parse_markdown(src)
     }
 
+    /// Serializes the document as pretty-printed JSON.
     pub fn to_json(&self) -> Result<String, serde_json::Error> {
         serde_json::to_string_pretty(self)
     }
 
     #[cfg(feature = "yaml")]
+    /// Serializes the document as YAML.
     pub fn to_yaml(&self) -> Result<String, serde_yaml::Error> {
         serde_yaml::to_string(self)
     }

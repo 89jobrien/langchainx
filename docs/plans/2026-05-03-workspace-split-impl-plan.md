@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # Implementation Plan: Cargo Workspace Split
 
 **Date**: 2026-05-03
@@ -15,10 +19,10 @@
 | 1    | DONE      | `langchainx-core`                                             |
 | 2    | DONE      | `langchainx-prompt`, `memory`, `llm`, `embedding`, `output-parsers` |
 | 3    | DONE      | `langchainx-chain`                                            |
-| 4    | PENDING   | `vectorstore`, `loaders`, `tools`, `router`, `splitters`, `testsuite` |
-| 5    | PENDING   | `langchainx-agent`                                            |
-| 6    | PENDING   | facade, delete `src/`                                         |
-| 7    | PENDING   | cleanup, version bump, tag v0.4.0                             |
+| 4    | DONE      | `vectorstore`, `loaders`, `tools`, `router`, `splitters`, `testsuite` |
+| 5    | DONE      | `langchainx-agent`                                            |
+| 6    | DONE      | facade, delete `src/`                                         |
+| 7    | DONE      | cleanup, version bump, tag v0.4.0                             |
 
 Note: `langchainx-types` was not in the original plan — it must be extracted before Wave 4.
 See Wave 1.5 below.

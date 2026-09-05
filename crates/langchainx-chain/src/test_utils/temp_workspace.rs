@@ -1,11 +1,11 @@
+//! Temporary filesystem workspace for isolated tests.
 use std::path::Path;
 
 use tempfile::TempDir;
 
 /// A temporary directory scoped to a single test.
 ///
-/// Automatically deleted on drop. Use with `CommandExecutor::with_working_dir`
-/// to give agents an isolated filesystem sandbox.
+/// The directory and its contents are automatically deleted on drop.
 ///
 /// ```rust,ignore
 /// use langchainx_chain::test_utils::TempWorkspace;
@@ -20,6 +20,7 @@ pub struct TempWorkspace {
 }
 
 impl TempWorkspace {
+    /// Creates an empty temporary directory that is deleted on drop.
     pub fn new() -> Self {
         Self {
             dir: TempDir::new().expect("failed to create temp workspace"),

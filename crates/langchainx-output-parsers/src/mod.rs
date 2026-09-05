@@ -1,3 +1,4 @@
+//! Output parser traits, implementations, and errors.
 mod output_parser;
 pub use output_parser::*;
 

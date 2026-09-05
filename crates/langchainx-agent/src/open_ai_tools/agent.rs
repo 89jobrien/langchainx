@@ -1,3 +1,4 @@
+//! Agent that translates OpenAI-compatible tool-call responses into execution actions.
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -22,12 +23,14 @@ use langchainx_prompt::{
 use crate::agent::Agent;
 use crate::error::AgentError;
 
+/// An agent backed by an LLM chain configured for native tool calling.
 pub struct OpenAiToolAgent {
     pub(crate) chain: Box<dyn Chain>,
     pub(crate) tools: Vec<Arc<dyn Tool>>,
 }
 
 impl OpenAiToolAgent {
+    /// Creates the chat prompt with history, user input, and tool scratchpad placeholders.
     pub fn create_prompt(prefix: &str) -> Result<MessageFormatterStruct, AgentError> {
         let prompt = message_formatter![
             fmt_message!(Message::new_system_message(prefix)),

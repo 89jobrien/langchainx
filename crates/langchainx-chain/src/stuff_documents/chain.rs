@@ -1,3 +1,4 @@
+//! Chain that joins document contents and passes them to an LLM chain.
 use std::pin::Pin;
 
 use async_trait::async_trait;
@@ -21,6 +22,7 @@ const _COMBINE_DOCUMENTS_DEFAULT_OUTPUT_KEY: &str = "text";
 const COMBINE_DOCUMENTS_DEFAULT_DOCUMENT_VARIABLE_NAME: &str = "context";
 const STUFF_DOCUMENTS_DEFAULT_SEPARATOR: &str = "\n\n";
 
+/// Combines input documents into a single prompt variable before generation.
 pub struct StuffDocument {
     llm_chain: LLMChain,
     input_key: String,
@@ -29,6 +31,7 @@ pub struct StuffDocument {
 }
 
 impl StuffDocument {
+    /// Wraps an LLM chain using the default document input key, context key, and separator.
     pub fn new(llm_chain: LLMChain) -> Self {
         Self {
             llm_chain,
@@ -45,13 +48,12 @@ impl StuffDocument {
             .join(&self.separator)
     }
 
-    ///Inly use thi if you use the deafult prompt
+    /// Creates an input builder for the default question-answering prompt.
     pub fn qa_prompt_builder<'a>(&self) -> StuffQAPromptBuilder<'a> {
         StuffQAPromptBuilder::new()
     }
 
-    /// load_stuff_qa return an instance of StuffDocument
-    /// with a prompt desiged for question ansering
+    /// Creates a document chain with the default question-answering prompt.
     ///
     /// # Example
     /// ```rust,ignore
@@ -83,35 +85,9 @@ impl StuffDocument {
         load_stuff_qa(llm, None)
     }
 
-    /// load_stuff_qa_with_options return an instance of StuffDocument
-    /// with a prompt desiged for question ansering
+    /// Creates a document chain with the default question-answering prompt and model options.
     ///
-    /// # Example
-    /// ```rust,ignore
-    ///
-    /// let llm = OpenAI::default();
-    /// let chain = StuffDocument::load_stuff_qa_with_options(llm,ChainCallOptions::default());
-    ///
-    /// let input = chain
-    /// .qa_prompt_builder()
-    /// .documents(&[
-    /// Document::new(format!(
-    /// "\nQuestion: {}\nAnswer: {}\n",
-    /// "Which is the favorite text editor of luis", "Nvim"
-    /// )),
-    /// Document::new(format!(
-    /// "\nQuestion: {}\nAnswer: {}\n",
-    /// "How old is Luis", "24"
-    /// )),
-    /// ])
-    /// .question("How old is luis and whats his favorite text editor")
-    /// .build();
-    ///
-    /// let ouput = chain.invoke(input).await.unwrap();
-    ///
-    /// println!("{}", ouput);
-    /// ```
-    ///
+    /// Input construction is identical to [`load_stuff_qa`](Self::load_stuff_qa).
     pub fn load_stuff_qa_with_options<L: LLM + 'static>(llm: L, opt: ChainCallOptions) -> Self {
         load_stuff_qa(llm, Some(opt))
     }

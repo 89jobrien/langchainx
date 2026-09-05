@@ -9,8 +9,8 @@
 //!
 //! Without the env var every test returns immediately (pass/skip).
 
-use langchainx_tools::minibox::MiniboxTool;
 use langchainx_tools::Tool;
+use langchainx_tools::minibox::MiniboxTool;
 use serde_json::json;
 
 /// How long to wait for container output before fetching logs.
@@ -136,11 +136,7 @@ async fn logs_contains_container_output() {
 
     tokio::time::sleep(std::time::Duration::from_millis(LOG_SETTLE_MS)).await;
 
-    let logs_out = invoke(
-        &tool,
-        json!({ "action": "logs", "id": container_id }),
-    )
-    .await;
+    let logs_out = invoke(&tool, json!({ "action": "logs", "id": container_id })).await;
 
     assert!(
         logs_out.contains("marker-langchainx-logs"),

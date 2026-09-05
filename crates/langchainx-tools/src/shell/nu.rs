@@ -1,3 +1,4 @@
+//! Structured Nushell pipeline execution.
 use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -16,7 +17,7 @@ const MAX_OUTPUT_CHARS: usize = 10_000;
 /// # Example
 /// ```rust,ignore
 /// let tool = NuTool::new();
-/// let tool = NuTool::builder().timeout_secs(30).build();
+/// let custom_tool = NuTool::builder().timeout_secs(30).build();
 /// ```
 pub struct NuTool {
     nu_path: PathBuf,
@@ -24,6 +25,7 @@ pub struct NuTool {
 }
 
 impl NuTool {
+    /// Creates a tool that invokes `nu` with a 60-second timeout.
     pub fn new() -> Self {
         Self {
             nu_path: PathBuf::from("nu"),
@@ -31,6 +33,7 @@ impl NuTool {
         }
     }
 
+    /// Returns a builder for the executable path and timeout.
     pub fn builder() -> NuToolBuilder {
         NuToolBuilder::default()
     }
@@ -109,22 +112,26 @@ impl Default for NuTool {
 // ── Builder ───────────────────────────────────────────────────────────────────
 
 #[derive(Default)]
+/// Configures a [`NuTool`].
 pub struct NuToolBuilder {
     nu_path: Option<PathBuf>,
     timeout_secs: Option<u64>,
 }
 
 impl NuToolBuilder {
+    /// Sets the Nushell executable path.
     pub fn nu_path(mut self, path: impl Into<PathBuf>) -> Self {
         self.nu_path = Some(path.into());
         self
     }
 
+    /// Sets the command timeout in seconds.
     pub fn timeout_secs(mut self, secs: u64) -> Self {
         self.timeout_secs = Some(secs);
         self
     }
 
+    /// Builds the configured Nushell tool.
     pub fn build(self) -> NuTool {
         NuTool {
             nu_path: self.nu_path.unwrap_or_else(|| PathBuf::from("nu")),

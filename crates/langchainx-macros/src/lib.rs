@@ -1,3 +1,5 @@
+//! Declarative helpers for defining tools and constructing prompts, models, and chains.
+#![deny(missing_docs)]
 // Re-exports used by macros. Not part of the public API.
 #[doc(hidden)]
 pub use async_trait::async_trait;

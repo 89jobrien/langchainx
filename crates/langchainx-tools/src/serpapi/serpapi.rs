@@ -1,3 +1,4 @@
+//! SerpApi request configuration and concise answer extraction.
 use std::error::Error;
 
 use async_trait::async_trait;
@@ -5,6 +6,7 @@ use serde_json::Value;
 
 use crate::{Tool, ToolError};
 
+/// Google Search tool backed by SerpApi.
 pub struct SerpApi {
     api_key: String,
     location: Option<String>,
@@ -14,6 +16,7 @@ pub struct SerpApi {
 }
 
 impl SerpApi {
+    /// Creates a SerpApi client with an API key.
     pub fn new(api_key: String) -> Self {
         Self {
             api_key,
@@ -23,28 +26,34 @@ impl SerpApi {
             google_domain: None,
         }
     }
+    /// Sets the geographic search location.
     pub fn with_location<S: Into<String>>(mut self, location: S) -> Self {
         self.location = Some(location.into());
         self
     }
+    /// Sets the Google interface language code.
     pub fn with_hl<S: Into<String>>(mut self, hl: S) -> Self {
         self.hl = Some(hl.into());
         self
     }
+    /// Sets the Google country code.
     pub fn with_gl(mut self, gl: String) -> Self {
         self.gl = Some(gl);
         self
     }
+    /// Sets the Google domain used for the search.
     pub fn with_google_domain<S: Into<String>>(mut self, google_domain: S) -> Self {
         self.google_domain = Some(google_domain.into());
         self
     }
 
+    /// Replaces the SerpApi API key.
     pub fn with_api_key<S: Into<String>>(mut self, api_key: S) -> Self {
         self.api_key = api_key.into();
         self
     }
 
+    /// Runs a search and returns the best answer box, sports, knowledge, or organic result.
     pub async fn simple_search(&self, query: &str) -> Result<String, Box<dyn Error>> {
         let mut url = format!(
             "https://serpapi.com/search.json?q={}&api_key={}",

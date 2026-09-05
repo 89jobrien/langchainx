@@ -1,3 +1,4 @@
+//! Parser for fenced JSON actions emitted by the conversational agent.
 use std::collections::VecDeque;
 
 use regex::Regex;

@@ -91,8 +91,7 @@ pub fn checkpoint_write(
     metadata: HashMap<String, String>,
 ) -> Result<()> {
     let dir = root.join(CHECKPOINT_DIR);
-    fs::create_dir_all(&dir)
-        .with_context(|| format!("failed to create checkpoint dir {dir:?}"))?;
+    fs::create_dir_all(&dir).with_context(|| format!("failed to create checkpoint dir {dir:?}"))?;
 
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -107,10 +106,9 @@ pub fn checkpoint_write(
     };
 
     let path = checkpoint_path(root, agent_id);
-    let json = serde_json::to_string_pretty(&checkpoint)
-        .context("failed to serialise checkpoint")?;
-    fs::write(&path, json)
-        .with_context(|| format!("failed to write checkpoint to {path:?}"))
+    let json =
+        serde_json::to_string_pretty(&checkpoint).context("failed to serialise checkpoint")?;
+    fs::write(&path, json).with_context(|| format!("failed to write checkpoint to {path:?}"))
 }
 
 /// Read the checkpoint for `agent_id`, returning `None` if none exists or it is expired.
@@ -148,8 +146,7 @@ pub fn checkpoint_read(root: &Path, agent_id: &str) -> Result<Option<AgentCheckp
 pub fn checkpoint_clear(root: &Path, agent_id: &str) -> Result<()> {
     let path = checkpoint_path(root, agent_id);
     if path.exists() {
-        fs::remove_file(&path)
-            .with_context(|| format!("failed to remove checkpoint {path:?}"))?;
+        fs::remove_file(&path).with_context(|| format!("failed to remove checkpoint {path:?}"))?;
     }
     Ok(())
 }
@@ -201,8 +198,7 @@ mod tests {
         let dir = tmp();
         let root = dir.path();
 
-        checkpoint_write(root, "agent-7", CheckpointStep::Reading, HashMap::new())
-            .expect("write");
+        checkpoint_write(root, "agent-7", CheckpointStep::Reading, HashMap::new()).expect("write");
         assert!(checkpoint_path(root, "agent-7").exists());
 
         checkpoint_clear(root, "agent-7").expect("clear");

@@ -1,3 +1,4 @@
+//! CSV loader that creates one document per data row.
 use crate::{Loader, LoaderError, process_doc_stream};
 use async_stream::stream;
 use async_trait::async_trait;
@@ -12,22 +13,22 @@ use std::io::{BufReader, Cursor, Read};
 use std::path::Path;
 use std::pin::Pin;
 
-// TODO(#36): add fuzz target for CsvLoader -- malformed CSV input
-//   (unbalanced quotes, missing columns, binary data) should not panic.
-//   Add property test: loaded doc count == CSV row count.
 #[derive(Debug, Clone)]
+/// Loads selected CSV columns into documents with one-based row metadata.
 pub struct CsvLoader<R> {
     reader: R,
     columns: Vec<String>,
 }
 
 impl<R: Read> CsvLoader<R> {
+    /// Creates a loader from a reader and the column names to include.
     pub fn new(reader: R, columns: Vec<String>) -> Self {
         Self { reader, columns }
     }
 }
 
 impl CsvLoader<Cursor<Vec<u8>>> {
+    /// Creates a loader from CSV text and the column names to include.
     pub fn from_string<S: Into<String>>(input: S, columns: Vec<String>) -> Self {
         let input = input.into();
         let reader = Cursor::new(input.into_bytes());
@@ -37,6 +38,7 @@ impl CsvLoader<Cursor<Vec<u8>>> {
 
 #[allow(clippy::result_large_err)] // LoaderError contains large foreign variants; boxing requires API change
 impl CsvLoader<BufReader<File>> {
+    /// Opens a CSV file and creates a loader for it.
     pub fn from_path<P: AsRef<Path>>(path: P, columns: Vec<String>) -> Result<Self, LoaderError> {
         let file = File::open(path)?;
         let reader = BufReader::new(file);

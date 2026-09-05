@@ -1,3 +1,4 @@
+//! PostgreSQL pgvector storage, metadata filtering, and similarity search.
 use std::{collections::HashMap, fmt, sync::Arc};
 
 use async_trait::async_trait;
@@ -11,6 +12,7 @@ use langchainx_embedding::schemas::Document;
 
 use crate::{VecStoreOptions, VectorStore, VectorStoreError};
 
+/// Vector store backed by pgvector tables in PostgreSQL.
 pub struct Store {
     pub(crate) embedder: Arc<dyn Embedder>,
     pub(crate) pool: Pool<Postgres>,
@@ -21,22 +23,34 @@ pub struct Store {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+/// SQL filter expression applied to pgvector document metadata.
 pub enum PgFilter {
+    /// Equality between two filter values.
     Eq(PgLit, PgLit),
+    /// Ordered comparison between two filter values.
     Cmp(std::cmp::Ordering, PgLit, PgLit),
+    /// Membership of a filter value in a string array.
     In(PgLit, Vec<String>),
+    /// Conjunction of nested filters.
     And(Vec<PgFilter>),
+    /// Disjunction of nested filters.
     Or(Vec<PgFilter>),
 }
 
+/// Name of a metadata column.
 pub type Column = String;
 
+/// Path segments used to address a JSON metadata field.
 pub type Path = Vec<String>;
 
 #[derive(Debug, Clone, PartialEq)]
+/// Literal or metadata-field operand in a [`PgFilter`].
 pub enum PgLit {
+    /// JSON metadata field addressed by path.
     JsonField(Path),
+    /// Quoted SQL string literal.
     LitStr(String),
+    /// Raw JSON value rendered into the filter expression.
     RawJson(Value),
 }
 
@@ -102,6 +116,7 @@ impl fmt::Display for PgFilter {
     }
 }
 
+/// HNSW index parameters used when creating the embedding index.
 pub struct HNSWIndex {
     pub(crate) m: i32,
     pub(crate) ef_construction: i32,
@@ -109,6 +124,7 @@ pub struct HNSWIndex {
 }
 
 impl HNSWIndex {
+    /// Creates HNSW index settings for the specified distance operator class.
     pub fn new(m: i32, ef_construction: i32, distance_function: &str) -> Self {
         HNSWIndex {
             m,
@@ -134,6 +150,7 @@ impl Store {
     }
 }
 
+/// Operation options accepted by the pgvector backend.
 pub type PgOptions = VecStoreOptions<PgFilter>;
 
 impl Default for PgOptions {

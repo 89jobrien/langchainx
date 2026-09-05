@@ -1,3 +1,4 @@
+//! Builder for SQLite `vec0` vector stores.
 use std::{error::Error, str::FromStr, sync::Arc};
 
 use sqlx::{
@@ -8,6 +9,7 @@ use sqlx::{
 use super::Store;
 use langchainx_embedding::embedding::embedder_trait::Embedder;
 
+/// Configures a SQLite `vec0`-backed vector store.
 pub struct StoreBuilder {
     pool: Option<Pool<Sqlite>>,
     connection_url: Option<String>,
@@ -23,6 +25,7 @@ impl Default for StoreBuilder {
 }
 
 impl StoreBuilder {
+    /// Creates a builder using the `documents` table.
     pub fn new() -> Self {
         StoreBuilder {
             pool: None,
@@ -33,34 +36,40 @@ impl StoreBuilder {
         }
     }
 
+    /// Uses an existing SQLite pool and clears any configured connection URL.
     pub fn pool(mut self, pool: Pool<Sqlite>) -> Self {
         self.pool = Some(pool);
         self.connection_url = None;
         self
     }
 
+    /// Sets a SQLite connection URL and clears any configured pool.
     pub fn connection_url<S: Into<String>>(mut self, connection_url: S) -> Self {
         self.connection_url = Some(connection_url.into());
         self.pool = None;
         self
     }
 
+    /// Sets the document table name.
     pub fn table(mut self, table: &str) -> Self {
         self.table = table.into();
         self
     }
 
+    /// Sets the required embedding dimensions.
     pub fn vector_dimensions(mut self, vector_dimensions: i32) -> Self {
         self.vector_dimensions = vector_dimensions;
         self
     }
 
+    /// Sets the required document and query embedder.
     pub fn embedder<E: Embedder + 'static>(mut self, embedder: E) -> Self {
         self.embedder = Some(Arc::new(embedder));
         self
     }
 
     // Finalize the builder and construct the Store object
+    /// Builds the store and opens a `vec0`-enabled pool when needed.
     pub async fn build(self) -> Result<Store, Box<dyn Error>> {
         if self.embedder.is_none() {
             return Err("Embedder is required".into());
@@ -108,10 +117,7 @@ mod tests {
 
     #[async_trait]
     impl Embedder for DummyEmbedder {
-        async fn embed_documents(
-            &self,
-            _docs: &[String],
-        ) -> Result<Vec<Vec<f64>>, EmbedderError> {
+        async fn embed_documents(&self, _docs: &[String]) -> Result<Vec<Vec<f64>>, EmbedderError> {
             Ok(vec![])
         }
 

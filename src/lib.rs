@@ -1,3 +1,5 @@
+//! Unified facade for the langchainx agents, chains, models, prompts, and integrations.
+#![deny(missing_docs)]
 // langchainx — thin re-export facade over extracted crates.
 // All original source code lives in crates/langchainx-*.
 // Each module below is a single-line glob re-export delegating to the

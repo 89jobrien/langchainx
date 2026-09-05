@@ -1,3 +1,4 @@
+//! Cargo test and Clippy tool adapters.
 pub mod clippy;
 pub use clippy::ClippyTool;
 

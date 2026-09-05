@@ -1,14 +1,17 @@
+//! SQLx-backed PostgreSQL engine for schema inspection and queries.
 use async_trait::async_trait;
 use sqlx::{Column, Pool, Postgres, Row, TypeInfo, postgres::PgPoolOptions};
 use std::error::Error;
 
 use crate::sql::{Dialect, Engine};
 
+/// PostgreSQL implementation of [`Engine`] backed by a SQLx pool.
 pub struct PostgreSQLEngine {
     pool: Pool<Postgres>,
 }
 
 impl PostgreSQLEngine {
+    /// Connects to a PostgreSQL DSN with a pool of up to five connections.
     pub async fn new(dsn: &str) -> Result<Self, Box<dyn Error>> {
         let pool = PgPoolOptions::new().max_connections(5).connect(dsn).await?;
 

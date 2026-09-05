@@ -1,3 +1,4 @@
+//! PostgreSQL chain that generates, executes, and explains SQL queries.
 mod builder;
 mod chain;
 mod prompt;

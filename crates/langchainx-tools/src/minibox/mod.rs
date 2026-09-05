@@ -1,3 +1,4 @@
+//! Direct `mbx` CLI tool for minibox container operations.
 mod input;
 
 use async_trait::async_trait;
@@ -13,7 +14,7 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// A langchainx tool that wraps the `mbx` CLI for the minibox container runtime.
 ///
-/// Supports: run, ps, stop, pause, resume, rm, exec, logs, sandbox, prune, rmi, snapshot.
+/// Supports: pull, run, ps, stop, pause, resume, rm, exec, logs, sandbox, prune, rmi, snapshot.
 ///
 /// # Example
 /// ```rust,ignore
@@ -28,6 +29,7 @@ pub struct MiniboxTool {
 }
 
 impl MiniboxTool {
+    /// Creates a tool using `mbx` from `PATH` and the default timeout.
     pub fn new() -> Self {
         Self {
             mbx_path: PathBuf::from("mbx"),
@@ -36,6 +38,7 @@ impl MiniboxTool {
         }
     }
 
+    /// Returns a builder for the CLI path, socket, and timeout.
     pub fn builder() -> MiniboxToolBuilder {
         MiniboxToolBuilder::default()
     }
@@ -92,6 +95,7 @@ impl Default for MiniboxTool {
 // -- Builder -----------------------------------------------------------------
 
 #[derive(Default)]
+/// Configures a [`MiniboxTool`].
 pub struct MiniboxToolBuilder {
     mbx_path: Option<PathBuf>,
     socket_path: Option<PathBuf>,
@@ -99,21 +103,25 @@ pub struct MiniboxToolBuilder {
 }
 
 impl MiniboxToolBuilder {
+    /// Sets the `mbx` executable path.
     pub fn mbx_path(mut self, path: impl Into<PathBuf>) -> Self {
         self.mbx_path = Some(path.into());
         self
     }
 
+    /// Sets the minibox daemon socket through `MINIBOX_SOCKET`.
     pub fn socket_path(mut self, path: impl Into<PathBuf>) -> Self {
         self.socket_path = Some(path.into());
         self
     }
 
+    /// Sets the timeout for each CLI invocation.
     pub fn timeout(mut self, timeout: Duration) -> Self {
         self.timeout = Some(timeout);
         self
     }
 
+    /// Builds the configured minibox tool.
     pub fn build(self) -> MiniboxTool {
         MiniboxTool {
             mbx_path: self.mbx_path.unwrap_or_else(|| PathBuf::from("mbx")),

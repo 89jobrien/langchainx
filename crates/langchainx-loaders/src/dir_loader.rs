@@ -1,3 +1,4 @@
+//! Recursive file discovery and filtering for path-based loaders.
 use async_recursion::async_recursion;
 use std::sync::Arc;
 use std::{fmt, path::Path, pin::Pin};
@@ -5,9 +6,11 @@ use tokio::fs;
 
 use super::LoaderError;
 
+/// A thread-safe predicate that excludes matching paths.
 pub struct PathFilter(Arc<dyn Fn(&Path) -> bool + Send + Sync>);
 
 impl PathFilter {
+    /// Wraps a path exclusion predicate.
     pub fn new<F>(f: F) -> Self
     where
         F: Fn(&Path) -> bool + Send + Sync + 'static,
@@ -29,13 +32,17 @@ impl Clone for PathFilter {
 }
 
 #[derive(Debug, Clone, Default)]
+/// Controls recursive file discovery.
 pub struct DirLoaderOptions {
+    /// Optional glob matched against each full path string.
     pub glob: Option<String>,
+    /// Optional path suffixes to include.
     pub suffixes: Option<Vec<String>>,
+    /// Optional predicate; matching files and directories are skipped.
     pub path_filter: Option<PathFilter>,
 }
 
-/// Recursively list all files in a directory
+/// Recursively appends files below `dir_path` to `files`.
 // qual:allow(iosp) reason: "filesystem I/O boundary"
 #[async_recursion]
 pub async fn list_files_in_path(
@@ -73,7 +80,7 @@ pub async fn list_files_in_path(
     Ok(Box::pin(()))
 }
 
-/// Find files in a directory that match the given options
+/// Finds files below a path that satisfy the configured suffix, glob, and path filters.
 // qual:allow(iosp) reason: "filesystem I/O boundary"
 pub async fn find_files_with_extension(
     folder_path: &str,

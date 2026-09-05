@@ -1,3 +1,4 @@
+//! PDF loaders backed by `lopdf` or `pdf-extract`.
 #[cfg(feature = "lopdf")]
 pub mod lo_loader;
 #[cfg(feature = "lopdf")]

@@ -1,3 +1,4 @@
+//! Loader for commits reachable from a Git repository's current `HEAD`.
 use std::collections::HashMap;
 use std::pin::Pin;
 
@@ -10,16 +11,19 @@ use langchainx_text_splitter::TextSplitter;
 use serde_json::Value;
 
 #[derive(Clone)]
+/// Streams reachable commits as Git-log-style documents.
 pub struct GitCommitLoader {
     repo: ThreadSafeRepository,
 }
 
 #[allow(clippy::result_large_err)] // LoaderError contains large foreign variants; boxing requires API change
 impl GitCommitLoader {
+    /// Creates a loader from an already discovered repository.
     pub fn new(repo: ThreadSafeRepository) -> Self {
         Self { repo }
     }
 
+    /// Discovers a repository from a path and creates a loader for it.
     pub fn from_path<P: AsRef<std::path::Path>>(directory: P) -> Result<Self, LoaderError> {
         let repo = ThreadSafeRepository::discover(directory)?;
         Ok(Self::new(repo))

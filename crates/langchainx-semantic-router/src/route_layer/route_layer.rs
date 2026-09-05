@@ -1,3 +1,4 @@
+//! Semantic route selection and optional tool-input generation.
 use std::{collections::HashMap, sync::Arc};
 
 use serde_json::Value;
@@ -7,15 +8,17 @@ use langchainx_embedding::Embedder;
 
 use crate::{Index, RouteLayerError, Router};
 
-// TODO(#87): add property tests for AggregationMethod::aggregate --
-//   verify Mean is always between min and max, Sum >= Max, Max <= Sum.
-//   Test with empty slice (currently panics on Mean division by zero).
+/// Strategy for combining multiple utterance scores for one route.
 pub enum AggregationMethod {
+    /// Arithmetic mean of the scores.
     Mean,
+    /// Highest score.
     Max,
+    /// Sum of the scores.
     Sum,
 }
 impl AggregationMethod {
+    /// Aggregates scores, returning `0.0` for an empty slice.
     pub fn aggregate(&self, values: &[f64]) -> f64 {
         if values.is_empty() {
             return 0.0;
@@ -32,12 +35,17 @@ impl AggregationMethod {
 }
 
 #[derive(Debug, Clone)]
+/// The route selected for an input query.
 pub struct RouteChoise {
+    /// Selected route name.
     pub route: String,
+    /// Highest individual utterance similarity for the selected route.
     pub similarity_score: f64,
+    /// LLM-generated tool input when the route has a tool description.
     pub tool_input: Option<Value>,
 }
 
+/// Embeds queries, searches an index, and selects the highest-scoring route.
 pub struct RouteLayer {
     pub(crate) embedder: Arc<dyn Embedder>,
     pub(crate) index: Box<dyn Index>,
@@ -48,6 +56,7 @@ pub struct RouteLayer {
 }
 
 impl RouteLayer {
+    /// Embeds routes that need vectors and adds all routes to the index.
     pub async fn add_routes(&mut self, routers: &mut [Router]) -> Result<(), RouteLayerError> {
         for router in routers.iter_mut() {
             if router.embedding.is_none() {
@@ -59,6 +68,7 @@ impl RouteLayer {
         Ok(())
     }
 
+    /// Deletes a route from the index by name.
     pub async fn delete_route<S: Into<String>>(
         &mut self,
         route_name: S,
@@ -67,6 +77,7 @@ impl RouteLayer {
         Ok(())
     }
 
+    /// Returns all routes currently stored in the index.
     pub async fn get_routers(&self) -> Result<Vec<Router>, RouteLayerError> {
         let routes = self.index.get_routers().await?;
         Ok(routes)
@@ -123,8 +134,9 @@ impl RouteLayer {
         (top_route, top_scores)
     }
 
-    /// Call the route layer with a query and return the best route choise.
-    /// If route has a tool description, it will also return the tool input.
+    /// Selects the best route for a text query.
+    ///
+    /// Generates tool input when the selected route has a tool description.
     pub async fn call<S: Into<String>>(
         &self,
         query: S,
@@ -152,8 +164,7 @@ impl RouteLayer {
         }))
     }
 
-    /// Call the route layer with an embedding vector and return the best route choise.
-    /// Does not return tool input.
+    /// Selects the best route for a precomputed embedding without generating tool input.
     pub async fn call_embedding(
         &self,
         embedding: &[f64],

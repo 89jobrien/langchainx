@@ -1,14 +1,17 @@
+//! FastEmbed-backed local embedding implementation.
 use async_trait::async_trait;
 
 use crate::embedding::{Embedder, EmbedderError};
 use fastembed::TextEmbedding;
 
+/// A local text embedder backed by a FastEmbed model.
 pub struct FastEmbed {
     model: TextEmbedding,
     batch_size: Option<usize>,
 }
 
 impl FastEmbed {
+    /// Initializes the default FastEmbed model.
     pub fn try_new() -> Result<Self, EmbedderError> {
         Ok(Self {
             model: TextEmbedding::try_new(Default::default())
@@ -17,6 +20,7 @@ impl FastEmbed {
         })
     }
 
+    /// Sets the optional batch size used for embedding requests.
     pub fn with_batch_size(mut self, batch_size: usize) -> Self {
         self.batch_size = Some(batch_size);
         self

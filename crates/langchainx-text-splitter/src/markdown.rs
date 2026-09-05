@@ -1,8 +1,10 @@
+//! Markdown-aware token splitting.
 use async_trait::async_trait;
 use text_splitter::ChunkConfig;
 
 use crate::{SplitterOptions, TextSplitter, TextSplitterError};
 
+/// Splits Markdown while respecting its semantic structure where possible.
 pub struct MarkdownSplitter {
     splitter_options: SplitterOptions,
 }
@@ -14,6 +16,7 @@ impl Default for MarkdownSplitter {
 }
 
 impl MarkdownSplitter {
+    /// Creates a Markdown splitter with the supplied options.
     pub fn new(options: SplitterOptions) -> Self {
         MarkdownSplitter {
             splitter_options: options,

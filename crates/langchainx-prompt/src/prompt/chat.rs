@@ -1,11 +1,11 @@
+//! Chat-message templates and composite message formatters.
 use crate::schemas::{messages::Message, prompt::PromptValue};
 
 use super::{
     FormatPrompter, MessageFormatter, PromptArgs, PromptError, PromptFromatter, PromptTemplate,
 };
 
-/// Struct `HumanMessagePromptTemplate` defines a template for creating human (user) messages.
-/// `PromptTemplate` is used to generate the message template.
+/// Formats a [`PromptTemplate`] as a human message.
 ///
 /// # Usage
 /// ```rust,ignore
@@ -20,6 +20,7 @@ pub struct HumanMessagePromptTemplate {
 }
 
 impl HumanMessagePromptTemplate {
+    /// Wraps a text template that will produce human messages.
     pub fn new(prompt: PromptTemplate) -> Self {
         Self { prompt }
     }
@@ -45,8 +46,7 @@ impl FormatPrompter for HumanMessagePromptTemplate {
     }
 }
 
-/// Struct `SystemMessagePromptTemplate` defines a template for creating system-level messages.
-/// `PromptTemplate` is used to generate the message template.
+/// Formats a [`PromptTemplate`] as a system message.
 ///
 /// # Usage
 /// ```rust,ignore
@@ -62,6 +62,7 @@ pub struct SystemMessagePromptTemplate {
 }
 
 impl SystemMessagePromptTemplate {
+    /// Wraps a text template that will produce system messages.
     pub fn new(prompt: PromptTemplate) -> Self {
         Self { prompt }
     }
@@ -88,8 +89,7 @@ impl MessageFormatter for SystemMessagePromptTemplate {
     }
 }
 
-/// Struct `AIMessagePromptTemplate` defines a template for creating AI (assistant) messages.
-/// `PromptTemplate` is used to generate the message template.
+/// Formats a [`PromptTemplate`] as an AI message.
 ///
 /// # Usage
 /// ```rust,ignore
@@ -98,6 +98,7 @@ impl MessageFormatter for SystemMessagePromptTemplate {
 ///    "content",
 ///    "additional_info"
 /// ));
+/// ```
 #[derive(Clone)]
 pub struct AIMessagePromptTemplate {
     prompt: PromptTemplate,
@@ -125,18 +126,23 @@ impl MessageFormatter for AIMessagePromptTemplate {
 }
 
 impl AIMessagePromptTemplate {
+    /// Wraps a text template that will produce AI messages.
     pub fn new(prompt: PromptTemplate) -> Self {
         Self { prompt }
     }
 }
 
+/// An item in a composite chat-message formatter.
 pub enum MessageOrTemplate {
+    /// A fixed message copied directly into the output.
     Message(Message),
+    /// A formatter expanded using the supplied prompt arguments.
     Template(Box<dyn MessageFormatter>),
+    /// A named argument containing serialized messages to insert.
     MessagesPlaceholder(String),
 }
 
-/// `fmt_message` is a utility macro used to create a `MessageOrTemplate::Message` variant.
+/// Wraps a fixed [`Message`](crate::schemas::messages::Message) for a composite formatter.
 ///
 /// # Usage
 /// The macro is called with a `Message` object. For example:
@@ -151,7 +157,7 @@ macro_rules! fmt_message {
     };
 }
 
-/// `fmt_template` is a utility macro used to create a `MessageOrTemplate::Template` variant.
+/// Boxes a message formatter for inclusion in a composite formatter.
 ///
 /// # Usage
 /// The macro is called with a `MessageFormatter` object, for instance `HumanMessagePromptTemplate`,
@@ -161,7 +167,6 @@ macro_rules! fmt_message {
 /// let prompt_template = HumanMessagePromptTemplate::new(template);
 /// fmt_template!(prompt_template)
 /// ```
-/// This returns a `MessageOrTemplate::Template` variant that wraps the `MessageFormatter` object within a Box.
 #[macro_export]
 macro_rules! fmt_template {
     ($template:expr) => {
@@ -169,14 +174,13 @@ macro_rules! fmt_template {
     };
 }
 
-/// `fmt_placeholder` is a utility macro used to create a `MessageOrTemplate::MessagesPlaceholder` variant.
+/// Creates a placeholder for a named list of serialized messages.
 ///
 /// # Usage
 /// The macro is called with a string literal or a String object:
 /// ```rust,ignore
 /// fmt_placeholder!("Placeholder message")
 /// ```
-/// This returns a `MessageOrTemplate::MessagesPlaceholder` variant that wraps the given string.
 #[macro_export]
 macro_rules! fmt_placeholder {
     ($placeholder:expr) => {
@@ -185,23 +189,28 @@ macro_rules! fmt_placeholder {
 }
 
 #[derive(Default)]
+/// Builds an ordered prompt from fixed messages, templates, and placeholders.
 pub struct MessageFormatterStruct {
     items: Vec<MessageOrTemplate>,
 }
 
 impl MessageFormatterStruct {
+    /// Creates an empty message formatter.
     pub fn new() -> Self {
         Self { items: Vec::new() }
     }
 
+    /// Appends a fixed message.
     pub fn add_message(&mut self, message: Message) {
         self.items.push(MessageOrTemplate::Message(message));
     }
 
+    /// Appends a message template.
     pub fn add_template(&mut self, template: Box<dyn MessageFormatter>) {
         self.items.push(MessageOrTemplate::Template(template));
     }
 
+    /// Appends a placeholder resolved from prompt arguments during formatting.
     pub fn add_messages_placeholder(&mut self, placeholder: &str) {
         self.items.push(MessageOrTemplate::MessagesPlaceholder(
             placeholder.to_string(),
@@ -258,7 +267,7 @@ impl FormatPrompter for MessageFormatterStruct {
 }
 
 #[macro_export]
-// A macro for creating a new MessageFormatterStruct with various types of messages.
+/// Creates a [`MessageFormatterStruct`](crate::prompt::MessageFormatterStruct) from ordered items.
 ///
 ///# Example
 /// ```rust,ignore
@@ -269,7 +278,6 @@ impl FormatPrompter for MessageFormatterStruct {
 ///     "content",
 ///     "test"
 /// ));
-///
 ///
 /// let human_msg = Message::new_human_message("Hello from user");
 ///

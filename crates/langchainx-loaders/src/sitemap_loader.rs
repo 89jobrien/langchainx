@@ -1,3 +1,4 @@
+//! Loader for pages referenced by XML sitemaps and one-level sitemap indexes.
 use std::pin::Pin;
 
 use async_trait::async_trait;
@@ -9,12 +10,14 @@ use langchainx_text_splitter::TextSplitter;
 
 use crate::{HtmlLoader, Loader, LoaderError, process_doc_stream};
 
+/// Fetches sitemap URLs and extracts readable page content with [`HtmlLoader`].
 pub struct SitemapLoader {
     url: String,
     client: reqwest::Client,
 }
 
 impl SitemapLoader {
+    /// Creates a loader for a sitemap URL with a default HTTP client.
     pub fn new(url: impl Into<String>) -> Self {
         Self {
             url: url.into(),
@@ -22,6 +25,7 @@ impl SitemapLoader {
         }
     }
 
+    /// Replaces the HTTP client used for sitemap and page requests.
     pub fn with_client(self, client: reqwest::Client) -> Self {
         Self { client, ..self }
     }

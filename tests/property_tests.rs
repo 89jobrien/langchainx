@@ -1,7 +1,9 @@
 /// Property tests — invariants that must hold for all valid inputs.
 use proptest::prelude::*;
 
+use futures::StreamExt;
 use langchainx::{
+    document_loaders::{CsvLoader, Loader},
     prompt::{PromptFromatter, PromptTemplate, TemplateFormat},
     prompt_args,
     schemas::{Message, MessageType},
@@ -21,6 +23,41 @@ fn arb_message_type() -> impl Strategy<Value = MessageType> {
 }
 
 proptest! {
+    #[test]
+    fn csv_loader_emits_one_document_per_data_row(
+        rows in prop::collection::vec(
+            ("[A-Za-z0-9]{1,32}", "[A-Za-z0-9]{1,32}"),
+            0..64,
+        ),
+    ) {
+        let mut csv = String::from("first,second\n");
+        for (first, second) in &rows {
+            csv.push_str(first);
+            csv.push(',');
+            csv.push_str(second);
+            csv.push('\n');
+        }
+
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("Tokio runtime should build");
+        let documents = runtime.block_on(async {
+            let loader = CsvLoader::from_string(
+                csv,
+                vec!["first".to_string(), "second".to_string()],
+            );
+            let stream = loader.load().await.expect("generated CSV should load");
+            stream.collect::<Vec<_>>().await
+        });
+
+        prop_assert!(
+            documents.iter().all(Result::is_ok),
+            "all generated CSV rows should produce documents"
+        );
+        prop_assert_eq!(documents.len(), rows.len());
+    }
+
     #[test]
     fn message_json_roundtrip(
         content in "\\PC{0,200}",

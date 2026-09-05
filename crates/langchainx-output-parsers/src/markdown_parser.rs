@@ -1,18 +1,16 @@
+//! Extraction of content from fenced Markdown code blocks.
 use async_trait::async_trait;
 use regex::Regex;
 
 use super::{OutputParser, OutputParserError};
 
-// TODO(#86): add fuzz target for parse() -- markdown code fence extraction
-//   is a parser boundary that should survive adversarial input.
-// FIXME(#86): `expresion` field is set but never read in parse() -- the
-//   hardcoded regex in parse() ignores self.expresion and
-//   with_custom_expresion().
+/// Extracts the first capture group produced by a configurable regular expression.
 pub struct MarkdownParser {
     expresion: String,
     trim: bool,
 }
 impl MarkdownParser {
+    /// Creates a parser for the first fenced Markdown code block.
     pub fn new() -> Self {
         Self {
             expresion: r"```(?:\w+)?\s*([\s\S]+?)\s*```".to_string(),
@@ -20,11 +18,13 @@ impl MarkdownParser {
         }
     }
 
+    /// Replaces the extraction regex, whose first capture group is returned.
     pub fn with_custom_expresion(mut self, expresion: &str) -> Self {
         self.expresion = expresion.to_string();
         self
     }
 
+    /// Configures whether surrounding whitespace is removed from extracted text.
     pub fn with_trim(mut self, trim: bool) -> Self {
         self.trim = trim;
         self
@@ -41,7 +41,15 @@ impl OutputParser for MarkdownParser {
     async fn parse(&self, output: &str) -> Result<String, OutputParserError> {
         let re = Regex::new(&self.expresion)?;
         if let Some(cap) = re.captures(output) {
-            let find = cap[1].to_string();
+            let find = cap
+                .get(1)
+                .ok_or_else(|| {
+                    OutputParserError::ParsingError(
+                        "Markdown parser expression must contain a capture group".into(),
+                    )
+                })?
+                .as_str()
+                .to_string();
             if self.trim {
                 Ok(find.trim().to_string())
             } else {
@@ -89,6 +97,15 @@ mod tests {
         let parser = MarkdownParser::new().with_custom_expresion(r"<code>(.*?)</code>");
         let result = parser.parse("<code>hello</code>").await.unwrap();
         assert_eq!(result, "hello");
+    }
+
+    #[tokio::test]
+    async fn custom_expression_without_capture_group_returns_error() {
+        let parser = MarkdownParser::new().with_custom_expresion(r"<code>.*?</code>");
+
+        let result = parser.parse("<code>hello</code>").await;
+
+        assert!(matches!(result, Err(OutputParserError::ParsingError(_))));
     }
 
     #[tokio::test]

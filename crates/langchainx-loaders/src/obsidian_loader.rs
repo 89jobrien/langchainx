@@ -1,3 +1,4 @@
+//! Recursive loader for Markdown notes in an Obsidian vault.
 use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -14,20 +15,16 @@ use crate::{Loader, LoaderError, markdown_serializer::parse_frontmatter, process
 /// Recursively loads all `.md` files from an Obsidian vault directory.
 ///
 /// - Skips the `.obsidian/` configuration directory.
-/// - Parses YAML frontmatter into `Document.metadata`.
+/// - Parses leading string frontmatter into `Document.metadata`.
 /// - Sets `source` metadata to the absolute file path.
-///
-/// `Clone` is derived to allow callers to reuse a loader configuration across
-/// multiple load calls without consuming the original.
-///
-/// **Note:** `load()` currently collects all matching files eagerly before
-/// streaming. A future version will stream lazily.
+/// - Collects matching files before returning the document stream.
 #[derive(Debug, Clone)]
 pub struct ObsidianLoader {
     vault_path: PathBuf,
 }
 
 impl ObsidianLoader {
+    /// Creates a loader rooted at an Obsidian vault directory.
     pub fn new<P: Into<PathBuf>>(vault_path: P) -> Self {
         Self {
             vault_path: vault_path.into(),

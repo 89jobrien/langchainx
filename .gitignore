@@ -4,6 +4,7 @@ Cargo.lock
 .env
 .env.local
 !.env.example
+.envrc
 .nuenv
 !.nuenv.example
 .fastembed_cache

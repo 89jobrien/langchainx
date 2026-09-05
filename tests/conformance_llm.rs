@@ -8,52 +8,35 @@
 mod common;
 
 use langchainx::{language_models::llm::LLM, schemas::Message};
+use langchainx_testsuite::contracts::llm::{
+    assert_generate_contract, assert_invoke_contract, assert_message_format_contract,
+    assert_stream_contract,
+};
 
 use common::FakeLLM;
 
-async fn assert_llm_contract(llm: &dyn LLM, expected_generation: &str) {
-    // 1. generate() returns Ok
-    let messages = vec![Message::new_human_message("test prompt")];
-    let result = llm.generate(&messages).await;
-    assert!(
-        result.is_ok(),
-        "generate() must return Ok, got: {:?}",
-        result.err()
-    );
-    let gen_result = result.unwrap();
-
-    // 2. generation matches expected
-    assert_eq!(
-        gen_result.generation, expected_generation,
-        "generation content mismatch"
-    );
-
-    // 3. messages_to_string produces non-empty output
-    let s = llm.messages_to_string(&messages);
-    assert!(!s.is_empty(), "messages_to_string must not be empty");
-    assert!(
-        s.contains("test prompt"),
-        "messages_to_string must contain the message content"
-    );
-}
-
-/// invoke() is a convenience wrapper — verify it returns just the string.
-async fn assert_llm_invoke_contract(llm: &dyn LLM, expected: &str) {
-    let result = llm.invoke("test").await;
-    assert!(result.is_ok());
-    assert_eq!(result.unwrap(), expected);
-}
-
 #[tokio::test]
 async fn fake_llm_satisfies_contract() {
-    let llm = FakeLLM::new(vec!["response-1", "response-2"]);
-    assert_llm_contract(&llm, "response-1").await;
-    assert_llm_invoke_contract(&llm, "response-2").await;
+    let llm = FakeLLM::new(vec!["response-1", "response-2", "response-3"]);
+    assert_generate_contract(&llm, "response-1").await;
+    assert_invoke_contract(&llm, "response-2").await;
+    assert_stream_contract(&llm, "response-3").await;
+    let messages = [
+        Message::new_system_message("system"),
+        Message::new_human_message("human"),
+        Message::new_ai_message("ai"),
+        Message::new_tool_message("tool", "call-1"),
+    ];
+    assert_message_format_contract(
+        &llm,
+        &messages,
+        "SystemMessage: system\nHumanMessage: human\nAIMessage: ai\nToolMessage: tool",
+    );
 }
 
 #[tokio::test]
 async fn fake_llm_exhausted_returns_empty() {
-    let llm = FakeLLM::new(vec![]);
+    let llm = FakeLLM::new(Vec::<String>::new());
     let result = llm.generate(&[Message::new_human_message("hi")]).await;
     assert!(result.is_ok());
     assert_eq!(

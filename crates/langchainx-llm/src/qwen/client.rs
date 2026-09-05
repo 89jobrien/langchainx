@@ -1,5 +1,4 @@
-// TODO(#89): 353 lines -- consider splitting request
-//   building, response parsing, and streaming into separate submodules.
+//! Qwen OpenAI-compatible chat-completions client.
 use crate::{
     language_models::{GenerateResult, LLMError, TokenUsage, llm::LLM, options::CallOptions},
     schemas::{Message, StreamData},
@@ -14,7 +13,7 @@ use super::models::{ApiResponse, ErrorResponse, Payload, QwenMessage};
 use super::request::QwenModel;
 use super::response::{parse_error_response, parse_sse_chunk};
 
-/// Qwen client
+/// A client for generating and streaming responses from Qwen.
 #[derive(Clone)]
 pub struct Qwen {
     model: String,
@@ -30,7 +29,7 @@ impl Default for Qwen {
 }
 
 impl Qwen {
-    /// Create a new Qwen client with default settings
+    /// Creates a client using `QWEN_API_KEY` and the Qwen Turbo model.
     pub fn new() -> Self {
         Self {
             model: QwenModel::QwenTurbo.to_string(), // Default to Turbo model
@@ -41,25 +40,25 @@ impl Qwen {
         }
     }
 
-    /// Set the model
+    /// Sets the Qwen model identifier.
     pub fn with_model<S: Into<String>>(mut self, model: S) -> Self {
         self.model = model.into();
         self
     }
 
-    /// Set call options
+    /// Replaces the model call options.
     pub fn with_options(mut self, options: CallOptions) -> Self {
         self.options = options;
         self
     }
 
-    /// Set API key
+    /// Sets the Qwen API key.
     pub fn with_api_key<S: Into<String>>(mut self, api_key: S) -> Self {
         self.api_key = api_key.into();
         self
     }
 
-    /// Set the base URL
+    /// Sets the chat-completions endpoint URL.
     pub fn with_base_url<S: Into<String>>(mut self, base_url: S) -> Self {
         self.base_url = base_url.into();
         self
@@ -71,7 +70,7 @@ impl Qwen {
         let payload = self.build_payload(messages, false);
         let res = client
             .post(&self.base_url)
-            .header("Authorization", format!("Bearer {}", &self.api_key))
+            .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
             .json(&payload)
             .send()
@@ -149,7 +148,7 @@ impl LLM for Qwen {
         let payload = self.build_payload(messages, true);
         let request = client
             .post(&self.base_url)
-            .header("Authorization", format!("Bearer {}", &self.api_key))
+            .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
             .header("Accept", "text/event-stream")
             .json(&payload)

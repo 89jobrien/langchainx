@@ -1,3 +1,4 @@
+//! Loader that converts HTML documents to Markdown.
 use std::{
     collections::HashMap,
     fs::File,
@@ -18,6 +19,7 @@ pub use htmd::{HtmlToMarkdown, HtmlToMarkdownBuilder};
 use crate::{Loader, LoaderError, process_doc_stream};
 
 #[derive(Debug, Clone)]
+/// Converts HTML from a reader into one Markdown document.
 pub struct HtmlToMarkdownLoader<R> {
     html: R,
     url: Url,
@@ -25,22 +27,26 @@ pub struct HtmlToMarkdownLoader<R> {
 }
 
 #[derive(Debug, Clone, Default)]
+/// Options for HTML-to-Markdown conversion.
 pub struct HtmlToMarkdownLoaderOptions {
     skip_tags: Option<Vec<String>>,
 }
 
 impl HtmlToMarkdownLoaderOptions {
+    /// Configures HTML tags whose content should be omitted.
     pub fn with_skip_tags(mut self, tags: Vec<String>) -> Self {
         self.skip_tags = Some(tags);
         self
     }
 
+    /// Returns the configured tags to omit, if any.
     pub fn skip_tags(&self) -> Option<&Vec<String>> {
         self.skip_tags.as_ref()
     }
 }
 
 impl HtmlToMarkdownLoader<Cursor<Vec<u8>>> {
+    /// Creates a loader from HTML text, its source URL, and conversion options.
     pub fn from_string<S: Into<String>>(
         input: S,
         url: Url,
@@ -53,6 +59,7 @@ impl HtmlToMarkdownLoader<Cursor<Vec<u8>>> {
 }
 
 impl<R: Read> HtmlToMarkdownLoader<R> {
+    /// Creates a loader from an HTML reader, its source URL, and conversion options.
     pub fn new(html: R, url: Url, options: HtmlToMarkdownLoaderOptions) -> Self {
         Self { html, url, options }
     }
@@ -60,6 +67,7 @@ impl<R: Read> HtmlToMarkdownLoader<R> {
 
 #[allow(clippy::result_large_err)] // LoaderError contains large foreign variants; boxing requires API change
 impl HtmlToMarkdownLoader<BufReader<File>> {
+    /// Opens an HTML file and creates a loader with the supplied source URL and options.
     pub fn from_path<P: AsRef<Path>>(
         path: P,
         url: Url,

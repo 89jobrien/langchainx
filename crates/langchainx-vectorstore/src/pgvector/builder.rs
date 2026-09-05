@@ -1,3 +1,4 @@
+//! Builder and schema initialization for PostgreSQL pgvector stores.
 use std::{collections::HashMap, env, error::Error, sync::Arc};
 
 use serde_json::{Value, json};
@@ -17,6 +18,7 @@ const DEFAULT_PRE_DELETE_COLLECTION: bool = false;
 const DEFAULT_EMBEDDING_STORE_TABLE_NAME: &str = "langchain_pg_embedding";
 const DEFAULT_COLLECTION_STORE_TABLE_NAME: &str = "langchain_pg_collection";
 
+/// Configures a pgvector store and initializes its extension, tables, and indexes.
 pub struct StoreBuilder<F> {
     pool: Option<Pool<Postgres>>,
     embedder: Option<Arc<dyn Embedder>>,
@@ -39,6 +41,7 @@ impl Default for StoreBuilder<PgFilter> {
 
 impl StoreBuilder<PgFilter> {
     // Returns a new StoreBuilder instance with default values for each option
+    /// Creates a builder with LangChain-compatible table and collection names.
     pub fn new() -> Self {
         StoreBuilder {
             pool: None,
@@ -55,62 +58,74 @@ impl StoreBuilder<PgFilter> {
         }
     }
 
+    /// Uses an existing PostgreSQL connection pool.
     pub fn pool(mut self, pool: Pool<Postgres>) -> Self {
         self.pool = Some(pool);
         self
     }
 
+    /// Sets the required document and query embedder.
     pub fn embedder<E: Embedder + 'static>(mut self, embedder: E) -> Self {
         self.embedder = Some(Arc::new(embedder));
         self
     }
 
+    /// Sets the PostgreSQL URL used when no pool is supplied.
     pub fn connection_url(mut self, connection_url: &str) -> Self {
         self.connection_url = Some(connection_url.into());
         self
     }
 
+    /// Sets the optional fixed dimensions of the pgvector column.
     pub fn vector_dimensions(mut self, vector_dimensions: i32) -> Self {
         self.vector_dimensions = vector_dimensions;
         self
     }
 
+    /// Controls whether the named collection is deleted before initialization.
     pub fn pre_delete_collection(mut self, pre_delete_collection: bool) -> Self {
         self.pre_delete_collection = pre_delete_collection;
         self
     }
 
+    /// Sets the table containing documents and embeddings.
     pub fn embedder_table_name(mut self, embedder_table_name: &str) -> Self {
         self.embedder_table_name = embedder_table_name.into();
         self
     }
 
+    /// Sets the logical collection name.
     pub fn collection_name(mut self, collection_name: &str) -> Self {
         self.collection_name = collection_name.into();
         self
     }
 
+    /// Sets the table containing collection metadata.
     pub fn collection_table_name(mut self, collection_table_name: &str) -> Self {
         self.collection_table_name = collection_table_name.into();
         self
     }
 
+    /// Stores operation options on the builder; the current build output does not consume them.
     pub fn vstore_options(mut self, vstore_options: PgOptions) -> Self {
         self.vstore_options = vstore_options;
         self
     }
 
+    /// Sets metadata stored with the collection record.
     pub fn collection_metadata(mut self, collection_metadata: HashMap<String, Value>) -> Self {
         self.collection_metadata = collection_metadata;
         self
     }
 
+    /// Enables an HNSW embedding index with the supplied settings.
     pub fn hns_index(mut self, hns_index: HNSWIndex) -> Self {
         self.hns_index = Some(hns_index);
         self
     }
 
     // Finalize the builder and construct the Store object
+    /// Initializes the pgvector schema and builds the store.
     pub async fn build(self) -> Result<Store, Box<dyn Error>> {
         if self.embedder.is_none() {
             return Err("Embedder is required".into());
@@ -210,6 +225,7 @@ impl StoreBuilder<PgFilter> {
         Ok(())
     }
 
+    /// Creates the pgvector extension while holding the shared advisory lock.
     pub async fn create_vector_extension_if_not_exists(
         &self,
         tx: &mut Transaction<'_, Postgres>,

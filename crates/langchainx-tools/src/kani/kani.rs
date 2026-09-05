@@ -1,3 +1,4 @@
+//! `Tool` adapter for Kani verification harnesses.
 use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -14,6 +15,7 @@ pub struct KaniTool {
 }
 
 impl KaniTool {
+    /// Creates a Kani tool rooted at the supplied project directory.
     pub fn new(base_dir: impl Into<PathBuf>) -> Self {
         Self {
             base_dir: base_dir.into(),

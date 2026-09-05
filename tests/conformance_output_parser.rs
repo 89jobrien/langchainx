@@ -5,29 +5,26 @@
 /// 2. `parse()` with empty input returns Ok (not an error).
 /// 3. The parsed output is deterministic for the same input.
 use langchainx::output_parsers::{OutputParser, SimpleParser};
+use langchainx_testsuite::contracts::output_parser::{
+    assert_deterministic_parse, assert_parse_contract,
+};
 
 #[tokio::test]
 async fn simple_parser_parse_non_empty_returns_ok() {
     let parser = SimpleParser::new();
-    let result = parser.parse("hello world").await;
-    assert!(result.is_ok(), "parse() must return Ok for valid input");
-    assert_eq!(result.unwrap(), "hello world");
+    assert_parse_contract(&parser, "hello world", "hello world").await;
 }
 
 #[tokio::test]
 async fn simple_parser_parse_empty_returns_ok() {
     let parser = SimpleParser::new();
-    let result = parser.parse("").await;
-    assert!(result.is_ok(), "parse('') must return Ok, not error");
-    assert_eq!(result.unwrap(), "");
+    assert_parse_contract(&parser, "", "").await;
 }
 
 #[tokio::test]
 async fn simple_parser_is_deterministic() {
     let parser = SimpleParser::new();
-    let a = parser.parse("test input").await.unwrap();
-    let b = parser.parse("test input").await.unwrap();
-    assert_eq!(a, b, "same input must produce same output");
+    assert_deterministic_parse(&parser, "test input").await;
 }
 
 #[tokio::test]

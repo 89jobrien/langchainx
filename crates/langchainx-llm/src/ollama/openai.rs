@@ -1,3 +1,4 @@
+//! OpenAI-compatible configuration for a local Ollama server.
 use async_openai::config::Config;
 use reqwest::header::HeaderMap;
 use secrecy::SecretString;
@@ -5,15 +6,21 @@ use serde::Deserialize;
 
 const OLLAMA_API_BASE: &str = "http://localhost:11434/v1";
 
-/// Ollama has [OpenAI compatiblity](https://ollama.com/blog/openai-compatibility), meaning that you can use it as an OpenAI API.
+/// Configures the OpenAI client to use Ollama's compatibility endpoint.
 ///
-/// This struct implements the `Config` trait of OpenAI, and has the necessary setup for OpenAI configurations for you to use Ollama.
+/// The default configuration targets `http://localhost:11434/v1` and uses Ollama's
+/// placeholder API key.
 ///
 /// ## Example
 ///
-/// ```rs
+/// ```rust,no_run
+/// use langchainx_llm::{OpenAI, language_models::llm::LLM, ollama::openai::OllamaConfig};
+///
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// let ollama = OpenAI::new(OllamaConfig::default()).with_model("llama3.2");
-/// let response = ollama.invoke("Say hello!").await.unwrap();
+/// let response = ollama.invoke("Say hello!").await?;
+/// # Ok(())
+/// # }
 /// ```
 #[derive(Clone, Debug, Deserialize)]
 #[serde(default)]
@@ -23,15 +30,18 @@ pub struct OllamaConfig {
 }
 
 impl OllamaConfig {
+    /// Creates the default local Ollama configuration.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Sets the API key supplied to the OpenAI-compatible client.
     pub fn with_api_key<S: Into<String>>(mut self, api_key: S) -> Self {
         self.api_key = SecretString::from(api_key.into());
         self
     }
 
+    /// Sets the Ollama OpenAI-compatible API base URL.
     pub fn with_api_base<S: Into<String>>(mut self, api_base: S) -> Self {
         self.api_base = api_base.into();
         self
@@ -72,7 +82,7 @@ impl Default for OllamaConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{language_models::llm::LLM, llm::openai::OpenAI, schemas::Message};
+    use crate::{language_models::llm::LLM, openai::OpenAI, schemas::Message};
     use tokio::io::AsyncWriteExt;
     use tokio_stream::StreamExt;
 

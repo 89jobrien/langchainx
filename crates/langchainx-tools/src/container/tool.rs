@@ -22,6 +22,7 @@ pub struct ContainerTool {
 }
 
 impl ContainerTool {
+    /// Creates a tool backed by the supplied container runtime.
     pub fn new(runtime: Box<dyn ContainerRuntime>) -> Self {
         Self { runtime }
     }
@@ -121,8 +122,7 @@ impl Tool for ContainerTool {
         match action {
             "ps" => {
                 let containers = self.runtime.ps().await?;
-                Ok(serde_json::to_string_pretty(&containers)
-                    .unwrap_or_else(|_| "[]".into()))
+                Ok(serde_json::to_string_pretty(&containers).unwrap_or_else(|_| "[]".into()))
             }
 
             "pull" => {
@@ -215,8 +215,7 @@ impl Tool for ContainerTool {
                     }
                     "list" => {
                         let snaps = self.runtime.snapshot_list(cid).await?;
-                        Ok(serde_json::to_string_pretty(&snaps)
-                            .unwrap_or_else(|_| "[]".into()))
+                        Ok(serde_json::to_string_pretty(&snaps).unwrap_or_else(|_| "[]".into()))
                     }
                     other => Err(ToolError::InvalidInput(format!(
                         "unknown snapshot sub_action: {other}"
@@ -224,9 +223,7 @@ impl Tool for ContainerTool {
                 }
             }
 
-            other => Err(ToolError::InvalidInput(format!(
-                "unknown action: {other}"
-            ))),
+            other => Err(ToolError::InvalidInput(format!("unknown action: {other}"))),
         }
     }
 }
@@ -250,10 +247,7 @@ fn str_array(input: &Value, field: &str) -> Result<Vec<String>, ToolError> {
 fn parse_run_config(input: &Value) -> Result<RunConfig, ToolError> {
     Ok(RunConfig {
         image: str_field(input, "image")?.to_string(),
-        tag: input["tag"]
-            .as_str()
-            .unwrap_or("latest")
-            .to_string(),
+        tag: input["tag"].as_str().unwrap_or("latest").to_string(),
         command: str_array(input, "command")?,
         name: input["name"].as_str().map(String::from),
         env: str_array(input, "env")?,

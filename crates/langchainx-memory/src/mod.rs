@@ -1,3 +1,4 @@
+//! Conversation-memory implementations.
 mod dummy_memory;
 mod simple_memory;
 mod window_buffer;

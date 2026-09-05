@@ -1,6 +1,7 @@
+//! Qwen model identifiers used in API requests.
 use std::fmt;
 
-/// Qwen model options
+/// Qwen model identifiers supported by the convenience enum.
 #[allow(non_camel_case_types)]
 pub enum QwenModel {
     /// Qwen-Max

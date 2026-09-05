@@ -1,8 +1,12 @@
+---
+status: done
+---
+
 # Document Loaders Wave 2 — Personal Utility Tier
 
 **Date:** 2026-05-03
 **Issues:** #19, #20
-**Status:** approved
+**Status:** Implemented
 
 ## Goal
 

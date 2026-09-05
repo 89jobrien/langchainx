@@ -1,3 +1,4 @@
+//! Exact, single-occurrence text replacement in files.
 use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -5,11 +6,13 @@ use std::path::PathBuf;
 
 use crate::{Tool, ToolError};
 
+/// Replaces text only when the requested match occurs exactly once.
 pub struct EditFileTool {
     base_dir: PathBuf,
 }
 
 impl EditFileTool {
+    /// Creates a file editor rooted at `base_dir`.
     pub fn new(base_dir: impl Into<PathBuf>) -> Self {
         Self {
             base_dir: base_dir.into(),

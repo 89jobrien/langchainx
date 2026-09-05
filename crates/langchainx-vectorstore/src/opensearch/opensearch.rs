@@ -1,3 +1,4 @@
+//! OpenSearch k-NN index management and vector search.
 use async_trait::async_trait;
 use opensearch::http::request::JsonBody;
 use opensearch::http::response::Response;
@@ -17,12 +18,19 @@ use langchainx_embedding::schemas::Document;
 
 use crate::{VecStoreOptions, VectorStore, VectorStoreError};
 
+/// Vector store backed by an OpenSearch k-NN index.
 pub struct Store {
+    /// OpenSearch client used for index operations.
     pub client: OpenSearch,
+    /// Default embedder for documents and queries.
     pub embedder: Arc<dyn Embedder>,
+    /// Neighbor count sent to k-NN queries.
     pub k: i32,
+    /// OpenSearch index name.
     pub index: String,
+    /// Index field containing embedding vectors.
     pub vector_field: String,
+    /// Index field containing document text.
     pub content_field: String,
 }
 
@@ -31,6 +39,7 @@ pub struct Store {
 // https://opensearch.org/docs/latest/clients/rust/
 
 impl Store {
+    /// Deletes the configured OpenSearch index.
     pub async fn delete_index(&self) -> Result<Response, VectorStoreError> {
         let response = self
             .client
@@ -46,6 +55,7 @@ impl Store {
         Ok(result)
     }
 
+    /// Creates the configured 1,536-dimension FAISS HNSW index.
     pub async fn create_index(&self) -> Result<Response, VectorStoreError> {
         let body = json!({
             "settings": {

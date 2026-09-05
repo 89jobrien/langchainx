@@ -1,3 +1,4 @@
+//! Internal Anthropic request and response payloads.
 use serde::{Deserialize, Serialize};
 
 use crate::schemas::Message;
@@ -15,9 +16,6 @@ impl ClaudeMessage {
         }
     }
 
-    // TODO(#92): MessageType match is duplicated across
-    //   Claude, DeepSeek, and Qwen models. Extract a shared role_str() method
-    //   on MessageType or a From<&Message> impl.
     pub fn from_message(message: &Message) -> Self {
         Self::new(message.message_type.role_str(), &message.content)
     }

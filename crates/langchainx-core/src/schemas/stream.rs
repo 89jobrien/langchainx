@@ -1,16 +1,22 @@
+//! Data emitted by streaming language-model and chain operations.
 use serde_json::Value;
 use std::io::{self, Write};
 
 use crate::language_models::TokenUsage;
 
 #[derive(Debug, Clone)]
+/// One chunk of a streamed response.
 pub struct StreamData {
+    /// Provider-specific structured value for this chunk.
     pub value: Value,
+    /// Token usage reported with this chunk, when available.
     pub tokens: Option<TokenUsage>,
+    /// Text content emitted by this chunk.
     pub content: String,
 }
 
 impl StreamData {
+    /// Creates a stream chunk from its structured value, usage, and text.
     pub fn new<S: Into<String>>(value: Value, tokens: Option<TokenUsage>, content: S) -> Self {
         Self {
             value,
@@ -19,6 +25,7 @@ impl StreamData {
         }
     }
 
+    /// Writes the chunk content to standard output and flushes it.
     pub fn to_stdout(&self) -> io::Result<()> {
         let stdout = io::stdout();
         let mut handle = stdout.lock();

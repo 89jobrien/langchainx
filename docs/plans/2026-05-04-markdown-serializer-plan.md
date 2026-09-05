@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # Plan: Markdown Serializer
 
 ## Goal

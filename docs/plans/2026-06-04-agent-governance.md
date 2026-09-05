@@ -1,7 +1,11 @@
+---
+status: open
+---
+
 # Agent Governance -- Design Document
 
 **Date**: 2026-06-04
-**Status**: Approved (brainstorm complete)
+**Status**: Approved; implementation open
 
 ## Goal
 

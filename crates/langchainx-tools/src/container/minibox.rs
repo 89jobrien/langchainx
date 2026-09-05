@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use super::{
-    ContainerId, ContainerInfo, ContainerRuntime, RunConfig, SandboxConfig, SnapshotInfo,
-    DEFAULT_TIMEOUT, run_cli,
+    ContainerId, ContainerInfo, ContainerRuntime, DEFAULT_TIMEOUT, RunConfig, SandboxConfig,
+    SnapshotInfo, run_cli,
 };
 use crate::ToolError;
 
@@ -20,6 +20,7 @@ pub struct MiniboxRuntime {
 }
 
 impl MiniboxRuntime {
+    /// Creates a runtime using `mbx` from `PATH` and the default timeout.
     pub fn new() -> Self {
         Self {
             mbx_path: PathBuf::from("mbx"),
@@ -38,16 +39,19 @@ impl MiniboxRuntime {
         }
     }
 
+    /// Sets the `mbx` executable path.
     pub fn with_mbx_path(mut self, path: impl Into<PathBuf>) -> Self {
         self.mbx_path = path.into();
         self
     }
 
+    /// Sets the minibox daemon socket through `MINIBOX_SOCKET`.
     pub fn with_socket_path(mut self, path: impl Into<PathBuf>) -> Self {
         self.socket_path = Some(path.into());
         self
     }
 
+    /// Sets the timeout for each `mbx` command.
     pub fn with_timeout(mut self, timeout: Duration) -> Self {
         self.timeout = timeout;
         self
@@ -235,11 +239,7 @@ impl ContainerRuntime for MiniboxRuntime {
         self.cmd(&args).await
     }
 
-    async fn snapshot_save(
-        &self,
-        id: &str,
-        name: Option<&str>,
-    ) -> Result<String, ToolError> {
+    async fn snapshot_save(&self, id: &str, name: Option<&str>) -> Result<String, ToolError> {
         let mut args = vec!["snapshot", "save", id];
         if let Some(n) = name {
             args.push(n);
@@ -247,11 +247,7 @@ impl ContainerRuntime for MiniboxRuntime {
         self.cmd(&args).await
     }
 
-    async fn snapshot_restore(
-        &self,
-        id: &str,
-        name: &str,
-    ) -> Result<String, ToolError> {
+    async fn snapshot_restore(&self, id: &str, name: &str) -> Result<String, ToolError> {
         self.cmd(&["snapshot", "restore", id, name]).await
     }
 
@@ -287,8 +283,7 @@ mod tests {
 
     #[test]
     fn minibox_runtime_socket_path() {
-        let rt = MiniboxRuntime::new()
-            .with_socket_path("/run/minibox/miniboxd.sock");
+        let rt = MiniboxRuntime::new().with_socket_path("/run/minibox/miniboxd.sock");
         assert_eq!(
             rt.socket_path,
             Some(PathBuf::from("/run/minibox/miniboxd.sock"))

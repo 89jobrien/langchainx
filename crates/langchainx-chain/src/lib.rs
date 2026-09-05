@@ -1,3 +1,5 @@
+//! Composable chains for prompting models, carrying conversation state, and combining results.
+#![deny(missing_docs)]
 // Re-export upstream crates so `crate::language_models`, `crate::schemas`,
 // `crate::prompt`, `crate::output_parsers` all resolve within this crate.
 // Use langchainx_llm::language_models (superset: includes LLM, LLMError, CallOptions + core types).

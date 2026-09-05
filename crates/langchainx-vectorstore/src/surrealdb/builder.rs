@@ -1,3 +1,4 @@
+//! Builder for native and Python-compatible SurrealDB vector stores.
 use std::{error::Error, sync::Arc};
 
 use surrealdb::{Connection, Surreal};
@@ -6,6 +7,7 @@ use langchainx_embedding::embedding::embedder_trait::Embedder;
 
 use super::Store;
 
+/// Configures a SurrealDB-backed vector store.
 pub struct StoreBuilder<C: Connection> {
     db: Option<Surreal<C>>,
     collection_name: String,
@@ -23,12 +25,13 @@ impl<C: Connection> Default for StoreBuilder<C> {
 }
 
 impl<C: Connection> StoreBuilder<C> {
-    /// Create a new StoreBuilder optimized for SurrealDB. Refer to `new_with_compatiblity()` if
-    /// you are looking to connect to store created by python version of langchain.
+    /// Creates a builder using the native single-table, schemafull layout.
+    ///
+    /// Use [`Self::new_with_compatiblity`] for stores created by Python LangChain.
     /// * table is singular - "document" instead of "documents"
     /// * uses single table instead of multiple tables
     /// * creates a schemafull table required for faster indexing.
-    ///   https://github.com/surrealdb/surrealdb/issues/2013
+    ///   <https://github.com/surrealdb/surrealdb/issues/2013>
     pub fn new() -> Self {
         StoreBuilder {
             db: None,
@@ -41,7 +44,7 @@ impl<C: Connection> StoreBuilder<C> {
         }
     }
 
-    /// Create a new StoreBuilder with compatibility with python version of langchain
+    /// Creates a builder compatible with Python LangChain's per-collection layout.
     pub fn new_with_compatiblity() -> Self {
         StoreBuilder {
             db: None,
@@ -54,7 +57,7 @@ impl<C: Connection> StoreBuilder<C> {
         }
     }
 
-    /// Use surrealdb
+    /// Sets the required SurrealDB connection.
     /// ```no_run
     /// use langchainx_vectorstore::surrealdb::StoreBuilder;
     ///
@@ -79,19 +82,19 @@ impl<C: Connection> StoreBuilder<C> {
         self
     }
 
+    /// Sets the logical collection name.
     pub fn collection_name(mut self, collection_name: &str) -> Self {
         self.collection_name = collection_name.into();
         self
     }
 
-    /// Setting collection_table_name to None, creates table per collection. Set to some value if
-    /// you would like to reuse table. Reusing table is not compatible with python version of
-    /// langchain.
+    /// Sets a shared table name, or uses one table per collection when `None`.
     pub fn collection_table_name(mut self, collection_table_name: Option<String>) -> Self {
         self.collection_table_name = collection_table_name;
         self
     }
 
+    /// Sets the metadata key used to distinguish collections in a shared table.
     pub fn collection_metadata_key_name(
         mut self,
         collection_metadata_key_name: Option<String>,
@@ -100,22 +103,25 @@ impl<C: Connection> StoreBuilder<C> {
         self
     }
 
+    /// Sets the embedding dimensions enforced by schemafull tables.
     pub fn vector_dimensions(mut self, vector_dimensions: i32) -> Self {
         self.vector_dimensions = vector_dimensions;
         self
     }
 
+    /// Controls whether initialization defines a schemafull table.
     pub fn schemafull(mut self, schemafull: bool) -> Self {
         self.schemafull = schemafull;
         self
     }
 
+    /// Sets the required document and query embedder.
     pub fn embedder<E: Embedder + 'static>(mut self, embedder: E) -> Self {
         self.embedder = Some(Arc::new(embedder));
         self
     }
 
-    /// Build the Store. Returns `Err` if embedder or db is missing.
+    /// Builds the store, failing if the embedder or database connection is missing.
     pub async fn build(self) -> Result<Store<C>, Box<dyn Error>> {
         if self.embedder.is_none() {
             return Err("Embedder is required".into());
@@ -149,10 +155,7 @@ mod tests {
 
     #[async_trait]
     impl Embedder for DummyEmbedder {
-        async fn embed_documents(
-            &self,
-            _docs: &[String],
-        ) -> Result<Vec<Vec<f64>>, EmbedderError> {
+        async fn embed_documents(&self, _docs: &[String]) -> Result<Vec<Vec<f64>>, EmbedderError> {
             Ok(vec![])
         }
 

@@ -1,3 +1,4 @@
+//! Common embedding abstractions, errors, and provider-specific embedders.
 mod error;
 
 pub mod embedder_trait;

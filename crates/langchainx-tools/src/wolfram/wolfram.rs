@@ -1,3 +1,4 @@
+//! Wolfram Alpha API queries and plaintext pod extraction.
 use async_trait::async_trait;
 use serde_json::Value;
 
@@ -75,7 +76,7 @@ impl From<Subpod> for String {
     }
 }
 
-/// When being used within agents GPT4 is recommended
+/// Queries Wolfram Alpha and returns non-empty plaintext result pods.
 pub struct Wolfram {
     app_id: String,
     exclude_pods: Vec<String>,
@@ -83,6 +84,7 @@ pub struct Wolfram {
 }
 
 impl Wolfram {
+    /// Creates a Wolfram Alpha tool with an application ID.
     pub fn new(app_id: String) -> Self {
         Self {
             app_id,
@@ -91,11 +93,13 @@ impl Wolfram {
         }
     }
 
+    /// Excludes result pods with the supplied identifiers.
     pub fn with_excludes<S: AsRef<str>>(mut self, exclude_pods: &[S]) -> Self {
         self.exclude_pods = exclude_pods.iter().map(|s| s.as_ref().to_owned()).collect();
         self
     }
 
+    /// Replaces the Wolfram Alpha application ID.
     pub fn with_app_id<S: AsRef<str>>(mut self, app_id: S) -> Self {
         self.app_id = app_id.as_ref().to_owned();
         self
@@ -132,7 +136,7 @@ impl Tool for Wolfram {
             .ok_or_else(|| ToolError::InvalidInput("input must be a string".to_string()))?;
         let mut url = format!(
             "https://api.wolframalpha.com/v2/query?appid={}&input={}&output=JSON&format=plaintext&podstate=Result__Step-by-step+solution",
-            &self.app_id,
+            self.app_id,
             urlencoding::encode(input)
         );
 
@@ -236,12 +240,10 @@ mod tests {
     fn pod_with_all_empty_subpods_converts_to_empty_string() {
         let pod = Pod {
             title: "Empty".to_string(),
-            subpods: vec![
-                Subpod {
-                    title: String::new(),
-                    plaintext: String::new(),
-                },
-            ],
+            subpods: vec![Subpod {
+                title: String::new(),
+                plaintext: String::new(),
+            }],
         };
         let s = String::from(pod);
         assert_eq!(s, "");

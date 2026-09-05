@@ -1,3 +1,4 @@
+use langchainx::schemas::Message;
 /// Conformance tests for the `BaseMemory` trait contract.
 ///
 /// Every `BaseMemory` impl must satisfy these invariants:
@@ -8,79 +9,31 @@
 /// 5. `clear` removes all messages.
 /// 6. Messages are returned in insertion order.
 use langchainx::schemas::memory::BaseMemory;
-use langchainx::schemas::{Message, MessageType};
-
-fn assert_memory_contract(mut mem: impl BaseMemory) {
-    // 1. Starts empty
-    assert!(mem.messages().is_empty(), "new memory must start empty");
-
-    // 2. add_message is retrievable
-    mem.add_message(Message::new_human_message("hello"));
-    assert_eq!(mem.messages().len(), 1);
-    assert_eq!(mem.messages()[0].content, "hello");
-
-    // 3. add_user_message stores HumanMessage
-    mem.clear();
-    mem.add_user_message(&"user msg");
-    let msgs = mem.messages();
-    if !msgs.is_empty() {
-        // DummyMemory legitimately ignores adds — skip type check
-        assert_eq!(msgs[0].message_type, MessageType::HumanMessage);
-        assert_eq!(msgs[0].content, "user msg");
-    }
-
-    // 4. add_ai_message stores AIMessage
-    mem.clear();
-    mem.add_ai_message(&"ai msg");
-    let msgs = mem.messages();
-    if !msgs.is_empty() {
-        assert_eq!(msgs[0].message_type, MessageType::AIMessage);
-        assert_eq!(msgs[0].content, "ai msg");
-    }
-
-    // 5. clear removes all
-    mem.add_message(Message::new_human_message("leftover"));
-    mem.clear();
-    assert!(mem.messages().is_empty(), "clear must remove all messages");
-
-    // 6. Insertion order preserved
-    mem.add_message(Message::new_human_message("first"));
-    mem.add_message(Message::new_ai_message("second"));
-    mem.add_message(Message::new_human_message("third"));
-    let msgs = mem.messages();
-    if msgs.len() >= 3 {
-        assert_eq!(msgs[0].content, "first");
-        assert_eq!(msgs[1].content, "second");
-        assert_eq!(msgs[2].content, "third");
-    }
-}
-
-/// DummyMemory has a weaker contract: adds are no-ops. We verify that
-/// separately rather than forcing it through the full contract.
-fn assert_dummy_contract(mut mem: impl BaseMemory) {
-    assert!(mem.messages().is_empty());
-    mem.add_message(Message::new_human_message("ignored"));
-    assert!(
-        mem.messages().is_empty(),
-        "dummy memory must ignore add_message"
-    );
-    mem.clear();
-    assert!(mem.messages().is_empty());
-}
+use langchainx_testsuite::contracts::memory::{
+    assert_memory_contract, assert_memory_format_contract, assert_noop_memory_contract,
+};
 
 #[test]
 fn simple_memory_satisfies_contract() {
     assert_memory_contract(langchainx::memory::SimpleMemory::new());
+    assert_memory_format_contract(
+        langchainx::memory::SimpleMemory::new(),
+        "human: hello\nai: hi there\nsystem: be helpful",
+    );
 }
 
 #[test]
 fn window_buffer_memory_satisfies_contract() {
     assert_memory_contract(langchainx::memory::WindowBufferMemory::new(100));
+    assert_memory_format_contract(
+        langchainx::memory::WindowBufferMemory::new(100),
+        "human: hello\nai: hi there\nsystem: be helpful",
+    );
 }
 
 #[test]
 fn dummy_memory_satisfies_contract() {
-    assert_dummy_contract(langchainx::memory::DummyMemory::new());
+    assert_noop_memory_contract(langchainx::memory::DummyMemory::new());
 }
 
 /// WindowBufferMemory-specific: window size is enforced.

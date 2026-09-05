@@ -1,3 +1,4 @@
+//! Anthropic Messages API implementation of the language-model interface.
 use crate::{
     AnthropicError,
     language_models::{GenerateResult, LLMError, TokenUsage, llm::LLM, options::CallOptions},
@@ -13,10 +14,15 @@ use super::models::{ApiResponse, ClaudeMessage, Payload};
 
 const DEFAULT_MAX_TOKENS: u32 = 1024;
 
+/// Anthropic model identifiers supported by the convenience enum.
 pub enum ClaudeModel {
+    /// Claude 3 Opus, dated 2024-02-29.
     Claude3pus20240229,
+    /// Claude 3 Sonnet, dated 2024-02-29.
     Claude3sonnet20240229,
+    /// Claude 3 Haiku, dated 2024-03-07.
     Claude3haiku20240307,
+    /// Claude 3.5 Sonnet, dated 2024-06-20.
     Claude3_5sonnet20240620,
 }
 
@@ -33,6 +39,7 @@ impl fmt::Display for ClaudeModel {
 }
 
 #[derive(Clone)]
+/// A client for generating and streaming responses from Anthropic Claude.
 pub struct Claude {
     model: String,
     options: CallOptions,
@@ -47,6 +54,7 @@ impl Default for Claude {
 }
 
 impl Claude {
+    /// Creates a client using `CLAUDE_API_KEY` and the default model and API version.
     pub fn new() -> Self {
         Self {
             model: ClaudeModel::Claude3pus20240229.to_string(),
@@ -56,21 +64,25 @@ impl Claude {
         }
     }
 
+    /// Sets the Anthropic model identifier.
     pub fn with_model<S: Into<String>>(mut self, model: S) -> Self {
         self.model = model.into();
         self
     }
 
+    /// Replaces the model call options.
     pub fn with_options(mut self, options: CallOptions) -> Self {
         self.options = options;
         self
     }
 
+    /// Sets the Anthropic API key.
     pub fn with_api_key<S: Into<String>>(mut self, api_key: S) -> Self {
         self.api_key = api_key.into();
         self
     }
 
+    /// Sets the `anthropic-version` request header.
     pub fn with_anthropic_version<S: Into<String>>(mut self, version: S) -> Self {
         self.anthropic_version = version.into();
         self

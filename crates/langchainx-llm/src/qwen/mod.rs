@@ -1,3 +1,4 @@
+//! Alibaba Cloud Qwen client, model identifiers, requests, and API errors.
 mod client;
 mod models;
 mod request;

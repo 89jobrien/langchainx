@@ -1,3 +1,4 @@
+//! Qdrant-backed vector storage and similarity search.
 use async_trait::async_trait;
 use qdrant_client::Payload;
 use qdrant_client::qdrant::{Filter, PointStruct, SearchPointsBuilder, UpsertPointsBuilder};
@@ -16,12 +17,19 @@ use langchainx_embedding::schemas::Document;
 use crate::{VecStoreOptions, VectorStore, VectorStoreError};
 use uuid::Uuid;
 
+/// Vector store backed by a Qdrant collection.
 pub struct Store {
+    /// Qdrant client used for collection operations.
     pub client: Qdrant,
+    /// Default embedder for documents and queries.
     pub embedder: Arc<dyn Embedder>,
+    /// Collection containing the vectors and payloads.
     pub collection_name: String,
+    /// Payload field containing document text.
     pub content_field: String,
+    /// Payload field containing document metadata.
     pub metadata_field: String,
+    /// Optional Qdrant-native filter applied to every search.
     pub search_filter: Option<Filter>,
 }
 

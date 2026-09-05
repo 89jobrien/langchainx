@@ -1,3 +1,4 @@
+//! HTML loader backed by readability text extraction.
 use std::{
     collections::HashMap,
     fs::File,
@@ -15,15 +16,15 @@ use url::Url;
 
 use crate::{Loader, LoaderError, process_doc_stream};
 
-// TODO(#36): add fuzz target for HtmlLoader -- readability extractor
-//   should not panic on malformed HTML, unclosed tags, or binary input.
 #[derive(Debug, Clone)]
+/// Extracts a page title and readable text from HTML.
 pub struct HtmlLoader<R> {
     html: R,
     url: Url,
 }
 
 impl HtmlLoader<Cursor<Vec<u8>>> {
+    /// Creates a loader from HTML text and its source URL.
     pub fn from_string<S: Into<String>>(input: S, url: Url) -> Self {
         let input = input.into();
         let reader = Cursor::new(input.into_bytes());
@@ -32,6 +33,7 @@ impl HtmlLoader<Cursor<Vec<u8>>> {
 }
 
 impl<R: Read> HtmlLoader<R> {
+    /// Creates a loader from an HTML reader and its source URL.
     pub fn new(html: R, url: Url) -> Self {
         Self { html, url }
     }
@@ -39,6 +41,7 @@ impl<R: Read> HtmlLoader<R> {
 
 #[allow(clippy::result_large_err)] // LoaderError contains large foreign variants; boxing requires API change
 impl HtmlLoader<BufReader<File>> {
+    /// Opens an HTML file and associates it with a source URL.
     pub fn from_path<P: AsRef<Path>>(path: P, url: Url) -> Result<Self, LoaderError> {
         let file = File::open(path)?;
         let reader = BufReader::new(file);

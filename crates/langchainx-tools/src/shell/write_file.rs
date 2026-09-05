@@ -1,3 +1,4 @@
+//! Full-file writes with automatic parent-directory creation.
 use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -5,11 +6,15 @@ use std::path::PathBuf;
 
 use crate::{Tool, ToolError};
 
+/// Writes complete file contents, resolving relative paths from a base directory.
+///
+/// Absolute paths and parent-directory components are accepted as supplied.
 pub struct WriteFileTool {
     base_dir: PathBuf,
 }
 
 impl WriteFileTool {
+    /// Creates a file writer that resolves relative paths from `base_dir`.
     pub fn new(base_dir: impl Into<PathBuf>) -> Self {
         Self {
             base_dir: base_dir.into(),

@@ -1,3 +1,5 @@
+//! Prompt templates, chat-message formatters, and prompt construction macros.
+#![deny(missing_docs)]
 pub use langchainx_core::language_models;
 pub use langchainx_core::schemas;
 

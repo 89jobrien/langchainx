@@ -1,3 +1,4 @@
+//! Loaders for JSON values and newline-delimited JSON records.
 use crate::{Loader, LoaderError, process_doc_stream};
 use async_stream::stream;
 use async_trait::async_trait;
@@ -14,12 +15,14 @@ use std::pin::Pin;
 // ──────────────────────────────── JsonLoader ────────────────────────────────
 
 #[derive(Debug)]
+/// Loads a JSON value or array into documents.
 pub struct JsonLoader<R> {
     reader: R,
     content_key: Option<String>,
 }
 
 impl<R: Read> JsonLoader<R> {
+    /// Creates a loader from a JSON reader.
     pub fn new(input: R) -> Self {
         Self {
             reader: input,
@@ -27,6 +30,7 @@ impl<R: Read> JsonLoader<R> {
         }
     }
 
+    /// Uses an object field as page content and stores remaining fields as metadata.
     pub fn with_content_key(mut self, key: impl Into<String>) -> Self {
         self.content_key = Some(key.into());
         self
@@ -34,6 +38,7 @@ impl<R: Read> JsonLoader<R> {
 }
 
 impl JsonLoader<Cursor<Vec<u8>>> {
+    /// Creates a loader from JSON text.
     pub fn from_string(input: impl Into<String>) -> Self {
         let bytes = input.into().into_bytes();
         Self::new(Cursor::new(bytes))
@@ -41,6 +46,7 @@ impl JsonLoader<Cursor<Vec<u8>>> {
 }
 
 impl JsonLoader<BufReader<File>> {
+    /// Opens a JSON file and creates a loader for it.
     pub async fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, LoaderError> {
         let file = File::open(path)?;
         Ok(Self::new(BufReader::new(file)))
@@ -94,12 +100,14 @@ impl<R: Read + Send + Sync + 'static> Loader for JsonLoader<R> {
 // ──────────────────────────────── JsonlLoader ───────────────────────────────
 
 #[derive(Debug)]
+/// Loads one JSON value per non-empty input line.
 pub struct JsonlLoader<R> {
     reader: R,
     content_key: Option<String>,
 }
 
 impl<R: BufRead> JsonlLoader<R> {
+    /// Creates a loader from a buffered JSON Lines reader.
     pub fn new(input: R) -> Self {
         Self {
             reader: input,
@@ -107,6 +115,7 @@ impl<R: BufRead> JsonlLoader<R> {
         }
     }
 
+    /// Uses an object field as page content and stores remaining fields as metadata.
     pub fn with_content_key(mut self, key: impl Into<String>) -> Self {
         self.content_key = Some(key.into());
         self
@@ -114,6 +123,7 @@ impl<R: BufRead> JsonlLoader<R> {
 }
 
 impl JsonlLoader<BufReader<Cursor<Vec<u8>>>> {
+    /// Creates a loader from JSON Lines text.
     pub fn from_string(input: impl Into<String>) -> Self {
         let bytes = input.into().into_bytes();
         Self::new(BufReader::new(Cursor::new(bytes)))
@@ -121,6 +131,7 @@ impl JsonlLoader<BufReader<Cursor<Vec<u8>>>> {
 }
 
 impl JsonlLoader<BufReader<File>> {
+    /// Opens a JSON Lines file and creates a loader for it.
     pub async fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, LoaderError> {
         let file = File::open(path)?;
         Ok(Self::new(BufReader::new(file)))

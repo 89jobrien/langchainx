@@ -1,3 +1,4 @@
+//! Route-layer construction, selection, and errors.
 mod builder;
 pub use builder::*;
 

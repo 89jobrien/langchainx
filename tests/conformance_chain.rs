@@ -9,9 +9,11 @@
 mod common;
 
 use langchainx::{
-    chain::{Chain, LLMChainBuilder},
-    prompt::HumanMessagePromptTemplate,
-    prompt_args, template_fstring,
+    chain::LLMChainBuilder, prompt::HumanMessagePromptTemplate, prompt_args, template_fstring,
+};
+use langchainx_testsuite::contracts::chain::{
+    assert_call_generation, assert_execute_output, assert_invoke_generation, assert_missing_input,
+    assert_output_keys,
 };
 
 use common::FakeLLM;
@@ -26,11 +28,7 @@ async fn llm_chain_missing_input_variable_returns_err() {
         .build()
         .expect("build chain");
 
-    let result = chain.invoke(prompt_args! { "a" => "alpha" }).await;
-    assert!(
-        result.is_err(),
-        "invoke() with missing input variable must return Err"
-    );
+    assert_missing_input(&chain, prompt_args! { "a" => "alpha" }).await;
 }
 
 #[tokio::test]
@@ -46,13 +44,7 @@ async fn llm_chain_call_returns_generate_result() {
         .build()
         .expect("build chain");
 
-    let result = chain.call(prompt_args! { "country" => "France" }).await;
-    assert!(
-        result.is_ok(),
-        "call() must return Ok, got: {:?}",
-        result.err()
-    );
-    assert_eq!(result.unwrap().generation, "Paris");
+    assert_call_generation(&chain, prompt_args! { "country" => "France" }, "Paris").await;
 }
 
 #[tokio::test]
@@ -66,9 +58,7 @@ async fn llm_chain_invoke_returns_string() {
         .build()
         .expect("build chain");
 
-    let result = chain.invoke(prompt_args! { "country" => "Germany" }).await;
-    assert!(result.is_ok());
-    assert_eq!(result.unwrap(), "Berlin");
+    assert_invoke_generation(&chain, prompt_args! { "country" => "Germany" }, "Berlin").await;
 }
 
 #[tokio::test]
@@ -82,19 +72,7 @@ async fn llm_chain_execute_returns_hashmap_with_output_keys() {
         .build()
         .expect("build chain");
 
-    let result = chain.execute(prompt_args! { "country" => "Japan" }).await;
-    assert!(result.is_ok(), "execute() must return Ok");
-    let map = result.unwrap();
-    assert!(
-        map.contains_key("output"),
-        "execute() result must contain 'output' key, got keys: {:?}",
-        map.keys().collect::<Vec<_>>()
-    );
-    assert!(
-        map.contains_key("generate_result"),
-        "execute() result must contain 'generate_result' key"
-    );
-    assert_eq!(map["output"].as_str(), Some("Tokyo"));
+    assert_execute_output(&chain, prompt_args! { "country" => "Japan" }, "Tokyo").await;
 }
 
 #[tokio::test]
@@ -107,12 +85,7 @@ async fn llm_chain_get_output_keys_not_empty() {
         .build()
         .expect("build chain");
 
-    let keys = chain.get_output_keys();
-    assert!(
-        !keys.is_empty(),
-        "get_output_keys() must return at least one key"
-    );
-    assert!(keys.contains(&"output".to_string()));
+    assert_output_keys(&chain, &["output"]);
 }
 
 #[tokio::test]
@@ -125,14 +98,6 @@ async fn llm_chain_invoke_is_consistent_with_call() {
         .build()
         .expect("build chain");
 
-    let call_gen = chain
-        .call(prompt_args! { "x" => "test" })
-        .await
-        .unwrap()
-        .generation;
-    let invoke_str = chain.invoke(prompt_args! { "x" => "test" }).await.unwrap();
-    assert_eq!(
-        call_gen, invoke_str,
-        "invoke() must return same string as call().generation"
-    );
+    assert_call_generation(&chain, prompt_args! { "x" => "test" }, "alpha").await;
+    assert_invoke_generation(&chain, prompt_args! { "x" => "test" }, "alpha").await;
 }

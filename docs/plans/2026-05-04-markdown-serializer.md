@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # Markdown Serializer
 
 **Date**: 2026-05-04
-**Status**: approved
+**Status**: Implemented
 
 ## Goal
 

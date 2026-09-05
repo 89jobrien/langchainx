@@ -1,3 +1,4 @@
+//! Recursive regular-expression search over UTF-8 files.
 use async_trait::async_trait;
 use regex::Regex;
 use serde::Deserialize;
@@ -8,11 +9,15 @@ use crate::{Tool, ToolError};
 
 const MAX_RESULTS: usize = 200;
 
+/// Searches files and reports matching lines, resolving relative paths from a base directory.
+///
+/// Absolute paths and parent-directory components are accepted as supplied.
 pub struct GrepTool {
     base_dir: PathBuf,
 }
 
 impl GrepTool {
+    /// Creates a grep tool that resolves relative paths from `base_dir`.
     pub fn new(base_dir: impl Into<PathBuf>) -> Self {
         Self {
             base_dir: base_dir.into(),

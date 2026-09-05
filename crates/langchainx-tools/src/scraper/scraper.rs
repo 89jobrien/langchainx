@@ -1,3 +1,4 @@
+//! HTML body text extraction that omits script contents.
 use async_trait::async_trait;
 use regex::Regex;
 use scraper::{ElementRef, Html, Selector};
@@ -6,9 +7,11 @@ use std::{error::Error, sync::Arc};
 
 use crate::{Tool, ToolError};
 
+/// Fetches a web page and returns normalized body text with script contents removed.
 pub struct WebScrapper {}
 
 impl WebScrapper {
+    /// Creates a stateless web scraper.
     pub fn new() -> Self {
         Self {}
     }

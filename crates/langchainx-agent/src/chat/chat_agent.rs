@@ -1,3 +1,4 @@
+//! ReAct-style agent that parses chat output into tool actions or a final answer.
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -28,6 +29,7 @@ use super::{
     prompt::{FORMAT_INSTRUCTIONS, TEMPLATE_TOOL_RESPONSE},
 };
 
+/// A conversational agent that exchanges JSON-formatted actions with an LLM chain.
 pub struct ConversationalAgent {
     pub(crate) chain: Box<dyn Chain>,
     pub(crate) tools: Vec<Arc<dyn Tool>>,
@@ -35,6 +37,7 @@ pub struct ConversationalAgent {
 }
 
 impl ConversationalAgent {
+    /// Creates the chat prompt with history, user input, and scratchpad placeholders.
     pub fn create_prompt(
         tools: &[Arc<dyn Tool>],
         suffix: &str,

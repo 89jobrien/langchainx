@@ -54,7 +54,7 @@ async fn test_llm_chain_invoke() {
 
 #[tokio::test]
 async fn test_llm_chain_empty_response_queue() {
-    let fake = FakeLLM::new(vec![]);
+    let fake = FakeLLM::new(Vec::<String>::new());
 
     let prompt = message_formatter![fmt_template!(HumanMessagePromptTemplate::new(
         template_fstring!("{input}", "input")
@@ -184,7 +184,7 @@ async fn test_sequential_chain() {
 
 #[tokio::test]
 async fn test_llm_chain_input_keys() {
-    let fake = FakeLLM::new(vec![]);
+    let fake = FakeLLM::new(Vec::<String>::new());
 
     let prompt = message_formatter![fmt_template!(HumanMessagePromptTemplate::new(
         template_fstring!("{question}", "question")

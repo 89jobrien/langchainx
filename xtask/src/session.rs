@@ -172,8 +172,7 @@ pub fn read_session(path: &Path) -> Result<Option<SessionIdentity>> {
     if !path.exists() {
         return Ok(None);
     }
-    let text =
-        fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
+    let text = fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
     let identity =
         serde_json::from_str(&text).with_context(|| format!("parsing {}", path.display()))?;
     Ok(Some(identity))

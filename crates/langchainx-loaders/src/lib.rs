@@ -1,3 +1,5 @@
+//! Document loaders for text, structured data, web content, source code, and files.
+#![deny(missing_docs)]
 mod document_loader;
 pub use document_loader::*;
 

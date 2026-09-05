@@ -26,45 +26,70 @@ pub type ContainerId = String;
 /// Container listing entry from [`ContainerRuntime::ps`].
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContainerInfo {
+    /// Runtime-assigned container identifier.
     pub id: String,
+    /// Optional human-readable container name.
     pub name: Option<String>,
+    /// Image reference used by the container.
     pub image: String,
+    /// Runtime-reported container status.
     pub status: String,
 }
 
 /// Snapshot metadata from [`ContainerRuntime::snapshot_list`].
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SnapshotInfo {
+    /// Snapshot name.
     pub name: String,
+    /// Identifier of the container that owns the snapshot.
     pub container_id: String,
 }
 
 /// Configuration for [`ContainerRuntime::run`].
 #[derive(Debug, Clone, Default)]
 pub struct RunConfig {
+    /// Image repository or name.
     pub image: String,
+    /// Image tag; an empty value lets the runtime choose its default.
     pub tag: String,
+    /// Command and arguments executed in the container.
     pub command: Vec<String>,
+    /// Optional human-readable container name.
     pub name: Option<String>,
+    /// Environment entries in `KEY=VALUE` form.
     pub env: Vec<String>,
+    /// Bind mounts in runtime-specific syntax.
     pub volumes: Vec<String>,
+    /// Optional memory limit in bytes.
     pub memory: Option<u64>,
+    /// Optional relative CPU weight.
     pub cpu_weight: Option<u64>,
+    /// Optional runtime network mode.
     pub network: Option<String>,
+    /// Whether to grant privileged container access.
     pub privileged: bool,
+    /// Optional target platform such as `linux/arm64`.
     pub platform: Option<String>,
+    /// Whether to remove the container automatically after it exits.
     pub auto_remove: bool,
 }
 
 /// Configuration for [`ContainerRuntime::sandbox`].
 #[derive(Debug, Clone)]
 pub struct SandboxConfig {
+    /// Host path of the script to execute.
     pub script: String,
+    /// Sandbox image repository or name.
     pub image: String,
+    /// Sandbox image tag.
     pub tag: String,
+    /// Sandbox memory limit in MiB.
     pub memory_mb: u64,
+    /// Sandbox execution timeout in seconds.
     pub timeout_secs: u64,
+    /// Bind mounts exposed to the sandbox.
     pub volumes: Vec<String>,
+    /// Whether network access is enabled.
     pub network: bool,
 }
 
@@ -149,11 +174,7 @@ pub trait ContainerRuntime: Send + Sync {
     // -- Snapshots -----------------------------------------------------------
 
     /// Save a snapshot of a container's state.
-    async fn snapshot_save(
-        &self,
-        _id: &str,
-        _name: Option<&str>,
-    ) -> Result<String, ToolError> {
+    async fn snapshot_save(&self, _id: &str, _name: Option<&str>) -> Result<String, ToolError> {
         Err(ToolError::ExecutionFailed(format!(
             "{} does not support snapshots",
             self.name()
@@ -161,11 +182,7 @@ pub trait ContainerRuntime: Send + Sync {
     }
 
     /// Restore a container to a saved snapshot.
-    async fn snapshot_restore(
-        &self,
-        _id: &str,
-        _name: &str,
-    ) -> Result<String, ToolError> {
+    async fn snapshot_restore(&self, _id: &str, _name: &str) -> Result<String, ToolError> {
         Err(ToolError::ExecutionFailed(format!(
             "{} does not support snapshots",
             self.name()
@@ -214,14 +231,9 @@ pub(crate) async fn run_cli(
     let output = tokio::time::timeout(timeout, cmd.output())
         .await
         .map_err(|_| {
-            ToolError::ExecutionFailed(format!(
-                "{program} timed out after {}s",
-                timeout.as_secs()
-            ))
+            ToolError::ExecutionFailed(format!("{program} timed out after {}s", timeout.as_secs()))
         })?
-        .map_err(|e| {
-            ToolError::ExecutionFailed(format!("failed to spawn {program}: {e}"))
-        })?;
+        .map_err(|e| ToolError::ExecutionFailed(format!("failed to spawn {program}: {e}")))?;
 
     let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
     let stderr = String::from_utf8_lossy(&output.stderr).into_owned();

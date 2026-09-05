@@ -1,3 +1,4 @@
+//! `Tool` adapter for validating agent configuration files with `agentlint`.
 use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -15,6 +16,7 @@ pub struct AgentlintTool {
 }
 
 impl AgentlintTool {
+    /// Creates a tool rooted at the supplied project directory.
     pub fn new(base_dir: impl Into<PathBuf>) -> Self {
         Self {
             base_dir: base_dir.into(),

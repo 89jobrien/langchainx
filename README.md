@@ -4,6 +4,13 @@ Building applications with LLMs through composability, with Rust.
 
 > **Upstream credit:** This crate is based on the work in [langchain-rust](https://github.com/Abraxas-365/langchain-rust) and the engineers who work on the official Langchain project.
 
+## Local env
+
+```bash
+cp .envrc.example .envrc
+direnv allow
+```
+
 ## What makes this fork different
 
 - **Typed error types** throughout — no more opaque `Box<dyn Error>` chains

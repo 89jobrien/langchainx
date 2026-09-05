@@ -16,6 +16,7 @@ members = [
     "crates/langchainx-vectorstore",
     "crates/langchainx-agent",
     "crates/langchainx-macros",
+    "crates/langchainx-testsuite",
     "examples/vector_store_surrealdb",
     "xtask",
 ]
@@ -90,7 +91,7 @@ futures-util = "0.3.30"
 async-stream = "0.3.5"
 tokio-stream = "0.1.15"
 secrecy = { version = "0.10.3", features = ["serde"] }
-readability = "0.3.0"
+readability = { version = "0.3.0", default-features = false }
 htmd = { version = "0.1", optional = true }
 url = "2.5.0"
 fastembed = { version = "4", optional = true }
@@ -136,6 +137,9 @@ test-utils = ["dep:tempfile", "langchainx-chain/test-utils"]
 fastembed = ["dep:fastembed", "langchainx-embedding/fastembed"]
 git = ["gix", "flume", "langchainx-loaders/git"]
 html-to-markdown = ["dep:htmd", "langchainx-loaders/html-to-markdown"]
+openapi-toolkit = ["langchainx-tools/openapi-toolkit"]
+mcp-toolkit = ["langchainx-tools/mcp-toolkit"]
+plugin-toolkits = ["openapi-toolkit", "mcp-toolkit"]
 mistralai = ["mistralai-client", "langchainx-embedding/mistralai"]
 lopdf = ["dep:lopdf", "langchainx-loaders/lopdf"]
 pdf-extract = ["dep:lopdf", "dep:pdf-extract", "langchainx-loaders/pdf-extract"]
@@ -176,8 +180,17 @@ tree-sitter = [
 name = "e2e_local_llm"
 required-features = ["ollama"]
 
+[[example]]
+name = "openapi_toolkit"
+required-features = ["openapi-toolkit"]
+
+[[example]]
+name = "mcp_toolkit"
+required-features = ["mcp-toolkit"]
+
 [dev-dependencies]
 base64 = "0.22.1"
+langchainx-testsuite = { path = "crates/langchainx-testsuite" }
 proptest = "1"
 serial_test = "3.4.0"
 tokio-test = "0.4.4"

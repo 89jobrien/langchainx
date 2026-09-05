@@ -1,3 +1,4 @@
+//! Builder for the PostgreSQL question-answering chain.
 use std::sync::Arc;
 
 use crate::{
@@ -17,6 +18,7 @@ use super::{
     prompt::{DEFAULT_SQLSUFFIX, DEFAULT_SQLTEMPLATE},
 };
 
+/// Configures the model, database, row limit, parser, and output options for an [`SQLDatabaseChain`].
 pub struct SQLDatabaseChainBuilder {
     llm: Option<Arc<dyn LLM>>,
     options: Option<ChainCallOptions>,
@@ -28,6 +30,7 @@ pub struct SQLDatabaseChainBuilder {
 
 #[allow(clippy::new_without_default)] // Builder pattern
 impl SQLDatabaseChainBuilder {
+    /// Creates an empty builder.
     pub fn new() -> Self {
         Self {
             llm: None,
@@ -39,36 +42,43 @@ impl SQLDatabaseChainBuilder {
         }
     }
 
+    /// Sets the language model that generates SQL and summarizes query results.
     pub fn llm<L: IntoArcLLM>(mut self, llm: L) -> Self {
         self.llm = Some(llm.into_arc_llm());
         self
     }
 
+    /// Sets the structured-output key for generated text.
     pub fn output_key<S: Into<String>>(mut self, output_key: S) -> Self {
         self.output_key = Some(output_key.into());
         self
     }
 
+    /// Sets the parser applied to language-model generations.
     pub fn output_parser<P: Into<Box<dyn OutputParser>>>(mut self, output_parser: P) -> Self {
         self.output_parser = Some(output_parser.into());
         self
     }
 
+    /// Sets model call options; the SQL-result marker is always added as a stop sequence.
     pub fn options(mut self, options: ChainCallOptions) -> Self {
         self.options = Some(options);
         self
     }
 
+    /// Sets the maximum row count requested in generated SQL.
     pub fn top_k(mut self, top_k: usize) -> Self {
         self.top_k = Some(top_k);
         self
     }
 
+    /// Sets the database whose schema is described and whose queries are executed.
     pub fn database(mut self, database: SQLDatabase) -> Self {
         self.database = Some(database);
         self
     }
 
+    /// Builds the chain, requiring a model, row limit, and database.
     pub fn build(self) -> Result<SQLDatabaseChain, ChainError> {
         let llm = self
             .llm

@@ -1,3 +1,4 @@
+//! No-op memory for callers that do not need conversation history.
 use std::sync::Arc;
 
 use tokio::sync::Mutex;
@@ -5,9 +6,11 @@ use tokio::sync::Mutex;
 use crate::schemas::{memory::BaseMemory, messages::Message};
 
 #[derive(Default)]
+/// A memory implementation that discards every message.
 pub struct DummyMemory {}
 
 impl DummyMemory {
+    /// Creates no-op memory.
     pub fn new() -> Self {
         Self {}
     }

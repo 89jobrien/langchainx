@@ -1,3 +1,4 @@
+//! Agent implementation that uses OpenAI-compatible native tool calls.
 mod builder;
 pub use builder::*;
 

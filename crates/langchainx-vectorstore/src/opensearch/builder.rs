@@ -1,3 +1,4 @@
+//! Builder for OpenSearch k-NN vector stores.
 use langchainx_embedding::embedding::Embedder;
 use opensearch::OpenSearch;
 use std::error::Error;
@@ -5,6 +6,7 @@ use std::sync::Arc;
 
 use super::Store;
 
+/// Configures an OpenSearch-backed vector store.
 pub struct StoreBuilder {
     client: Option<OpenSearch>,
     embedder: Option<Arc<dyn Embedder>>,
@@ -22,6 +24,7 @@ impl Default for StoreBuilder {
 
 impl StoreBuilder {
     // Returns a new StoreBuilder instance with default values for each option
+    /// Creates a builder with default k-NN and field settings.
     pub fn new() -> Self {
         StoreBuilder {
             client: None,
@@ -33,37 +36,43 @@ impl StoreBuilder {
         }
     }
 
+    /// Sets the required OpenSearch client.
     pub fn client(mut self, client: OpenSearch) -> Self {
         self.client = Some(client);
         self
     }
 
+    /// Sets the required document and query embedder.
     pub fn embedder<E: Embedder + 'static>(mut self, embedder: E) -> Self {
         self.embedder = Some(Arc::new(embedder));
         self
     }
 
+    /// Sets the neighbor count sent to the OpenSearch k-NN query.
     pub fn k(mut self, k: i32) -> Self {
         self.k = k;
         self
     }
 
+    /// Sets the required OpenSearch index name.
     pub fn index(mut self, index: &str) -> Self {
         self.index = Some(index.to_string());
         self
     }
 
+    /// Sets the index field containing embedding vectors.
     pub fn vector_field(mut self, vector_field: &str) -> Self {
         self.vector_field = vector_field.to_string();
         self
     }
 
+    /// Sets the index field containing document text.
     pub fn content_field(mut self, content_field: &str) -> Self {
         self.content_field = content_field.to_string();
         self
     }
 
-    /// Build the Store. Returns `Err` if any required field is missing.
+    /// Builds the store, failing if the client, embedder, or index is missing.
     pub async fn build(self) -> Result<Store, Box<dyn Error>> {
         if self.client.is_none() {
             return Err("Client is required".into());
@@ -99,10 +108,7 @@ mod tests {
 
     #[async_trait]
     impl Embedder for DummyEmbedder {
-        async fn embed_documents(
-            &self,
-            _docs: &[String],
-        ) -> Result<Vec<Vec<f64>>, EmbedderError> {
+        async fn embed_documents(&self, _docs: &[String]) -> Result<Vec<Vec<f64>>, EmbedderError> {
             Ok(vec![])
         }
 

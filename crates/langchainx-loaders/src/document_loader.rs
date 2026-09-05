@@ -1,3 +1,4 @@
+//! Shared interface and stream processing for document loaders.
 use std::pin::Pin;
 
 use async_stream::stream;
@@ -11,13 +12,16 @@ use langchainx_text_splitter::TextSplitter;
 use super::LoaderError;
 
 #[async_trait]
+/// Loads a source into an asynchronous stream of documents.
 pub trait Loader: Send + Sync {
+    /// Consumes the loader and returns its document stream.
     async fn load(
         self,
     ) -> Result<
         Pin<Box<dyn Stream<Item = Result<Document, LoaderError>> + Send + 'static>>,
         LoaderError,
     >;
+    /// Loads documents and splits each one with the supplied text splitter.
     async fn load_and_split<TS: TextSplitter + 'static>(
         self,
         splitter: TS,

@@ -1,3 +1,4 @@
+//! Bounded file discovery with glob patterns.
 use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -7,11 +8,15 @@ use crate::{Tool, ToolError};
 
 const MAX_RESULTS: usize = 200;
 
+/// Finds files matching a glob pattern, resolving relative patterns from a base directory.
+///
+/// Absolute patterns and parent-directory components are accepted as supplied.
 pub struct GlobTool {
     base_dir: PathBuf,
 }
 
 impl GlobTool {
+    /// Creates a glob tool that resolves relative patterns from `base_dir`.
     pub fn new(base_dir: impl Into<PathBuf>) -> Self {
         Self {
             base_dir: base_dir.into(),

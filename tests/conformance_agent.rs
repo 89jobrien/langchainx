@@ -9,72 +9,23 @@ mod common;
 
 use std::sync::Arc;
 
-use async_trait::async_trait;
-use tokio::sync::Mutex;
-
-use common::EchoTool;
+use common::{EchoTool, ScriptedAgent};
 use langchainx::{
-    agent::{Agent, AgentError, AgentExecutor},
+    agent::AgentExecutor,
     chain::Chain,
     prompt_args,
     schemas::agent::{AgentAction, AgentEvent, AgentFinish},
     tools::Tool,
 };
-
-struct FixedAgent {
-    events: Arc<Mutex<Vec<AgentEvent>>>,
-    tools: Vec<Arc<dyn Tool>>,
-}
-
-impl FixedAgent {
-    fn finishing(output: &str) -> Self {
-        Self {
-            events: Arc::new(Mutex::new(vec![AgentEvent::Finish(AgentFinish {
-                output: output.into(),
-            })])),
-            tools: vec![],
-        }
-    }
-
-    fn with_events(events: Vec<AgentEvent>, tools: Vec<Arc<dyn Tool>>) -> Self {
-        Self {
-            events: Arc::new(Mutex::new(events)),
-            tools,
-        }
-    }
-}
-
-#[async_trait]
-impl Agent for FixedAgent {
-    async fn plan(
-        &self,
-        _steps: &[(AgentAction, String)],
-        _inputs: langchainx::prompt::PromptArgs,
-    ) -> Result<AgentEvent, AgentError> {
-        let mut events = self.events.lock().await;
-        if events.is_empty() {
-            Ok(AgentEvent::Finish(AgentFinish {
-                output: "fallback".into(),
-            }))
-        } else {
-            Ok(events.remove(0))
-        }
-    }
-
-    fn get_tools(&self) -> Vec<Arc<dyn Tool>> {
-        self.tools.clone()
-    }
-}
+use langchainx_testsuite::contracts::agent::{assert_plan_returns_event, assert_tool_names};
 
 #[tokio::test]
 async fn agent_plan_returns_finish() {
-    let agent = FixedAgent::finishing("done");
-    let event = agent
-        .plan(&[], langchainx::prompt_args! { "input" => "hi" })
-        .await
-        .unwrap();
+    let agent = ScriptedAgent::finishing("done");
+    let event =
+        assert_plan_returns_event(&agent, langchainx::prompt_args! { "input" => "hi" }).await;
     match event {
-        AgentEvent::Finish(f) => assert_eq!(f.output, "done"),
+        AgentEvent::Finish(finish) => assert_eq!(finish.output, "done"),
         AgentEvent::Action(_) => panic!("expected Finish, got Action"),
     }
 }
@@ -82,15 +33,13 @@ async fn agent_plan_returns_finish() {
 #[tokio::test]
 async fn agent_get_tools_returns_configured_tools() {
     let tool: Arc<dyn Tool> = Arc::new(EchoTool);
-    let agent = FixedAgent::with_events(vec![], vec![tool.clone()]);
-    let tools = agent.get_tools();
-    assert_eq!(tools.len(), 1);
-    assert_eq!(tools[0].name(), "echo");
+    let agent = ScriptedAgent::new(vec![], vec![tool]);
+    assert_tool_names(&agent, &["echo"]);
 }
 
 #[tokio::test]
 async fn executor_drives_agent_to_finish() {
-    let agent = FixedAgent::finishing("42");
+    let agent = ScriptedAgent::finishing("42");
     let executor = AgentExecutor::from_agent(agent);
     let result = executor
         .invoke(prompt_args! { "input" => "compute" })
@@ -102,7 +51,7 @@ async fn executor_drives_agent_to_finish() {
 #[tokio::test]
 async fn executor_calls_tool_then_finishes() {
     let tool: Arc<dyn Tool> = Arc::new(EchoTool);
-    let agent = FixedAgent::with_events(
+    let agent = ScriptedAgent::new(
         vec![
             AgentEvent::Action(vec![AgentAction {
                 tool: "echo".into(),
@@ -135,7 +84,7 @@ async fn executor_respects_max_iterations() {
             }])
         })
         .collect();
-    let agent = FixedAgent::with_events(events, vec![tool]);
+    let agent = ScriptedAgent::new(events, vec![tool]);
     let executor = AgentExecutor::from_agent(agent).with_max_iterations(3);
     let result = executor
         .invoke(prompt_args! { "input" => "loop" })
@@ -146,7 +95,7 @@ async fn executor_respects_max_iterations() {
 
 #[tokio::test]
 async fn executor_unknown_tool_returns_error() {
-    let agent = FixedAgent::with_events(
+    let agent = ScriptedAgent::new(
         vec![AgentEvent::Action(vec![AgentAction {
             tool: "nonexistent".into(),
             tool_input: "x".into(),

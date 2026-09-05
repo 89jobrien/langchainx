@@ -1,3 +1,4 @@
+//! Line-oriented text file reading.
 use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -5,11 +6,16 @@ use std::path::PathBuf;
 
 use crate::{Tool, ToolError};
 
+/// Reads all or a selected line range from a file.
+///
+/// Relative paths use a configured base directory; absolute paths and parent-directory
+/// components are accepted as supplied.
 pub struct ReadFileTool {
     base_dir: PathBuf,
 }
 
 impl ReadFileTool {
+    /// Creates a file reader that resolves relative paths from `base_dir`.
     pub fn new(base_dir: impl Into<PathBuf>) -> Self {
         Self {
             base_dir: base_dir.into(),

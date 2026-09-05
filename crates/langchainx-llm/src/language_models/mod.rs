@@ -1,3 +1,4 @@
+//! Core language-model traits, call options, results, and errors.
 // Core generate types live in langchainx-core; re-export them here so
 // `crate::language_models::GenerateResult` etc. resolve within this crate.
 pub use langchainx_core::language_models::{GenerateResult, TokenUsage};

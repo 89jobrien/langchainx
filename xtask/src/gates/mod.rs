@@ -7,7 +7,7 @@
 //! |--------------|----------------------------------------------|
 //! | fmt_check    | cargo fmt --all -- --check                   |
 //! | clippy       | cargo clippy --all-features -- -D warnings   |
-//! | audit        | cargo audit --ignore <known>                 |
+//! | audit        | `cargo audit --ignore <known>`               |
 //! | build        | cargo build --release --all-features         |
 //! | test         | cargo test --release --all-features          |
 //! | ci           | fmt_check → clippy → audit → build → test    |

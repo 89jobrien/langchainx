@@ -1,3 +1,4 @@
+//! Structured input accepted by [`super::MiniboxTool`].
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -200,8 +201,7 @@ mod tests {
 
     #[test]
     fn parse_minibox_input_sandbox_defaults() {
-        let action =
-            parse_minibox_input(json!({ "action": "sandbox", "script": "/tmp/foo.py" }));
+        let action = parse_minibox_input(json!({ "action": "sandbox", "script": "/tmp/foo.py" }));
         match action {
             MiniboxInput::Sandbox {
                 memory_mb, timeout, ..

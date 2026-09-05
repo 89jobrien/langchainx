@@ -1,3 +1,4 @@
+//! Chain that condenses questions, retrieves documents, and generates contextual answers.
 use futures::Stream;
 use futures_util::{StreamExt, pin_mut};
 use std::{collections::HashMap, pin::Pin, sync::Arc};
@@ -23,8 +24,10 @@ use crate::{
 const CONVERSATIONAL_RETRIEVAL_QA_DEFAULT_SOURCE_DOCUMENT_KEY: &str = "source_documents";
 const CONVERSATIONAL_RETRIEVAL_QA_DEFAULT_GENERATED_QUESTION_KEY: &str = "generated_question";
 
+/// Answers conversational questions using retrieved documents and optional question rewriting.
 pub struct ConversationalRetrieverChain {
     pub(crate) retriever: Box<dyn Retriever>,
+    /// Shared conversation history used to contextualize follow-up questions.
     pub memory: Arc<Mutex<dyn BaseMemory>>,
     pub(crate) combine_documents_chain: Box<dyn Chain>,
     pub(crate) condense_question_chain: Box<dyn Chain>,

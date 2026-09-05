@@ -1,3 +1,4 @@
+//! Document persistence and nearest-neighbor search using SQLite VSS.
 use std::{collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
@@ -9,6 +10,7 @@ use langchainx_embedding::schemas::Document;
 
 use crate::{VecStoreOptions, VectorStore, VectorStoreError};
 
+/// Vector store backed by SQLite tables and a `vss0` virtual table.
 pub struct Store {
     pub(crate) pool: Pool<Sqlite>,
     pub(crate) table: String,
@@ -16,9 +18,11 @@ pub struct Store {
     pub(crate) embedder: Arc<dyn Embedder>,
 }
 
+/// Operation options accepted by the SQLite VSS backend.
 pub type SqliteVssOptions = VecStoreOptions<Value>;
 
 impl Store {
+    /// Creates the document table, VSS table, and synchronization trigger.
     pub async fn initialize(&self) -> Result<(), VectorStoreError> {
         self.create_table_if_not_exists().await?;
         Ok(())

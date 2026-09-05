@@ -13,6 +13,7 @@ libfuzzer-sys = "0.4"
 serde_json = "1"
 tokio = { version = "1", features = ["rt", "macros"] }
 futures-util = "0.3"
+url = "2.5"
 
 [dependencies.langchainx]
 path = ".."
@@ -22,6 +23,23 @@ path = "../crates/langchainx-loaders"
 
 [dependencies.langchainx-core]
 path = "../crates/langchainx-core"
+
+[dependencies.langchainx-tools]
+path = "../crates/langchainx-tools"
+
+[features]
+default = []
+openapi-toolkit = [
+    "langchainx/openapi-toolkit",
+    "langchainx-tools/openapi-toolkit",
+    "langchainx-tools/fuzzing",
+]
+mcp-toolkit = [
+    "langchainx/mcp-toolkit",
+    "langchainx-tools/mcp-toolkit",
+    "langchainx-tools/fuzzing",
+]
+plugin-toolkits = ["openapi-toolkit", "mcp-toolkit"]
 
 [[bin]]
 name = "fuzz_csv_loader"
@@ -50,3 +68,33 @@ path = "fuzz_targets/fuzz_tool_parse_input.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "fuzz_markdown_parser"
+path = "fuzz_targets/fuzz_markdown_parser.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_html_loader"
+path = "fuzz_targets/fuzz_html_loader.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_openapi_toolkit"
+path = "fuzz_targets/fuzz_openapi_toolkit.rs"
+test = false
+doc = false
+bench = false
+required-features = ["openapi-toolkit"]
+
+[[bin]]
+name = "fuzz_mcp_protocol"
+path = "fuzz_targets/fuzz_mcp_protocol.rs"
+test = false
+doc = false
+bench = false
+required-features = ["mcp-toolkit"]

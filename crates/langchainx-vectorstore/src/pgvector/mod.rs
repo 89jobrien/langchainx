@@ -1,3 +1,4 @@
+//! PostgreSQL pgvector store, filters, index configuration, and builder.
 mod builder;
 mod pgvector;
 

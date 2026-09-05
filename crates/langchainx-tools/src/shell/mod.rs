@@ -1,10 +1,10 @@
+//! File, search, shell, and coding-agent tool adapters.
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use crate::Tool;
 
-/// Validate that `path` resolves under `base_dir`.
-/// Returns the canonical path or an error.
+/// Canonicalizes `path` and rejects values that escape `base_dir`.
 pub fn validate_path(base_dir: &Path, path: &str) -> Result<PathBuf, crate::ToolError> {
     let joined = base_dir.join(path);
     let canonical = joined
@@ -92,15 +92,8 @@ mod tests {
     #[test]
     fn coding_tools_returns_expected_count() {
         let tools = coding_tools(".");
-        let mut expected = 10;
-        #[cfg(feature = "bash-tool")]
-        {
-            expected += 1;
-        }
-        #[cfg(feature = "nu-tool")]
-        {
-            expected += 1;
-        }
+        let expected =
+            10 + usize::from(cfg!(feature = "bash-tool")) + usize::from(cfg!(feature = "nu-tool"));
         assert_eq!(tools.len(), expected);
     }
 

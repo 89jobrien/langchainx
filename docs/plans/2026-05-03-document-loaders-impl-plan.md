@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # Document Loaders — Implementation Plan
 
 **Date:** 2026-05-03

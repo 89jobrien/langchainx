@@ -1,3 +1,7 @@
+---
+status: open
+---
+
 # Plan: Remove async_trait Where Safe
 
 ## Goal

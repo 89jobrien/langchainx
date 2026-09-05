@@ -1,3 +1,4 @@
+//! Unbounded in-memory conversation history.
 use std::sync::Arc;
 
 use tokio::sync::Mutex;
@@ -5,11 +6,13 @@ use tokio::sync::Mutex;
 use crate::schemas::{memory::BaseMemory, messages::Message};
 
 #[derive(Default)]
+/// Stores every message in insertion order.
 pub struct SimpleMemory {
     messages: Vec<Message>,
 }
 
 impl SimpleMemory {
+    /// Creates empty conversation memory.
     pub fn new() -> Self {
         Self {
             messages: Vec::new(),

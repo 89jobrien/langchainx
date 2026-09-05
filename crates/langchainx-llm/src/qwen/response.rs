@@ -1,3 +1,4 @@
+//! Internal Qwen error and streaming-response parsing.
 use crate::{QwenError, language_models::LLMError};
 use serde_json::Value;
 use std::str::from_utf8;

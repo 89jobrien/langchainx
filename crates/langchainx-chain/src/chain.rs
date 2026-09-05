@@ -1,3 +1,4 @@
+//! Compatibility re-exports for the historical `langchainx_chain::chain` API.
 // Compatibility shim: files imported as `crate::chain::X` resolve here.
 pub use crate::chain_trait::*;
 pub use crate::conversational::*;

@@ -1,3 +1,5 @@
+//! Default templates for SQL generation and result summarization.
+/// Instructions for generating a bounded SQL query and answering from its result.
 pub const DEFAULT_SQLTEMPLATE: &str = r#"Given an input question, first create a syntactically correct {{dialect}} query to run, then look at the results of the query and return the answer. Unless the user specifies in his question a specific number of examples he wishes to obtain, always limit your query to at most {{top_k}} results. You can order the results by a relevant column to return the most interesting examples in the database.
 
 Never query for all the columns from a specific table, only ask for a the few relevant columns given the question.
@@ -13,6 +15,7 @@ Answer: Final answer here
 
 "#;
 
+/// Template suffix that supplies table metadata and the user's question.
 pub const DEFAULT_SQLSUFFIX: &str = r#"Only use the following tables:
 {{table_info}}
 

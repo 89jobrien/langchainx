@@ -1,3 +1,4 @@
+//! `Tool` adapter for Cargo and nextest test execution.
 use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -8,13 +9,14 @@ use crate::{Tool, ToolError};
 
 /// Tool adapter for `cargo test` / `cargo nextest run`.
 ///
-/// Runs tests and returns structured output. Prefers nextest if available.
+/// Runs tests and returns command output. Uses nextest by default.
 pub struct CargoTestTool {
     base_dir: PathBuf,
     use_nextest: bool,
 }
 
 impl CargoTestTool {
+    /// Creates a test tool rooted at the supplied project directory.
     pub fn new(base_dir: impl Into<PathBuf>) -> Self {
         Self {
             base_dir: base_dir.into(),
@@ -22,6 +24,7 @@ impl CargoTestTool {
         }
     }
 
+    /// Selects nextest when enabled and `cargo test` when disabled.
     pub fn with_nextest(mut self, enabled: bool) -> Self {
         self.use_nextest = enabled;
         self

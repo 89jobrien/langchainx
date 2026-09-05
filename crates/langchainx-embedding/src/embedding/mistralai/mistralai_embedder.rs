@@ -1,15 +1,18 @@
+//! Mistral AI embedding client implementation.
 use std::sync::Arc;
 
 use crate::embedding::{EmbedderError, embedder_trait::Embedder};
 use async_trait::async_trait;
 use mistralai_client::v1::{client::Client, constants::EmbedModel};
 
+/// An embedder using Mistral AI's `mistral-embed` model.
 pub struct MistralAIEmbedder {
     client: Arc<Client>,
     model: EmbedModel,
 }
 
 impl MistralAIEmbedder {
+    /// Creates an embedder from the Mistral AI client environment configuration.
     pub fn try_new() -> Result<Self, EmbedderError> {
         Ok(Self {
             client: Arc::new(

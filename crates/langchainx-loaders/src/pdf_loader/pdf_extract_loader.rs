@@ -1,3 +1,4 @@
+//! Whole-document PDF text extraction backed by `pdf-extract`.
 use std::{io::Read, path::Path, pin::Pin};
 
 use async_stream::stream;
@@ -10,17 +11,20 @@ use pdf_extract::{PlainTextOutput, output_doc};
 use crate::{Loader, LoaderError, process_doc_stream};
 
 #[derive(Debug, Clone)]
+/// Loads all extracted PDF text into one document.
 pub struct PdfExtractLoader {
     document: pdf_extract::Document,
 }
 
 #[allow(clippy::result_large_err)] // LoaderError contains large foreign variants; boxing requires API change
 impl PdfExtractLoader {
+    /// Parses a PDF from a reader.
     pub fn new<R: Read>(reader: R) -> Result<Self, LoaderError> {
         let document = pdf_extract::Document::load_from(reader)?;
         Ok(Self { document })
     }
 
+    /// Opens and parses a PDF file.
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, LoaderError> {
         let document = pdf_extract::Document::load(path)?;
         Ok(Self { document })

@@ -22,6 +22,9 @@ use langchainx::{
     schemas::MessageType,
     template_fstring,
 };
+use langchainx_testsuite::contracts::prompt::{
+    assert_missing_prompt_input, assert_prompt_format, assert_prompt_variables,
+};
 
 // -- PromptFromatter --
 
@@ -35,27 +38,23 @@ fn prompt_formatter_template_returns_raw_string() {
 #[test]
 fn prompt_formatter_variables_lists_declared_vars() {
     let pt = template_fstring!("Q: {question}", "question");
-    let vars = pt.variables();
-    assert_eq!(vars, vec!["question"]);
+    assert_prompt_variables(&pt, &["question"]);
 }
 
 #[test]
 fn prompt_formatter_format_substitutes_variables() {
     let pt = template_fstring!("{greeting} {who}!", "greeting", "who");
-    let result = pt
-        .format(prompt_args! { "greeting" => "Hi", "who" => "world" })
-        .unwrap();
-    assert_eq!(result, "Hi world!");
+    assert_prompt_format(
+        &pt,
+        prompt_args! { "greeting" => "Hi", "who" => "world" },
+        "Hi world!",
+    );
 }
 
 #[test]
 fn prompt_formatter_format_missing_var_returns_err() {
     let pt = template_fstring!("{a} and {b}", "a", "b");
-    let result = pt.format(prompt_args! { "a" => "alpha" });
-    assert!(
-        result.is_err(),
-        "format() with missing variable must return Err"
-    );
+    assert_missing_prompt_input(&pt, prompt_args! { "a" => "alpha" });
 }
 
 // -- FormatPrompter --

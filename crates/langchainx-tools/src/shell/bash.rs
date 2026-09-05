@@ -1,3 +1,4 @@
+//! Timeout-bounded POSIX shell command execution.
 use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -9,6 +10,7 @@ use crate::{Tool, ToolError};
 const DEFAULT_TIMEOUT_SECS: u64 = 60;
 const MAX_OUTPUT_CHARS: usize = 10_000;
 
+/// Executes commands through `sh -c` and returns JSON-encoded process output.
 pub struct BashTool;
 
 #[derive(Debug, Deserialize)]
