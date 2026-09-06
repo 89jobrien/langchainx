@@ -5,13 +5,14 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 
+use super::validate_path;
 use crate::{Tool, ToolError};
 
 const MAX_RESULTS: usize = 200;
 
 /// Searches files and reports matching lines, resolving relative paths from a base directory.
 ///
-/// Absolute paths and parent-directory components are accepted as supplied.
+/// Paths are confined to the configured base directory.
 pub struct GrepTool {
     base_dir: PathBuf,
 }
@@ -136,7 +137,7 @@ impl Tool for GrepTool {
         let re = Regex::new(&parsed.pattern)
             .map_err(|e| ToolError::InvalidInput(format!("invalid regex: {e}")))?;
 
-        let search_path = self.base_dir.join(&parsed.path);
+        let search_path = validate_path(&self.base_dir, &parsed.path)?;
         let mut results = Vec::new();
         search_file(&search_path, &re, &mut results, parsed.glob.as_deref())
             .map_err(|e| ToolError::ExecutionFailed(e.to_string()))?;
@@ -214,5 +215,23 @@ mod tests {
             .unwrap();
         assert!(result.contains(":2:"));
         assert!(result.contains(":4:"));
+    }
+
+    #[tokio::test]
+    async fn rejects_paths_outside_base_directory() {
+        let base = tempfile::tempdir().unwrap();
+        let mut outside = tempfile::NamedTempFile::new().unwrap();
+        use std::io::Write;
+        outside.write_all(b"secret").unwrap();
+        let tool = GrepTool::new(base.path());
+
+        let result = tool
+            .run(json!({
+                "pattern": "secret",
+                "path": outside.path().to_string_lossy()
+            }))
+            .await;
+
+        assert!(matches!(result, Err(ToolError::InvalidInput(_))));
     }
 }

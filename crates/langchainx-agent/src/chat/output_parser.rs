@@ -78,11 +78,8 @@ fn parse_partial_json(s: &str, strict: bool) -> Option<Value> {
             '{' if !is_inside_string => stack.push_back('}'),
             '[' if !is_inside_string => stack.push_back(']'),
             '}' | ']' if !is_inside_string => {
-                if let Some(c) = stack.pop_back() {
-                    if c != char {
-                        return None;
-                    }
-                } else {
+                let expected = stack.pop_back()?;
+                if expected != char {
                     return None;
                 }
             }

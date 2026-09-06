@@ -12,6 +12,7 @@ use xshell::Shell;
 mod bump;
 pub mod checkpoint;
 mod gates;
+#[allow(dead_code)] // Session helpers are exercised by tests but not yet wired into the xtask CLI.
 pub(crate) mod session;
 pub(crate) mod trace;
 

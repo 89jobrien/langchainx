@@ -104,7 +104,7 @@ mod tests {
         let mut stdout = tokio::io::stdout();
         while let Some(res) = stream.next().await {
             let data = res.unwrap();
-            stdout.write(data.content.as_bytes()).await.unwrap();
+            stdout.write_all(data.content.as_bytes()).await.unwrap();
         }
         stdout.flush().await.unwrap();
     }

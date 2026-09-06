@@ -1,5 +1,5 @@
 //! Loader for pages referenced by XML sitemaps and one-level sitemap indexes.
-use std::pin::Pin;
+use std::{net::IpAddr, pin::Pin};
 
 use async_trait::async_trait;
 use futures::Stream;
@@ -10,10 +10,14 @@ use langchainx_text_splitter::TextSplitter;
 
 use crate::{HtmlLoader, Loader, LoaderError, process_doc_stream};
 
+const MAX_HTTP_BODY_BYTES: usize = 2 * 1024 * 1024;
+const MAX_SITEMAP_URLS: usize = 1_000;
+
 /// Fetches sitemap URLs and extracts readable page content with [`HtmlLoader`].
 pub struct SitemapLoader {
     url: String,
     client: reqwest::Client,
+    allow_private_networks: bool,
 }
 
 impl SitemapLoader {
@@ -21,7 +25,11 @@ impl SitemapLoader {
     pub fn new(url: impl Into<String>) -> Self {
         Self {
             url: url.into(),
-            client: reqwest::Client::new(),
+            client: reqwest::Client::builder()
+                .redirect(reqwest::redirect::Policy::none())
+                .build()
+                .expect("default HTTP client configuration is valid"),
+            allow_private_networks: false,
         }
     }
 
@@ -30,7 +38,18 @@ impl SitemapLoader {
         Self { client, ..self }
     }
 
+    /// Allows sitemap and page requests to private network destinations.
+    pub fn with_allow_private_networks(self, allow: bool) -> Self {
+        Self {
+            allow_private_networks: allow,
+            ..self
+        }
+    }
+
     async fn fetch_text(&self, url: &str) -> Result<String, LoaderError> {
+        validate_url(url, self.allow_private_networks)
+            .await
+            .map_err(LoaderError::OtherError)?;
         let resp = self
             .client
             .get(url)
@@ -46,9 +65,7 @@ impl SitemapLoader {
             )));
         }
 
-        resp.text()
-            .await
-            .map_err(|e| LoaderError::OtherError(e.to_string()))
+        read_response_limited(resp, MAX_HTTP_BODY_BYTES).await
     }
 
     #[allow(clippy::result_large_err)] // LoaderError contains large foreign variants; boxing requires API change
@@ -100,6 +117,7 @@ impl SitemapLoader {
         let loc_urls: Vec<String> = if Self::is_sitemap_index(&root_xml) {
             // recurse one level: fetch each child sitemap and collect its locs
             let child_sitemaps = Self::extract_locs(&root_xml, "sitemapindex")?;
+            ensure_url_limit(child_sitemaps.len())?;
             let mut all_locs = Vec::new();
             for sitemap_url in child_sitemaps {
                 let child_xml = self.fetch_text(&sitemap_url).await?;
@@ -110,6 +128,7 @@ impl SitemapLoader {
         } else {
             Self::extract_locs(&root_xml, "urlset")?
         };
+        ensure_url_limit(loc_urls.len())?;
 
         let mut docs = Vec::new();
         for loc in loc_urls {
@@ -140,6 +159,86 @@ impl SitemapLoader {
         }
 
         Ok(docs)
+    }
+}
+
+async fn read_response_limited(
+    mut response: reqwest::Response,
+    limit: usize,
+) -> Result<String, LoaderError> {
+    if response
+        .content_length()
+        .is_some_and(|length| length > limit as u64)
+    {
+        return Err(LoaderError::OtherError(format!(
+            "response body exceeds {limit} bytes"
+        )));
+    }
+    let mut body = Vec::new();
+    while let Some(chunk) = response
+        .chunk()
+        .await
+        .map_err(|error| LoaderError::OtherError(error.to_string()))?
+    {
+        if body.len().saturating_add(chunk.len()) > limit {
+            return Err(LoaderError::OtherError(format!(
+                "response body exceeds {limit} bytes"
+            )));
+        }
+        body.extend_from_slice(&chunk);
+    }
+    String::from_utf8(body).map_err(|error| LoaderError::OtherError(error.to_string()))
+}
+
+fn ensure_url_limit(count: usize) -> Result<(), LoaderError> {
+    if count > MAX_SITEMAP_URLS {
+        return Err(LoaderError::OtherError(format!(
+            "sitemap contains {count} URLs; maximum is {MAX_SITEMAP_URLS}"
+        )));
+    }
+    Ok(())
+}
+
+async fn validate_url(url: &str, allow_private_networks: bool) -> Result<(), String> {
+    let parsed = url::Url::parse(url).map_err(|error| format!("invalid URL: {error}"))?;
+    if !matches!(parsed.scheme(), "http" | "https") {
+        return Err("URL scheme must be http or https".to_string());
+    }
+    let host = parsed
+        .host_str()
+        .ok_or_else(|| "URL must include a host".to_string())?;
+    if !allow_private_networks {
+        if host.eq_ignore_ascii_case("localhost") {
+            return Err("private network destinations are disabled".to_string());
+        }
+        let port = parsed.port_or_known_default().unwrap_or(80);
+        let addresses = tokio::net::lookup_host((host, port))
+            .await
+            .map_err(|error| format!("cannot resolve URL host: {error}"))?;
+        if addresses
+            .map(|address| address.ip())
+            .any(|address| !is_public_address(address))
+        {
+            return Err("private network destinations are disabled".to_string());
+        }
+    }
+    Ok(())
+}
+
+fn is_public_address(address: IpAddr) -> bool {
+    match address {
+        IpAddr::V4(address) => {
+            !(address.is_private()
+                || address.is_loopback()
+                || address.is_link_local()
+                || address.is_unspecified())
+        }
+        IpAddr::V6(address) => {
+            !(address.is_loopback()
+                || address.is_unique_local()
+                || address.is_unicast_link_local()
+                || address.is_unspecified())
+        }
     }
 }
 
@@ -219,8 +318,9 @@ mod tests {
             .create_async()
             .await;
 
-        let loader =
-            SitemapLoader::new(format!("{base}/sitemap.xml")).with_client(reqwest::Client::new());
+        let loader = SitemapLoader::new(format!("{base}/sitemap.xml"))
+            .with_client(reqwest::Client::new())
+            .with_allow_private_networks(true);
 
         let docs: Vec<Document> = loader
             .load()
@@ -254,10 +354,38 @@ mod tests {
             .await;
 
         let loader = SitemapLoader::new(format!("{}/sitemap.xml", server.url()))
-            .with_client(reqwest::Client::new());
+            .with_client(reqwest::Client::new())
+            .with_allow_private_networks(true);
 
         let result = loader.load().await;
         assert!(result.is_err(), "expected Err for 404");
+    }
+
+    #[tokio::test]
+    async fn private_network_sitemap_is_rejected_by_default() {
+        let loader = SitemapLoader::new("http://127.0.0.1/internal.xml");
+
+        let error = loader.load().await.err().expect("private URL should fail");
+
+        assert!(error.to_string().contains("private network"));
+    }
+
+    #[tokio::test]
+    async fn oversized_sitemap_response_is_rejected() {
+        let mut server = Server::new_async().await;
+        let mock = server
+            .mock("GET", "/large.xml")
+            .with_status(200)
+            .with_body(vec![b'x'; 2_097_153])
+            .create_async()
+            .await;
+        let loader = SitemapLoader::new(format!("{}/large.xml", server.url()))
+            .with_allow_private_networks(true);
+
+        let error = loader.load().await.err().expect("large body should fail");
+
+        assert!(error.to_string().contains("response body exceeds"));
+        mock.assert_async().await;
     }
 
     #[test]
@@ -327,8 +455,9 @@ mod tests {
             .create_async()
             .await;
 
-        let loader =
-            SitemapLoader::new(format!("{base}/sitemap.xml")).with_client(reqwest::Client::new());
+        let loader = SitemapLoader::new(format!("{base}/sitemap.xml"))
+            .with_client(reqwest::Client::new())
+            .with_allow_private_networks(true);
 
         let docs: Vec<Document> = loader
             .load()
@@ -400,8 +529,9 @@ mod tests {
             .create_async()
             .await;
 
-        let loader =
-            SitemapLoader::new(format!("{base}/index.xml")).with_client(reqwest::Client::new());
+        let loader = SitemapLoader::new(format!("{base}/index.xml"))
+            .with_client(reqwest::Client::new())
+            .with_allow_private_networks(true);
 
         // The failing child sitemap fetch should propagate as an error from load()
         let result = loader.load().await;

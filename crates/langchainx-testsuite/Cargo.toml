@@ -15,6 +15,7 @@ langchainx-llm = { path = "../langchainx-llm" }
 langchainx-loaders = { path = "../langchainx-loaders" }
 langchainx-output-parsers = { path = "../langchainx-output-parsers" }
 langchainx-prompt = { path = "../langchainx-prompt" }
+langchainx-vectorstore = { path = "../langchainx-vectorstore" }
 
 async-trait = "0.1.80"
 futures = "0.3"

@@ -77,3 +77,5 @@ Most integrations are opt-in. Key flags: `postgres`, `qdrant`, `surrealdb`, `ope
 `sqlite-vss`, `sqlite-vec`, `ollama`, `fastembed`, `mistralai`, `git`, `lopdf`, `pdf-extract`,
 `html-to-markdown`, `tree-sitter`. Default features are empty — only core OpenAI/Claude/DeepSeek/
 Qwen work without flags.
+
+@OPAVS.md

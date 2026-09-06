@@ -55,7 +55,7 @@ async fn main() {
             i,
             text_chunks.len(),
             chunk.page_content.len(),
-            &chunk.page_content
+            chunk.page_content
         );
 
         let openai = Text2SpeechOpenAI::default().with_path(format!("chunk_{}.mp3", i));
@@ -79,7 +79,7 @@ async fn main() {
     args.extend_from_slice(&[
         "-hide_banner".into(),
         "-i".into(),
-        format!("concat:{}", &chunks_paths_list),
+        format!("concat:{}", chunks_paths_list),
         "-acodec".into(),
         "copy".into(),
         "-y".into(), // overwite output file
@@ -89,7 +89,7 @@ async fn main() {
     println!(
         "Merging {} audio chunks using: ffmpeg {}\n",
         text_chunks.len(),
-        &args.join(" ")
+        args.join(" ")
     );
 
     let mut child = Command::new("ffmpeg")

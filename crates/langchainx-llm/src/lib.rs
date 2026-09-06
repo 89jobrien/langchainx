@@ -2,6 +2,7 @@
 #![deny(missing_docs)]
 pub mod language_models;
 pub mod schemas;
+mod sse;
 
 pub mod claude;
 pub use claude::*;

@@ -3,10 +3,10 @@ use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::path::PathBuf;
-use std::sync::mpsc;
-use std::thread;
 use std::time::Duration;
+use tokio::process::Command;
 
+use super::run_bounded_command;
 use crate::{Tool, ToolError};
 
 const DEFAULT_TIMEOUT_SECS: u64 = 60;
@@ -49,33 +49,20 @@ impl NuTool {
     }
 
     // qual:allow(iosp) reason: "subprocess I/O boundary"
-    fn run_nu(&self, command: &str) -> Result<String, ToolError> {
+    async fn run_nu(&self, command: &str) -> Result<String, ToolError> {
         let full_cmd = Self::prepare_command(command);
-        let nu_path = self.nu_path.clone();
         let timeout = Duration::from_secs(self.timeout_secs);
-
-        let (tx, rx) = mpsc::channel();
-
-        thread::spawn(move || {
-            let result = std::process::Command::new(&nu_path)
-                .args(["--no-config-file", "-c", &full_cmd])
-                .output();
-            let _ = tx.send(result);
-        });
-
-        let output = rx
-            .recv_timeout(timeout)
-            .map_err(|_| ToolError::ExecutionFailed("nu command timed out".to_string()))?
-            .map_err(|e| {
-                let msg = e.to_string();
-                if msg.contains("No such file")
-                    || msg.contains("not found")
-                    || msg.contains("os error 2")
+        let mut process = Command::new(&self.nu_path);
+        process.args(["--no-config-file", "-c", &full_cmd]);
+        let output = run_bounded_command(process, timeout, MAX_OUTPUT_CHARS)
+            .await
+            .map_err(|error| match error {
+                ToolError::ExecutionFailed(message)
+                    if message.contains("No such file") || message.contains("os error 2") =>
                 {
                     ToolError::ExecutionFailed("nu not found on PATH".to_string())
-                } else {
-                    ToolError::ExecutionFailed(format!("failed to spawn nu: {e}"))
                 }
+                other => other,
             })?;
 
         if output.status.success() {
@@ -200,7 +187,7 @@ impl Tool for NuTool {
             timeout_secs: effective_timeout,
         };
 
-        tool.run_nu(&parsed.command)
+        tool.run_nu(&parsed.command).await
     }
 }
 
@@ -234,12 +221,12 @@ mod tests {
         assert!(!prepared.contains("| to json | to json"));
     }
 
-    #[test]
-    fn nu_not_on_path_returns_tool_error() {
+    #[tokio::test]
+    async fn nu_not_on_path_returns_tool_error() {
         let tool = NuTool::builder()
             .nu_path("/nonexistent/path/to/nu-binary-xyz")
             .build();
-        let result = tool.run_nu("echo hello");
+        let result = tool.run_nu("echo hello").await;
         assert!(result.is_err());
         let err = result.unwrap_err();
         match err {
@@ -259,7 +246,7 @@ mod tests {
     async fn nonzero_exit_returns_ok_with_exit_code() {
         let tool = NuTool::new();
         // `exit 1` in nu causes a non-zero exit
-        let result = tool.run_nu("exit 1");
+        let result = tool.run_nu("exit 1").await;
         assert!(result.is_ok(), "expected Ok, got: {result:?}");
         let json_str = result.unwrap();
         let v: serde_json::Value = serde_json::from_str(&json_str).unwrap();
@@ -271,7 +258,7 @@ mod tests {
     #[ignore = "requires nu to be installed on PATH"]
     async fn nu_on_path_executes_command() {
         let tool = NuTool::new();
-        let result = tool.run_nu("[1 2 3]");
+        let result = tool.run_nu("[1 2 3]").await;
         assert!(result.is_ok(), "expected Ok, got: {result:?}");
         let json_str = result.unwrap();
         let v: serde_json::Value = serde_json::from_str(&json_str).unwrap();

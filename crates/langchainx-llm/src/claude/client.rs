@@ -3,6 +3,7 @@ use crate::{
     AnthropicError,
     language_models::{GenerateResult, LLMError, TokenUsage, llm::LLM, options::CallOptions},
     schemas::{Message, MessageType, StreamData},
+    sse::SseDecoder,
 };
 use async_trait::async_trait;
 use futures::{Stream, StreamExt};
@@ -179,32 +180,34 @@ impl LLM for Claude {
         // Instead of sending the request directly, return a stream wrapper
         let stream = client.execute(request).await?;
         let stream = stream.bytes_stream();
-        // Process each chunk as it arrives
-        let processed_stream = stream.then(move |result| async move {
-            match result {
-                Ok(bytes) => {
-                    let value: Value = parse_sse_to_json(&String::from_utf8_lossy(&bytes))?;
+        let processed_stream = async_stream::try_stream! {
+            let mut decoder = SseDecoder::default();
+            futures::pin_mut!(stream);
+            while let Some(result) = stream.next().await {
+                let bytes = result.map_err(LLMError::RequestError)?;
+                for data in decoder.push(&bytes)? {
+                    let value: Value = parse_sse_to_json(&data)?;
                     if value["type"].as_str().unwrap_or("") == "content_block_delta" {
                         let content = value["delta"]["text"].clone();
-                        Ok(StreamData::new(value, None, content.as_str().unwrap_or("")))
+                        yield StreamData::new(value, None, content.as_str().unwrap_or(""));
                     } else if value["type"].as_str().unwrap_or("") == "message_start" {
                         let input_tokens = value["message"]["usage"]["input_tokens"]
                             .as_u64()
                             .unwrap_or(0) as u32;
                         let tokens = TokenUsage::new(input_tokens, 0);
-                        Ok(StreamData::new(value, Some(tokens), ""))
+                        yield StreamData::new(value, Some(tokens), "");
                     } else if value["type"].as_str().unwrap_or("") == "message_delta" {
                         let output_tokens =
                             value["usage"]["output_tokens"].as_u64().unwrap_or(0) as u32;
                         let tokens = TokenUsage::new(0, output_tokens);
-                        Ok(StreamData::new(value, Some(tokens), ""))
+                        yield StreamData::new(value, Some(tokens), "");
                     } else {
-                        Ok(StreamData::new(value, None, ""))
+                        yield StreamData::new(value, None, "");
                     }
                 }
-                Err(e) => Err(LLMError::RequestError(e)),
             }
-        });
+            decoder.finish()?;
+        };
 
         Ok(Box::pin(processed_stream))
     }

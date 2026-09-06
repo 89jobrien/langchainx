@@ -52,30 +52,64 @@ impl PromptFromatter for PromptTemplate {
     }
 
     fn format(&self, input_variables: PromptArgs) -> Result<String, PromptError> {
-        let mut prompt = self.template();
-
-        // check if all variables are in the input variables
         for key in self.variables() {
             if !input_variables.contains_key(key.as_str()) {
                 return Err(PromptError::MissingVariable(key));
             }
         }
 
-        for (key, value) in input_variables {
-            let key = match self.format {
-                TemplateFormat::FString => format!("{{{}}}", key),
-                TemplateFormat::Jinja2 => format!("{{{{{}}}}}", key),
-            };
-            let value_str = match &value {
-                serde_json::Value::String(s) => s.clone(),
-                _ => value.to_string(),
-            };
-            prompt = prompt.replace(&key, &value_str);
-        }
+        let (opening, closing) = match self.format {
+            TemplateFormat::FString => ("{", "}"),
+            TemplateFormat::Jinja2 => ("{{", "}}"),
+        };
+        let prompt = render_template(
+            &self.template,
+            &self.variables,
+            &input_variables,
+            opening,
+            closing,
+        );
 
         log::debug!("Formatted prompt: {}", prompt);
         Ok(prompt)
     }
+}
+
+fn render_template(
+    template: &str,
+    variables: &[String],
+    values: &PromptArgs,
+    opening: &str,
+    closing: &str,
+) -> String {
+    let mut rendered = String::with_capacity(template.len());
+    let mut cursor = 0;
+
+    while let Some(relative_start) = template[cursor..].find(opening) {
+        let start = cursor + relative_start;
+        rendered.push_str(&template[cursor..start]);
+        let value_start = start + opening.len();
+        let Some(relative_end) = template[value_start..].find(closing) else {
+            rendered.push_str(&template[start..]);
+            return rendered;
+        };
+        let end = value_start + relative_end;
+        let key = &template[value_start..end];
+        if variables.iter().any(|variable| variable == key) {
+            if let Some(value) = values.get(key) {
+                match value {
+                    serde_json::Value::String(value) => rendered.push_str(value),
+                    value => rendered.push_str(&value.to_string()),
+                }
+            }
+        } else {
+            rendered.push_str(&template[start..end + closing.len()]);
+        }
+        cursor = end + closing.len();
+    }
+
+    rendered.push_str(&template[cursor..]);
+    rendered
 }
 
 /// Creates [`PromptArgs`](crate::prompt::PromptArgs) from serializable key-value pairs.
@@ -156,7 +190,6 @@ macro_rules! template_jinja2 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::prompt_args;
 
     #[test]
     fn should_format_jinja2_template() {
@@ -284,6 +317,36 @@ mod tests {
         let args = prompt_args! { "drink" => "latte" };
         let result = template.format(args).unwrap();
         assert_eq!(result, "Caf\u{00e9} latte \u{1F600}");
+    }
+
+    #[test]
+    fn format_does_not_replace_undeclared_placeholders() {
+        let template = template_fstring!("Hello {name}; keep {internal}", "name");
+        let args = prompt_args! {
+            "name" => "Alice",
+            "internal" => "secret",
+        };
+
+        let result = template.format(args).unwrap();
+
+        assert_eq!(result, "Hello Alice; keep {internal}");
+    }
+
+    #[test]
+    fn format_does_not_reprocess_inserted_placeholders() {
+        let template = PromptTemplate::new(
+            "{first}".to_string(),
+            vec!["first".to_string(), "second".to_string()],
+            TemplateFormat::FString,
+        );
+        let args = prompt_args! {
+            "first" => "{second}",
+            "second" => "resolved",
+        };
+
+        let result = template.format(args).unwrap();
+
+        assert_eq!(result, "{second}");
     }
 
     mod proptests {

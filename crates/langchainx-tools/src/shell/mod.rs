@@ -1,24 +1,163 @@
 //! File, search, shell, and coding-agent tool adapters.
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::sync::Arc;
+
+#[cfg(any(feature = "bash-tool", feature = "nu-tool"))]
+use std::{process::Stdio, time::Duration};
+#[cfg(any(feature = "bash-tool", feature = "nu-tool"))]
+use tokio::{
+    io::{AsyncRead, AsyncReadExt},
+    process::Command,
+};
 
 use crate::Tool;
 
 /// Canonicalizes `path` and rejects values that escape `base_dir`.
 pub fn validate_path(base_dir: &Path, path: &str) -> Result<PathBuf, crate::ToolError> {
-    let joined = base_dir.join(path);
-    let canonical = joined
+    let base_canonical = canonical_base(base_dir)?;
+    let canonical = base_dir
+        .join(path)
         .canonicalize()
         .map_err(|e| crate::ToolError::InvalidInput(format!("path not found: {e}")))?;
-    let base_canonical = base_dir
-        .canonicalize()
-        .map_err(|e| crate::ToolError::InvalidInput(format!("base dir not found: {e}")))?;
     if !canonical.starts_with(&base_canonical) {
         return Err(crate::ToolError::InvalidInput(
             "path escapes base directory".to_string(),
         ));
     }
     Ok(canonical)
+}
+
+/// Resolves a potentially new path while preventing traversal outside `base_dir`.
+pub fn validate_new_path(base_dir: &Path, path: &str) -> Result<PathBuf, crate::ToolError> {
+    let relative = Path::new(path);
+    validate_relative_components(relative)?;
+
+    let base_canonical = canonical_base(base_dir)?;
+    let target = base_canonical.join(relative);
+    let mut ancestor = target.as_path();
+    while !ancestor.exists() {
+        ancestor = ancestor.parent().ok_or_else(|| {
+            crate::ToolError::InvalidInput("path has no existing ancestor".to_string())
+        })?;
+    }
+
+    let canonical_ancestor = ancestor
+        .canonicalize()
+        .map_err(|e| crate::ToolError::InvalidInput(format!("invalid path: {e}")))?;
+    if !canonical_ancestor.starts_with(&base_canonical) {
+        return Err(crate::ToolError::InvalidInput(
+            "path escapes base directory".to_string(),
+        ));
+    }
+
+    Ok(target)
+}
+
+/// Builds a confined glob pattern rooted at `base_dir`.
+pub fn validate_glob_pattern(base_dir: &Path, pattern: &str) -> Result<PathBuf, crate::ToolError> {
+    let relative = Path::new(pattern);
+    validate_relative_components(relative)?;
+    Ok(canonical_base(base_dir)?.join(relative))
+}
+
+fn canonical_base(base_dir: &Path) -> Result<PathBuf, crate::ToolError> {
+    base_dir
+        .canonicalize()
+        .map_err(|e| crate::ToolError::InvalidInput(format!("base dir not found: {e}")))
+}
+
+fn validate_relative_components(path: &Path) -> Result<(), crate::ToolError> {
+    if path.as_os_str().is_empty()
+        || path.components().any(|component| {
+            matches!(
+                component,
+                Component::ParentDir | Component::RootDir | Component::Prefix(_)
+            )
+        })
+    {
+        return Err(crate::ToolError::InvalidInput(
+            "path must stay within the base directory".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(any(feature = "bash-tool", feature = "nu-tool"))]
+pub(crate) struct BoundedOutput {
+    pub(crate) stdout: Vec<u8>,
+    pub(crate) stderr: Vec<u8>,
+    pub(crate) status: std::process::ExitStatus,
+}
+
+#[cfg(any(feature = "bash-tool", feature = "nu-tool"))]
+pub(crate) async fn run_bounded_command(
+    mut command: Command,
+    timeout: Duration,
+    max_output_bytes: usize,
+) -> Result<BoundedOutput, crate::ToolError> {
+    command
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .kill_on_drop(true);
+    let mut child = command
+        .spawn()
+        .map_err(|error| crate::ToolError::ExecutionFailed(error.to_string()))?;
+    let stdout = child.stdout.take().ok_or_else(|| {
+        crate::ToolError::ExecutionFailed("failed to capture command stdout".to_string())
+    })?;
+    let stderr = child.stderr.take().ok_or_else(|| {
+        crate::ToolError::ExecutionFailed("failed to capture command stderr".to_string())
+    })?;
+    let per_stream_limit = max_output_bytes / 2;
+    let stdout_task = tokio::spawn(read_capped(stdout, per_stream_limit));
+    let stderr_task = tokio::spawn(read_capped(stderr, per_stream_limit));
+
+    let status = match tokio::time::timeout(timeout, child.wait()).await {
+        Ok(status) => {
+            status.map_err(|error| crate::ToolError::ExecutionFailed(error.to_string()))?
+        }
+        Err(_) => {
+            let _ = child.kill().await;
+            stdout_task.abort();
+            stderr_task.abort();
+            return Err(crate::ToolError::ExecutionFailed(
+                "command timed out".to_string(),
+            ));
+        }
+    };
+    let stdout = stdout_task
+        .await
+        .map_err(|error| crate::ToolError::ExecutionFailed(error.to_string()))??;
+    let stderr = stderr_task
+        .await
+        .map_err(|error| crate::ToolError::ExecutionFailed(error.to_string()))??;
+
+    Ok(BoundedOutput {
+        stdout,
+        stderr,
+        status,
+    })
+}
+
+#[cfg(any(feature = "bash-tool", feature = "nu-tool"))]
+async fn read_capped<R: AsyncRead + Unpin>(
+    mut reader: R,
+    limit: usize,
+) -> Result<Vec<u8>, crate::ToolError> {
+    let mut captured = Vec::with_capacity(limit.min(8192));
+    let mut buffer = [0_u8; 8192];
+    loop {
+        let read = reader
+            .read(&mut buffer)
+            .await
+            .map_err(|error| crate::ToolError::ExecutionFailed(error.to_string()))?;
+        if read == 0 {
+            break;
+        }
+        let remaining = limit.saturating_sub(captured.len());
+        captured.extend_from_slice(&buffer[..read.min(remaining)]);
+    }
+    Ok(captured)
 }
 
 #[cfg(feature = "bash-tool")]

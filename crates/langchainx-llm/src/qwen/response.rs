@@ -1,7 +1,5 @@
 //! Internal Qwen error and streaming-response parsing.
 use crate::{QwenError, language_models::LLMError};
-use serde_json::Value;
-use std::str::from_utf8;
 
 /// Parse error from JSON response and return appropriate QwenError
 pub(crate) fn parse_error_response(code: &str, message: &str) -> LLMError {
@@ -80,30 +78,4 @@ pub(crate) fn parse_error_response(code: &str, message: &str) -> LLMError {
             code, message
         ))),
     }
-}
-
-/// Parse Server-Sent Events (SSE) chunks
-pub(crate) fn parse_sse_chunk(bytes: &[u8]) -> Result<Vec<Value>, LLMError> {
-    let text = from_utf8(bytes).map_err(|e| LLMError::OtherError(e.to_string()))?;
-    let mut values = Vec::new();
-
-    for line in text.lines() {
-        if let Some(data) = line.strip_prefix("data: ") {
-            if data == "[DONE]" {
-                continue;
-            }
-
-            match serde_json::from_str::<Value>(data) {
-                Ok(value) => values.push(value),
-                Err(e) => {
-                    return Err(LLMError::OtherError(format!(
-                        "Failed to parse SSE data: {}, data: {}",
-                        e, data
-                    )));
-                }
-            }
-        }
-    }
-
-    Ok(values)
 }

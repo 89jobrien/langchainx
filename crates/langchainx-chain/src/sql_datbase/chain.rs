@@ -112,7 +112,7 @@ impl SQLDatabaseChain {
             "input".to_string(),
             Value::from(format!(
                 "{}{}{}{}{}",
-                &query, QUERY_PREFIX_WITH, sql_query, STOP_WORD, &query_result,
+                query, QUERY_PREFIX_WITH, sql_query, STOP_WORD, query_result,
             )),
         );
         Ok((llm_inputs, token_usage))
@@ -204,7 +204,7 @@ mod tests {
         // table_names_to_use is optional and should NOT be set by the builder
         let args = SqlChainPromptBuilder::new().query("select 1").build();
         assert!(
-            args.get(SQL_CHAIN_DEFAULT_INPUT_KEY_TABLE_NAMES).is_none(),
+            !args.contains_key(SQL_CHAIN_DEFAULT_INPUT_KEY_TABLE_NAMES),
             "table_names_to_use should not be present in default builder output"
         );
     }

@@ -4,12 +4,12 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use std::path::PathBuf;
 
+use super::validate_path;
 use crate::{Tool, ToolError};
 
 /// Reads all or a selected line range from a file.
 ///
-/// Relative paths use a configured base directory; absolute paths and parent-directory
-/// components are accepted as supplied.
+/// Paths are confined to the configured base directory.
 pub struct ReadFileTool {
     base_dir: PathBuf,
 }
@@ -68,7 +68,7 @@ impl Tool for ReadFileTool {
         let parsed: ReadFileInput =
             serde_json::from_value(input).map_err(|e| ToolError::InvalidInput(e.to_string()))?;
 
-        let path = self.base_dir.join(&parsed.path);
+        let path = validate_path(&self.base_dir, &parsed.path)?;
         let content = std::fs::read_to_string(&path).map_err(|e| {
             ToolError::ExecutionFailed(format!("cannot read {}: {e}", path.display()))
         })?;
@@ -137,5 +137,18 @@ mod tests {
         let tool = ReadFileTool::new("/tmp");
         let result = tool.run(json!({ "not_path": "x" })).await;
         assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn rejects_paths_outside_base_directory() {
+        let base = tempfile::tempdir().unwrap();
+        let outside = tempfile::NamedTempFile::new().unwrap();
+        let tool = ReadFileTool::new(base.path());
+
+        let result = tool
+            .run(json!({ "path": outside.path().to_string_lossy() }))
+            .await;
+
+        assert!(matches!(result, Err(ToolError::InvalidInput(_))));
     }
 }

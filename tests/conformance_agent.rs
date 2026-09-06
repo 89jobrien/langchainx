@@ -17,7 +17,10 @@ use langchainx::{
     schemas::agent::{AgentAction, AgentEvent, AgentFinish},
     tools::Tool,
 };
-use langchainx_testsuite::contracts::agent::{assert_plan_returns_event, assert_tool_names};
+use langchainx_testsuite::contracts::agent::{
+    assert_agent_contract, assert_executor_finishes, assert_executor_rejects_missing_input,
+    assert_plan_returns_event, assert_tool_names,
+};
 
 #[tokio::test]
 async fn agent_plan_returns_finish() {
@@ -40,12 +43,25 @@ async fn agent_get_tools_returns_configured_tools() {
 #[tokio::test]
 async fn executor_drives_agent_to_finish() {
     let agent = ScriptedAgent::finishing("42");
-    let executor = AgentExecutor::from_agent(agent);
-    let result = executor
-        .invoke(prompt_args! { "input" => "compute" })
-        .await
-        .expect("executor invoke");
-    assert_eq!(result, "42");
+    assert_executor_finishes(agent, prompt_args! { "input" => "compute" }, "42").await;
+}
+
+#[tokio::test]
+async fn reusable_agent_contract_checks_plan_and_stable_tools() {
+    let tool: Arc<dyn Tool> = Arc::new(EchoTool);
+    let agent = ScriptedAgent::new(
+        vec![AgentEvent::Finish(AgentFinish {
+            output: "done".into(),
+        })],
+        vec![tool],
+    );
+    let event = assert_agent_contract(&agent, prompt_args! { "input" => "go" }, &["echo"]).await;
+    assert!(matches!(event, AgentEvent::Finish(_)));
+}
+
+#[tokio::test]
+async fn executor_missing_input_contract_returns_typed_error() {
+    assert_executor_rejects_missing_input(ScriptedAgent::finishing("unused")).await;
 }
 
 #[tokio::test]

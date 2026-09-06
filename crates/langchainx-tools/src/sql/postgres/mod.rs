@@ -1,4 +1,4 @@
 //! PostgreSQL implementation of the SQL engine interface.
-mod postgres;
+mod engine;
 
-pub use postgres::*;
+pub use engine::*;

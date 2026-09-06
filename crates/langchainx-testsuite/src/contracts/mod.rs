@@ -20,3 +20,5 @@ pub mod output_parser;
 pub mod prompt;
 /// Contracts for tool metadata, execution, and default input parsing.
 pub mod tool;
+/// Contracts for vector-store insertion, limits, and document round trips.
+pub mod vectorstore;

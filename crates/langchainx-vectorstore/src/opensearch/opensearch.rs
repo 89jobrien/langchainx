@@ -177,45 +177,50 @@ impl VectorStore for Store {
             self.k,
             opt.filters.clone(),
         );
+        let request_limit = i64::try_from(limit).map_err(|_| {
+            VectorStoreError::OtherError(format!("search limit {limit} exceeds i64::MAX"))
+        })?;
 
         let response = self
             .client
             .search(SearchParts::Index(&[&self.index]))
             .from(0)
-            .size(3)
+            .size(request_limit)
             .body(query)
             .send()
-            .await?;
+            .await?
+            .error_for_status_code()
+            .map_err(|e| VectorStoreError::ConnectionError(e.to_string()))?;
 
         let response_body = response.json::<Value>().await?;
 
         let aoss_documents = response_body["hits"]["hits"]
             .as_array()
-            .unwrap()
+            .ok_or_else(|| {
+                VectorStoreError::OtherError(
+                    "OpenSearch response is missing hits.hits array".to_string(),
+                )
+            })?
             .iter()
-            .map(|raw_value| {
-                serde_json::from_value::<HashMap<String, Value>>(raw_value.clone()).unwrap()
-            })
-            .collect::<Vec<_>>();
+            .map(|raw_value| serde_json::from_value::<HashMap<String, Value>>(raw_value.clone()))
+            .collect::<Result<Vec<_>, _>>()?;
 
         let documents = aoss_documents
             .into_iter()
-            .map(|item| {
+            .map(|item| -> Result<Document, VectorStoreError> {
                 let page_content =
-                    serde_json::from_value::<String>(item["_source"][&self.content_field].clone())
-                        .unwrap();
+                    serde_json::from_value::<String>(item["_source"][&self.content_field].clone())?;
                 let metadata = serde_json::from_value::<HashMap<String, Value>>(
                     item["_source"]["metadata"].clone(),
-                )
-                .unwrap();
-                let score = serde_json::from_value::<f64>(item["_score"].clone()).unwrap();
-                Document {
+                )?;
+                let score = serde_json::from_value::<f64>(item["_score"].clone())?;
+                Ok(Document {
                     page_content,
                     metadata,
                     score,
-                }
+                })
             })
-            .collect();
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(documents)
     }
@@ -256,5 +261,71 @@ fn build_similarity_search_query(
               }
             })
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use langchainx_embedding::embedding::EmbedderError;
+    use opensearch::http::transport::Transport;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::TcpListener;
+    use tokio::sync::oneshot;
+
+    #[derive(Debug)]
+    struct FakeEmbedder;
+
+    #[async_trait]
+    impl Embedder for FakeEmbedder {
+        async fn embed_documents(
+            &self,
+            documents: &[String],
+        ) -> Result<Vec<Vec<f64>>, EmbedderError> {
+            Ok(documents.iter().map(|_| vec![0.0]).collect())
+        }
+
+        async fn embed_query(&self, _text: &str) -> Result<Vec<f64>, EmbedderError> {
+            Ok(vec![0.0])
+        }
+    }
+
+    #[tokio::test]
+    async fn similarity_search_sends_requested_limit() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let (request_tx, request_rx) = oneshot::channel();
+        tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut buffer = vec![0; 8192];
+            let read = socket.read(&mut buffer).await.unwrap();
+            request_tx
+                .send(String::from_utf8_lossy(&buffer[..read]).into_owned())
+                .unwrap();
+            socket
+                .write_all(
+                    b"HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: 20\r\n\r\n{\"hits\":{\"hits\":[]}}",
+                )
+                .await
+                .unwrap();
+        });
+
+        let transport = Transport::single_node(&format!("http://{address}")).unwrap();
+        let store = Store {
+            client: OpenSearch::new(transport),
+            embedder: Arc::new(FakeEmbedder),
+            k: 10,
+            index: "test".to_string(),
+            vector_field: "vector".to_string(),
+            content_field: "content".to_string(),
+        };
+
+        store
+            .similarity_search("query", 7, &VecStoreOptions::default())
+            .await
+            .unwrap();
+        let request = request_rx.await.unwrap();
+
+        assert!(request.lines().next().unwrap().contains("size=7"));
     }
 }

@@ -33,6 +33,63 @@ pub struct StoreBuilder<F> {
     hns_index: Option<HNSWIndex>,
 }
 
+#[cfg(test)]
+#[allow(clippy::items_after_test_module)]
+mod tests {
+    use async_trait::async_trait;
+    use langchainx_embedding::embedding::{Embedder, EmbedderError};
+
+    use super::*;
+
+    struct DummyEmbedder;
+
+    #[async_trait]
+    impl Embedder for DummyEmbedder {
+        async fn embed_documents(
+            &self,
+            _documents: &[String],
+        ) -> Result<Vec<Vec<f64>>, EmbedderError> {
+            Ok(Vec::new())
+        }
+
+        async fn embed_query(&self, _text: &str) -> Result<Vec<f64>, EmbedderError> {
+            Ok(Vec::new())
+        }
+    }
+
+    #[tokio::test]
+    async fn build_rejects_unsafe_table_names_before_connecting() {
+        let result = StoreBuilder::new()
+            .embedder(DummyEmbedder)
+            .embedder_table_name("documents; DROP TABLE users")
+            .build()
+            .await;
+
+        let error = result.err().expect("unsafe table name should fail");
+        assert!(error.to_string().contains("Invalid PostgreSQL identifier"));
+    }
+
+    #[tokio::test]
+    async fn build_rejects_unsafe_hnsw_operator_class_before_connecting() {
+        let result = StoreBuilder::new()
+            .embedder(DummyEmbedder)
+            .hns_index(HNSWIndex::new(
+                16,
+                64,
+                "vector_cosine_ops); DROP TABLE users",
+            ))
+            .build()
+            .await;
+
+        let error = result.err().expect("unsafe operator class should fail");
+        assert!(
+            error
+                .to_string()
+                .contains("Unsupported HNSW distance function")
+        );
+    }
+}
+
 impl Default for StoreBuilder<PgFilter> {
     fn default() -> Self {
         Self::new()
@@ -129,6 +186,11 @@ impl StoreBuilder<PgFilter> {
     pub async fn build(self) -> Result<Store, Box<dyn Error>> {
         if self.embedder.is_none() {
             return Err("Embedder is required".into());
+        }
+        validate_postgres_identifier(&self.embedder_table_name)?;
+        validate_postgres_identifier(&self.collection_table_name)?;
+        if let Some(index) = &self.hns_index {
+            validate_distance_function(&index.distance_function)?;
         }
         let pool = self.get_pool().await?;
         let mut tx = pool.begin().await?;
@@ -333,5 +395,24 @@ impl StoreBuilder<PgFilter> {
         }
 
         Ok(())
+    }
+}
+
+fn validate_postgres_identifier(identifier: &str) -> Result<(), Box<dyn Error>> {
+    let mut chars = identifier.chars();
+    let valid = chars
+        .next()
+        .is_some_and(|first| first == '_' || first.is_ascii_alphabetic())
+        && chars.all(|character| character == '_' || character.is_ascii_alphanumeric());
+    if !valid {
+        return Err(format!("Invalid PostgreSQL identifier: {identifier}").into());
+    }
+    Ok(())
+}
+
+fn validate_distance_function(distance_function: &str) -> Result<(), Box<dyn Error>> {
+    match distance_function {
+        "vector_l2_ops" | "vector_ip_ops" | "vector_cosine_ops" | "vector_l1_ops" => Ok(()),
+        _ => Err(format!("Unsupported HNSW distance function: {distance_function}").into()),
     }
 }

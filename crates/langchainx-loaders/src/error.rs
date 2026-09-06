@@ -55,9 +55,16 @@ pub enum LoaderError {
     #[cfg(feature = "git")]
     #[error(transparent)]
     /// Git repository discovery failed.
-    DiscoveryError(#[from] gix::discover::Error),
+    DiscoveryError(Box<gix::discover::Error>),
 
     #[error("Error: {0}")]
     /// A loader-specific error not represented by another variant.
     OtherError(String),
+}
+
+#[cfg(feature = "git")]
+impl From<gix::discover::Error> for LoaderError {
+    fn from(error: gix::discover::Error) -> Self {
+        Self::DiscoveryError(Box::new(error))
+    }
 }

@@ -34,3 +34,4 @@ Cargo.lock
 fuzz/target/
 fuzz/artifacts/
 fuzz/Cargo.lock
+.ctx/opavs/phase

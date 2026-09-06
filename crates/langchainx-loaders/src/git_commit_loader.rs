@@ -16,7 +16,6 @@ pub struct GitCommitLoader {
     repo: ThreadSafeRepository,
 }
 
-#[allow(clippy::result_large_err)] // LoaderError contains large foreign variants; boxing requires API change
 impl GitCommitLoader {
     /// Creates a loader from an already discovered repository.
     pub fn new(repo: ThreadSafeRepository) -> Self {
@@ -31,6 +30,7 @@ impl GitCommitLoader {
 }
 
 #[cfg(test)]
+#[allow(clippy::items_after_test_module)]
 mod tests {
     use super::*;
 

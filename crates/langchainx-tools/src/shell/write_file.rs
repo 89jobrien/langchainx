@@ -4,11 +4,12 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use std::path::PathBuf;
 
+use super::validate_new_path;
 use crate::{Tool, ToolError};
 
 /// Writes complete file contents, resolving relative paths from a base directory.
 ///
-/// Absolute paths and parent-directory components are accepted as supplied.
+/// Paths are confined to the configured base directory.
 pub struct WriteFileTool {
     base_dir: PathBuf,
 }
@@ -63,7 +64,7 @@ impl Tool for WriteFileTool {
         let parsed: WriteFileInput =
             serde_json::from_value(input).map_err(|e| ToolError::InvalidInput(e.to_string()))?;
 
-        let path = self.base_dir.join(&parsed.path);
+        let path = validate_new_path(&self.base_dir, &parsed.path)?;
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)
                 .map_err(|e| ToolError::ExecutionFailed(format!("cannot create dirs: {e}")))?;
@@ -112,5 +113,20 @@ mod tests {
         let tool = WriteFileTool::new(dir.path());
         let result = tool.run(json!({ "path": "x" })).await;
         assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn rejects_parent_directory_traversal() {
+        let parent = tempfile::tempdir().unwrap();
+        let base = parent.path().join("base");
+        std::fs::create_dir(&base).unwrap();
+        let tool = WriteFileTool::new(&base);
+
+        let result = tool
+            .run(json!({ "path": "../escaped.txt", "content": "escaped" }))
+            .await;
+
+        assert!(matches!(result, Err(ToolError::InvalidInput(_))));
+        assert!(!parent.path().join("escaped.txt").exists());
     }
 }

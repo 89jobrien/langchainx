@@ -35,3 +35,6 @@ mistralai-client = { version = "0.14.0", optional = true }
 default  = []
 ollama   = ["dep:ollama-rs"]
 mistralai = ["dep:mistralai-client"]
+
+[dev-dependencies]
+mockito = "1"

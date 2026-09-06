@@ -3,12 +3,13 @@ use crate::{
     DeepseekError,
     language_models::{GenerateResult, LLMError, TokenUsage, llm::LLM, options::CallOptions},
     schemas::{Message, StreamData},
+    sse::SseDecoder,
 };
 use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 use reqwest::Client;
 use serde_json::Value;
-use std::{fmt, pin::Pin, str};
+use std::{fmt, pin::Pin};
 
 use super::models::{ApiResponse, DeepseekMessage, Payload, ResponseFormat};
 
@@ -205,25 +206,6 @@ impl Deepseek {
 
         payload
     }
-
-    fn parse_sse_chunk(chunk: &[u8]) -> Result<Vec<Value>, LLMError> {
-        let text = str::from_utf8(chunk).map_err(|e| LLMError::ParsingError(e.to_string()))?;
-        let mut values = Vec::new();
-
-        for line in text.lines() {
-            if let Some(data) = line.strip_prefix("data: ") {
-                if data == "[DONE]" {
-                    continue;
-                }
-                let value: Value = serde_json::from_str(data).map_err(|e| {
-                    LLMError::ParsingError(format!("Failed to parse SSE data: {}", e))
-                })?;
-                values.push(value);
-            }
-        }
-
-        Ok(values)
-    }
 }
 
 #[async_trait]
@@ -252,93 +234,20 @@ impl LLM for Deepseek {
         let include_reasoning = self.include_reasoning;
         let is_reasoner = self.model == DeepseekModel::DeepseekReasoner.to_string();
 
-        let processed_stream = stream
-            .then(move |result| {
-                async move {
-                    match result {
-                        Ok(bytes) => {
-                            let chunks = Self::parse_sse_chunk(&bytes)?;
-
-                            for chunk in chunks {
-                                if let Some(choices) =
-                                    chunk.get("choices").and_then(|c| c.as_array())
-                                    && let Some(choice) = choices.first()
-                                    && let Some(delta) = choice.get("delta")
-                                {
-                                    // Handle reasoning_content if it exists
-                                    if include_reasoning
-                                        && is_reasoner
-                                        && let Some(reasoning) =
-                                            delta.get("reasoning_content").and_then(|c| c.as_str())
-                                        && !reasoning.is_empty()
-                                    {
-                                        let usage = chunk.get("usage").map(|usage| TokenUsage {
-                                            prompt_tokens: usage
-                                                .get("prompt_tokens")
-                                                .and_then(|t| t.as_u64())
-                                                .unwrap_or(0)
-                                                as u32,
-                                            completion_tokens: usage
-                                                .get("completion_tokens")
-                                                .and_then(|t| t.as_u64())
-                                                .unwrap_or(0)
-                                                as u32,
-                                            total_tokens: usage
-                                                .get("total_tokens")
-                                                .and_then(|t| t.as_u64())
-                                                .unwrap_or(0)
-                                                as u32,
-                                        });
-
-                                        return Ok(StreamData::new(
-                                            chunk.clone(),
-                                            usage,
-                                            format!("Reasoning: {}", reasoning),
-                                        ));
-                                    }
-
-                                    // Handle content as before
-                                    if let Some(content) =
-                                        delta.get("content").and_then(|c| c.as_str())
-                                        && !content.is_empty()
-                                    {
-                                        let usage = chunk.get("usage").map(|usage| TokenUsage {
-                                            prompt_tokens: usage
-                                                .get("prompt_tokens")
-                                                .and_then(|t| t.as_u64())
-                                                .unwrap_or(0)
-                                                as u32,
-                                            completion_tokens: usage
-                                                .get("completion_tokens")
-                                                .and_then(|t| t.as_u64())
-                                                .unwrap_or(0)
-                                                as u32,
-                                            total_tokens: usage
-                                                .get("total_tokens")
-                                                .and_then(|t| t.as_u64())
-                                                .unwrap_or(0)
-                                                as u32,
-                                        });
-
-                                        return Ok(StreamData::new(chunk.clone(), usage, content));
-                                    }
-                                }
-                            }
-
-                            // If we didn't return within the loop, return an empty stream data
-                            Ok(StreamData::new(Value::Null, None, ""))
-                        }
-                        Err(e) => Err(LLMError::OtherError(e.to_string())),
+        let processed_stream = async_stream::try_stream! {
+            let mut decoder = SseDecoder::default();
+            futures::pin_mut!(stream);
+            while let Some(result) = stream.next().await {
+                let bytes = result.map_err(|error| LLMError::OtherError(error.to_string()))?;
+                for data in decoder.push(&bytes)? {
+                    let chunk: Value = serde_json::from_str(&data)?;
+                    if let Some(data) = deepseek_stream_data(chunk, include_reasoning, is_reasoner) {
+                        yield data;
                     }
                 }
-            })
-            .filter_map(|result| async move {
-                match result {
-                    Ok(data) if !data.content.is_empty() => Some(Ok(data)),
-                    Ok(_) => None,
-                    Err(e) => Some(Err(e)),
-                }
-            });
+            }
+            decoder.finish()?;
+        };
 
         Ok(Box::pin(processed_stream))
     }
@@ -348,10 +257,105 @@ impl LLM for Deepseek {
     }
 }
 
+fn deepseek_stream_data(
+    chunk: Value,
+    include_reasoning: bool,
+    is_reasoner: bool,
+) -> Option<StreamData> {
+    let delta = chunk.get("choices")?.as_array()?.first()?.get("delta")?;
+    let usage = chunk.get("usage").map(deepseek_token_usage);
+    if include_reasoning
+        && is_reasoner
+        && let Some(reasoning) = delta
+            .get("reasoning_content")
+            .and_then(Value::as_str)
+            .filter(|value| !value.is_empty())
+    {
+        return Some(StreamData::new(
+            chunk.clone(),
+            usage,
+            format!("Reasoning: {reasoning}"),
+        ));
+    }
+    delta
+        .get("content")
+        .and_then(Value::as_str)
+        .filter(|value| !value.is_empty())
+        .map(|content| StreamData::new(chunk.clone(), usage, content))
+}
+
+fn deepseek_token_usage(usage: &Value) -> TokenUsage {
+    TokenUsage {
+        prompt_tokens: usage
+            .get("prompt_tokens")
+            .and_then(Value::as_u64)
+            .unwrap_or(0) as u32,
+        completion_tokens: usage
+            .get("completion_tokens")
+            .and_then(Value::as_u64)
+            .unwrap_or(0) as u32,
+        total_tokens: usage
+            .get("total_tokens")
+            .and_then(Value::as_u64)
+            .unwrap_or(0) as u32,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::schemas::{Message, MessageType};
+
+    #[tokio::test]
+    async fn generate_uses_configured_endpoint_and_parses_usage() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("POST", "/v1/chat/completions")
+            .match_header("authorization", "Bearer test-key")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                r#"{
+                    "id":"response-1","object":"chat.completion","created":1,
+                    "model":"deepseek-chat","choices":[{"message":{"role":"assistant","content":"pong","name":null,"reasoning_content":null},"finish_reason":"stop","index":0}],
+                    "usage":{"prompt_tokens":2,"completion_tokens":1,"total_tokens":3},
+                    "system_fingerprint":"test"
+                }"#,
+            )
+            .create_async()
+            .await;
+        let client = Deepseek::new()
+            .with_api_key("test-key")
+            .with_base_url(server.url());
+
+        let result = client
+            .generate(&[Message::new_human_message("ping")])
+            .await
+            .unwrap();
+
+        assert_eq!(result.generation, "pong");
+        assert_eq!(result.tokens.unwrap().total_tokens, 3);
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn generate_maps_rate_limit_status_to_typed_error() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("POST", "/v1/chat/completions")
+            .with_status(429)
+            .create_async()
+            .await;
+        let client = Deepseek::new().with_base_url(server.url());
+
+        let result = client.generate(&[Message::new_human_message("ping")]).await;
+
+        assert!(matches!(
+            result,
+            Err(LLMError::DeepseekError(DeepseekError::RateLimitError(_)))
+        ));
+        mock.assert_async().await;
+    }
 
     #[tokio::test]
     #[ignore]

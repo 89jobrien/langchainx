@@ -3,17 +3,34 @@ use async_trait::async_trait;
 use regex::Regex;
 use scraper::{ElementRef, Html, Selector};
 use serde_json::Value;
-use std::{error::Error, sync::Arc};
+use std::{net::IpAddr, sync::Arc};
 
 use crate::{Tool, ToolError};
 
+const MAX_HTTP_BODY_BYTES: usize = 1024 * 1024;
+
 /// Fetches a web page and returns normalized body text with script contents removed.
-pub struct WebScrapper {}
+pub struct WebScrapper {
+    client: reqwest::Client,
+    allow_private_networks: bool,
+}
 
 impl WebScrapper {
     /// Creates a stateless web scraper.
     pub fn new() -> Self {
-        Self {}
+        Self {
+            client: reqwest::Client::builder()
+                .redirect(reqwest::redirect::Policy::none())
+                .build()
+                .expect("default HTTP client configuration is valid"),
+            allow_private_networks: false,
+        }
+    }
+
+    /// Allows requests to loopback, link-local, and private network addresses.
+    pub fn with_allow_private_networks(mut self, allow: bool) -> Self {
+        self.allow_private_networks = allow;
+        self
     }
 }
 
@@ -38,10 +55,10 @@ impl Tool for WebScrapper {
         let input = input
             .as_str()
             .ok_or_else(|| ToolError::InvalidInput("input must be a string".to_string()))?;
-        match scrape_url(input).await {
-            Ok(content) => Ok(content),
-            Err(e) => Ok(format!("Error scraping {}: {}\n", input, e)),
-        }
+        validate_url(input, self.allow_private_networks)
+            .await
+            .map_err(ToolError::InvalidInput)?;
+        scrape_url(&self.client, input).await
     }
 }
 
@@ -51,12 +68,18 @@ impl From<WebScrapper> for Arc<dyn Tool> {
     }
 }
 
-async fn scrape_url(url: &str) -> Result<String, Box<dyn Error>> {
-    let res = reqwest::get(url).await?.text().await?;
+async fn scrape_url(client: &reqwest::Client, url: &str) -> Result<String, ToolError> {
+    let response = client
+        .get(url)
+        .send()
+        .await
+        .and_then(reqwest::Response::error_for_status)
+        .map_err(|error| ToolError::ExecutionFailed(error.to_string()))?;
+    let res = read_response_limited(response, MAX_HTTP_BODY_BYTES).await?;
 
     let document = Html::parse_document(&res);
-    let body_selector =
-        Selector::parse("body").map_err(|e| format!("CSS selector error: {e:?}"))?;
+    let body_selector = Selector::parse("body")
+        .map_err(|error| ToolError::ExecutionFailed(format!("CSS selector error: {error:?}")))?;
 
     let mut text = Vec::new();
     for element in document.select(&body_selector) {
@@ -65,9 +88,80 @@ async fn scrape_url(url: &str) -> Result<String, Box<dyn Error>> {
 
     let joined_text = text.join(" ");
     let cleaned_text = joined_text.replace(['\n', '\t'], " ");
-    let re = Regex::new(r"\s+")?;
+    let re = Regex::new(r"\s+").map_err(|error| ToolError::ExecutionFailed(error.to_string()))?;
     let final_text = re.replace_all(&cleaned_text, " ");
     Ok(final_text.to_string())
+}
+
+async fn read_response_limited(
+    mut response: reqwest::Response,
+    limit: usize,
+) -> Result<String, ToolError> {
+    if response
+        .content_length()
+        .is_some_and(|length| length > limit as u64)
+    {
+        return Err(ToolError::ExecutionFailed(format!(
+            "response body exceeds {limit} bytes"
+        )));
+    }
+    let mut body = Vec::new();
+    while let Some(chunk) = response
+        .chunk()
+        .await
+        .map_err(|error| ToolError::ExecutionFailed(error.to_string()))?
+    {
+        if body.len().saturating_add(chunk.len()) > limit {
+            return Err(ToolError::ExecutionFailed(format!(
+                "response body exceeds {limit} bytes"
+            )));
+        }
+        body.extend_from_slice(&chunk);
+    }
+    String::from_utf8(body).map_err(|error| ToolError::ExecutionFailed(error.to_string()))
+}
+
+async fn validate_url(url: &str, allow_private_networks: bool) -> Result<(), String> {
+    let parsed = reqwest::Url::parse(url).map_err(|error| format!("invalid URL: {error}"))?;
+    if !matches!(parsed.scheme(), "http" | "https") {
+        return Err("URL scheme must be http or https".to_string());
+    }
+    let host = parsed
+        .host_str()
+        .ok_or_else(|| "URL must include a host".to_string())?;
+    if !allow_private_networks {
+        if host.eq_ignore_ascii_case("localhost") {
+            return Err("private network destinations are disabled".to_string());
+        }
+        let port = parsed.port_or_known_default().unwrap_or(80);
+        let addresses = tokio::net::lookup_host((host, port))
+            .await
+            .map_err(|error| format!("cannot resolve URL host: {error}"))?;
+        if addresses
+            .map(|address| address.ip())
+            .any(|address| !is_public_address(address))
+        {
+            return Err("private network destinations are disabled".to_string());
+        }
+    }
+    Ok(())
+}
+
+fn is_public_address(address: IpAddr) -> bool {
+    match address {
+        IpAddr::V4(address) => {
+            !(address.is_private()
+                || address.is_loopback()
+                || address.is_link_local()
+                || address.is_unspecified())
+        }
+        IpAddr::V6(address) => {
+            !(address.is_loopback()
+                || address.is_unique_local()
+                || address.is_unicast_link_local()
+                || address.is_unspecified())
+        }
+    }
 }
 
 // qual:allow(iosp) reason: "DOM traversal with filtering"
@@ -104,7 +198,7 @@ mod tests {
             .create();
 
         // Instantiate your WebScrapper
-        let scraper = WebScrapper::new();
+        let scraper = WebScrapper::new().with_allow_private_networks(true);
 
         // Use the server URL for scraping
         let url = server.url();
@@ -119,5 +213,31 @@ mod tests {
 
         // Verify that the mock was called as expected
         mock.assert();
+    }
+
+    #[tokio::test]
+    async fn scraper_rejects_private_network_destinations_by_default() {
+        let scraper = WebScrapper::new();
+
+        let result = scraper.call("http://127.0.0.1/internal").await;
+
+        assert!(matches!(result, Err(ToolError::InvalidInput(_))));
+    }
+
+    #[tokio::test]
+    async fn scraper_rejects_oversized_response_body() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/large")
+            .with_status(200)
+            .with_body(vec![b'x'; 1_048_577])
+            .create_async()
+            .await;
+        let scraper = WebScrapper::new().with_allow_private_networks(true);
+
+        let result = scraper.call(&format!("{}/large", server.url())).await;
+
+        assert!(matches!(result, Err(ToolError::ExecutionFailed(_))));
+        mock.assert_async().await;
     }
 }

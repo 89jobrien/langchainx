@@ -57,14 +57,15 @@ pub enum PgLit {
 impl fmt::Display for PgLit {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            PgLit::LitStr(str) => write!(f, "'{}'", str),
-            PgLit::JsonField(path) => write!(f, "cmetadata#>>'{{{}}}'", path.join(",")),
+            PgLit::LitStr(value) => write!(f, "{}", sql_string_literal(value)),
+            PgLit::JsonField(path) => write!(
+                f,
+                "cmetadata#>>{}",
+                sql_string_literal(&format!("{{{}}}", path.join(",")))
+            ),
             PgLit::RawJson(value) => {
-                write!(
-                    f,
-                    "{}",
-                    serde_json::to_string(value).unwrap_or_else(|_| "null".to_string())
-                )
+                let json = serde_json::to_string(value).unwrap_or_else(|_| "null".to_string());
+                write!(f, "{}", sql_string_literal(&json))
             }
         }
     }
@@ -89,7 +90,7 @@ impl fmt::Display for PgFilter {
                     a,
                     values
                         .iter()
-                        .map(|s| format!("'{}'", s))
+                        .map(|value| sql_string_literal(value))
                         .collect::<Vec<String>>()
                         .join(",")
                 )
@@ -114,6 +115,10 @@ impl fmt::Display for PgFilter {
             ),
         }
     }
+}
+
+fn sql_string_literal(value: &str) -> String {
+    format!("'{}'", value.replace('\'', "''"))
 }
 
 /// HNSW index parameters used when creating the embedding index.
@@ -249,17 +254,16 @@ impl VectorStore for Store {
                 FROM
                     filtered_embedding_dims
                     JOIN {} ON filtered_embedding_dims.collection_id = {}.uuid
-                WHERE {}.name = '{}'
+                WHERE {}.name = $3
             ) AS data
             WHERE {}
             ORDER BY
                 data.distance DESC
-            LIMIT $3"#,
+            LIMIT $4"#,
             self.embedder_table_name,
             self.collection_table_name,
             self.collection_table_name,
             self.collection_table_name,
-            collection_name,
             where_filter,
         );
 
@@ -275,6 +279,7 @@ impl VectorStore for Store {
                     .map(|x| x as f32)
                     .collect::<Vec<f32>>(),
             ))
+            .bind(collection_name)
             .bind(limit as i32)
             .fetch_all(&self.pool)
             .await?;
@@ -302,5 +307,30 @@ impl VectorStore for Store {
             .map_err(VectorStoreError::from)?;
 
         Ok(docs)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn filter_string_literals_escape_single_quotes() {
+        let filter = PgFilter::Eq(
+            PgLit::JsonField(vec!["author".to_string()]),
+            PgLit::LitStr("O'Brien".to_string()),
+        );
+
+        assert_eq!(filter.to_string(), "cmetadata#>>'{author}' = 'O''Brien'");
+    }
+
+    #[test]
+    fn filter_in_values_escape_single_quotes() {
+        let filter = PgFilter::In(
+            PgLit::JsonField(vec!["author".to_string()]),
+            vec!["O'Brien".to_string()],
+        );
+
+        assert!(filter.to_string().contains("'O''Brien'"));
     }
 }

@@ -4,13 +4,14 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use std::path::PathBuf;
 
+use super::{validate_glob_pattern, validate_path};
 use crate::{Tool, ToolError};
 
 const MAX_RESULTS: usize = 200;
 
 /// Finds files matching a glob pattern, resolving relative patterns from a base directory.
 ///
-/// Absolute patterns and parent-directory components are accepted as supplied.
+/// Patterns and optional paths are confined to the configured base directory.
 pub struct GlobTool {
     base_dir: PathBuf,
 }
@@ -67,21 +68,26 @@ impl Tool for GlobTool {
         let parsed: GlobInput =
             serde_json::from_value(input).map_err(|e| ToolError::InvalidInput(e.to_string()))?;
 
-        let base = if let Some(p) = &parsed.path {
-            self.base_dir.join(p)
+        let base = if let Some(path) = &parsed.path {
+            validate_path(&self.base_dir, path)?
         } else {
-            self.base_dir.clone()
+            validate_path(&self.base_dir, ".")?
         };
 
-        let full_pattern = base.join(&parsed.pattern);
+        let full_pattern = validate_glob_pattern(&base, &parsed.pattern)?;
         let pattern_str = full_pattern.to_string_lossy();
 
-        let paths: Vec<String> = glob::glob(&pattern_str)
+        let mut paths = Vec::new();
+        for entry in glob::glob(&pattern_str)
             .map_err(|e| ToolError::InvalidInput(format!("invalid glob: {e}")))?
-            .filter_map(|entry| entry.ok())
-            .take(MAX_RESULTS)
-            .map(|p| p.to_string_lossy().into_owned())
-            .collect();
+        {
+            let path = entry.map_err(|e| ToolError::ExecutionFailed(e.to_string()))?;
+            let confined = validate_path(&self.base_dir, &path.to_string_lossy())?;
+            paths.push(confined.to_string_lossy().into_owned());
+            if paths.len() >= MAX_RESULTS {
+                break;
+            }
+        }
 
         Ok(paths.join("\n"))
     }
@@ -136,5 +142,18 @@ mod tests {
         let lines: Vec<&str> = result.lines().collect();
         assert_eq!(lines.len(), 1);
         assert!(lines[0].contains("sub"));
+    }
+
+    #[tokio::test]
+    async fn rejects_parent_directory_traversal() {
+        let parent = tempfile::tempdir().unwrap();
+        let base = parent.path().join("base");
+        std::fs::create_dir(&base).unwrap();
+        std::fs::write(parent.path().join("outside.rs"), "").unwrap();
+        let tool = GlobTool::new(&base);
+
+        let result = tool.run(json!({ "pattern": "../*.rs" })).await;
+
+        assert!(matches!(result, Err(ToolError::InvalidInput(_))));
     }
 }

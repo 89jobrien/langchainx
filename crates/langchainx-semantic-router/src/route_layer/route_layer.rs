@@ -323,7 +323,7 @@ mod tests {
         use proptest::prelude::*;
 
         fn finite_f64() -> impl Strategy<Value = f64> {
-            (-1e10f64..1e10f64)
+            -1e10f64..1e10f64
         }
 
         proptest! {
@@ -350,7 +350,6 @@ mod tests {
     #[ignore]
     async fn test_route_layer_builder() {
         use langchainx_embedding::embedding::openai::OpenAiEmbedder;
-        use langchainx_llm::openai::OpenAI;
 
         let captial_route = Router::new(
             "captial",

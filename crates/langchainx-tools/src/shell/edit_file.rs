@@ -4,6 +4,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use std::path::PathBuf;
 
+use super::validate_path;
 use crate::{Tool, ToolError};
 
 /// Replaces text only when the requested match occurs exactly once.
@@ -64,7 +65,7 @@ impl Tool for EditFileTool {
         let parsed: EditFileInput =
             serde_json::from_value(input).map_err(|e| ToolError::InvalidInput(e.to_string()))?;
 
-        let path = self.base_dir.join(&parsed.path);
+        let path = validate_path(&self.base_dir, &parsed.path)?;
         let content = std::fs::read_to_string(&path).map_err(|e| {
             ToolError::ExecutionFailed(format!("cannot read {}: {e}", path.display()))
         })?;
@@ -146,5 +147,24 @@ mod tests {
             .run(json!({ "path": "no_file.rs", "old_string": "x", "new_string": "y" }))
             .await;
         assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn rejects_paths_outside_base_directory() {
+        let base = tempfile::tempdir().unwrap();
+        let mut outside = tempfile::NamedTempFile::new().unwrap();
+        use std::io::Write;
+        outside.write_all(b"old").unwrap();
+        let tool = EditFileTool::new(base.path());
+
+        let result = tool
+            .run(json!({
+                "path": outside.path().to_string_lossy(),
+                "old_string": "old",
+                "new_string": "new"
+            }))
+            .await;
+
+        assert!(matches!(result, Err(ToolError::InvalidInput(_))));
     }
 }

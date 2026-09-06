@@ -305,7 +305,6 @@ macro_rules! message_formatter {
 #[cfg(test)]
 mod tests {
     use crate::{
-        message_formatter,
         prompt::{FormatPrompter, chat::AIMessagePromptTemplate},
         prompt_args,
         schemas::messages::Message,

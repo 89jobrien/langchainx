@@ -133,7 +133,7 @@ pub fn find_conversation_id(project_id: &str) -> Option<String> {
         })
         .collect();
 
-    candidates.sort_by(|a, b| b.0.cmp(&a.0)); // most recent first
+    candidates.sort_by_key(|candidate| std::cmp::Reverse(candidate.0));
     candidates.into_iter().next().map(|(_, name)| name)
 }
 

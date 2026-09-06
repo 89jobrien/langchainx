@@ -2,16 +2,17 @@
 use crate::{
     language_models::{GenerateResult, LLMError, TokenUsage, llm::LLM, options::CallOptions},
     schemas::{Message, StreamData},
+    sse::SseDecoder,
 };
 use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 use reqwest::Client;
 use serde_json::Value;
-use std::{pin::Pin, str::from_utf8};
+use std::pin::Pin;
 
 use super::models::{ApiResponse, ErrorResponse, Payload, QwenMessage};
 use super::request::QwenModel;
-use super::response::{parse_error_response, parse_sse_chunk};
+use super::response::parse_error_response;
 
 /// A client for generating and streaming responses from Qwen.
 #[derive(Clone)]
@@ -157,61 +158,29 @@ impl LLM for Qwen {
         let stream = client.execute(request).await?;
         let stream = stream.bytes_stream();
 
-        let processed_stream = stream
-            .then(move |result| {
-                async move {
-                    match result {
-                        Ok(bytes) => {
-                            // Parse SSE chunk format
-                            let _bytes_str = from_utf8(&bytes)
-                                .map_err(|e| LLMError::OtherError(e.to_string()))?;
-                            let chunks = parse_sse_chunk(&bytes)?;
-
-                            for chunk in chunks {
-                                if let Some(choices) =
-                                    chunk.get("choices").and_then(|c| c.as_array())
-                                    && let Some(choice) = choices.first()
-                                    && let Some(delta) = choice.get("delta")
-                                    && let Some(content) =
-                                        delta.get("content").and_then(|c| c.as_str())
-                                    && !content.is_empty()
-                                {
-                                    let usage = chunk.get("usage").map(|usage| TokenUsage {
-                                        prompt_tokens: usage
-                                            .get("prompt_tokens")
-                                            .and_then(|t| t.as_u64())
-                                            .unwrap_or(0)
-                                            as u32,
-                                        completion_tokens: usage
-                                            .get("completion_tokens")
-                                            .and_then(|t| t.as_u64())
-                                            .unwrap_or(0)
-                                            as u32,
-                                        total_tokens: usage
-                                            .get("total_tokens")
-                                            .and_then(|t| t.as_u64())
-                                            .unwrap_or(0)
-                                            as u32,
-                                    });
-
-                                    return Ok(StreamData::new(chunk.clone(), usage, content));
-                                }
-                            }
-
-                            // If we didn't return within the loop, return an empty stream data
-                            Ok(StreamData::new(Value::Null, None, ""))
-                        }
-                        Err(e) => Err(LLMError::RequestError(e)),
+        let processed_stream = async_stream::try_stream! {
+            let mut decoder = SseDecoder::default();
+            futures::pin_mut!(stream);
+            while let Some(result) = stream.next().await {
+                let bytes = result.map_err(LLMError::RequestError)?;
+                for data in decoder.push(&bytes)? {
+                    let chunk: Value = serde_json::from_str(&data)?;
+                    if let Some(content) = chunk
+                        .get("choices")
+                        .and_then(Value::as_array)
+                        .and_then(|choices| choices.first())
+                        .and_then(|choice| choice.get("delta"))
+                        .and_then(|delta| delta.get("content"))
+                        .and_then(Value::as_str)
+                        .filter(|content| !content.is_empty())
+                    {
+                        let usage = chunk.get("usage").map(token_usage);
+                        yield StreamData::new(chunk.clone(), usage, content);
                     }
                 }
-            })
-            .filter_map(|result| async move {
-                match result {
-                    Ok(data) if !data.content.is_empty() => Some(Ok(data)),
-                    Ok(_) => None,
-                    Err(e) => Some(Err(e)),
-                }
-            });
+            }
+            decoder.finish()?;
+        };
 
         Ok(Box::pin(processed_stream))
     }
@@ -221,10 +190,90 @@ impl LLM for Qwen {
     }
 }
 
+fn token_usage(usage: &Value) -> TokenUsage {
+    TokenUsage {
+        prompt_tokens: usage
+            .get("prompt_tokens")
+            .and_then(Value::as_u64)
+            .unwrap_or(0) as u32,
+        completion_tokens: usage
+            .get("completion_tokens")
+            .and_then(Value::as_u64)
+            .unwrap_or(0) as u32,
+        total_tokens: usage
+            .get("total_tokens")
+            .and_then(Value::as_u64)
+            .unwrap_or(0) as u32,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use futures::StreamExt;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::TcpListener;
     use tokio::test;
+
+    #[tokio::test]
+    async fn generate_uses_configured_endpoint() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("POST", "/chat")
+            .match_header("authorization", "Bearer test-key")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                r#"{"id":"response-1","created":1,"model":"qwen-turbo","choices":[{"message":{"role":"assistant","content":"pong"},"finish_reason":"stop","index":0}],"usage":{"prompt_tokens":2,"completion_tokens":1,"total_tokens":3}}"#,
+            )
+            .create_async()
+            .await;
+        let client = Qwen::new()
+            .with_api_key("test-key")
+            .with_base_url(format!("{}/chat", server.url()));
+
+        let result = client
+            .generate(&[Message::new_human_message("ping")])
+            .await
+            .unwrap();
+
+        assert_eq!(result.generation, "pong");
+        assert_eq!(result.tokens.unwrap().total_tokens, 3);
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn stream_reassembles_fragmented_sse_frames() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut request = [0_u8; 4096];
+            let _ = socket.read(&mut request).await.unwrap();
+            let body = b"data: {\"choices\":[{\"delta\":{\"content\":\"caf\xc3\xa9\"}}]}\n\ndata: [DONE]\n\n";
+            let headers = format!(
+                "HTTP/1.1 200 OK\r\ncontent-type: text/event-stream\r\ncontent-length: {}\r\n\r\n",
+                body.len()
+            );
+            socket.write_all(headers.as_bytes()).await.unwrap();
+            let split = body.iter().position(|byte| *byte == 0xc3).unwrap() + 1;
+            socket.write_all(&body[..split]).await.unwrap();
+            socket.flush().await.unwrap();
+            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+            socket.write_all(&body[split..]).await.unwrap();
+        });
+        let client = Qwen::new()
+            .with_api_key("test-key")
+            .with_base_url(format!("http://{address}/chat"));
+
+        let stream = LLM::stream(&client, &[Message::new_human_message("ping")])
+            .await
+            .unwrap();
+        let chunks = stream.collect::<Vec<_>>().await;
+
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(chunks[0].as_ref().unwrap().content, "caf\u{e9}");
+    }
 
     #[test]
     #[ignore]

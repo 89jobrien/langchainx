@@ -6,7 +6,7 @@ use sqlx::{
     sqlite::{SqliteConnectOptions, SqlitePoolOptions},
 };
 
-use super::Store;
+use super::{Store, sqlite_vss::quoted_identifier};
 use langchainx_embedding::embedding::embedder_trait::Embedder;
 
 /// Configures a SQLite VSS-backed vector store.
@@ -74,6 +74,7 @@ impl StoreBuilder {
         if self.embedder.is_none() {
             return Err("Embedder is required".into());
         }
+        quoted_identifier(&self.table)?;
 
         Ok(Store {
             pool: self.get_pool().await?,
@@ -155,5 +156,21 @@ mod tests {
         assert!(result.is_err());
         let msg = err_msg(result);
         assert!(!msg.is_empty());
+    }
+
+    #[tokio::test]
+    async fn build_rejects_unsafe_table_name() {
+        let pool = SqlitePoolOptions::new()
+            .connect_lazy("sqlite::memory:")
+            .unwrap();
+
+        let result = StoreBuilder::new()
+            .pool(pool)
+            .embedder(DummyEmbedder)
+            .table("documents; DROP TABLE users")
+            .build()
+            .await;
+
+        assert!(err_msg(result).contains("Invalid SQLite identifier"));
     }
 }
