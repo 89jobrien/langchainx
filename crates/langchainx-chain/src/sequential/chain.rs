@@ -1,6 +1,5 @@
 use std::collections::{HashMap, HashSet};
 
-use async_trait::async_trait;
 use serde_json::{Value, json};
 
 use crate::{
@@ -11,12 +10,11 @@ use crate::{
 
 //THIS IS EXPERIMENTAL
 pub struct SequentialChain {
-    pub(crate) chains: Vec<Box<dyn Chain>>,
+    pub(crate) chains: Vec<Box<dyn crate::chain::DynChain>>,
     pub(crate) input_keys: HashSet<String>,
     pub(crate) outputs: HashSet<String>,
 }
 
-#[async_trait]
 impl Chain for SequentialChain {
     async fn call(&self, input_variables: PromptArgs) -> Result<GenerateResult, ChainError> {
         let output = self.execute(input_variables).await?;

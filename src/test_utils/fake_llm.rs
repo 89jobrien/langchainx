@@ -3,7 +3,6 @@ use std::pin::Pin;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
-use async_trait::async_trait;
 use futures::Stream;
 
 use crate::language_models::llm::LLM;
@@ -50,7 +49,6 @@ impl FakeLLM {
     }
 }
 
-#[async_trait]
 impl LLM for FakeLLM {
     async fn generate(&self, _messages: &[Message]) -> Result<GenerateResult, LLMError> {
         self.call_count.fetch_add(1, Ordering::SeqCst);

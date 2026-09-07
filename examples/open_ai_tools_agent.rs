@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use async_trait::async_trait;
 use langchainx_agent::{AgentExecutor, OpenAiToolAgentBuilder};
 use langchainx_chain::{Chain, options::ChainCallOptions};
 use langchainx_llm::OpenAI;
@@ -11,7 +10,6 @@ use langchainx_tools::{CommandExecutor, DuckDuckGoSearchResults, SerpApi, Tool, 
 use serde_json::Value;
 struct Date {}
 
-#[async_trait]
 impl Tool for Date {
     fn name(&self) -> String {
         "Date".to_string()

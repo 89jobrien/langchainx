@@ -4,13 +4,13 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use serde_json::json;
 
-use langchainx_chain::Chain;
+use langchainx_chain::DynChain;
 use langchainx_core::{
     schemas::{
         agent::{AgentAction, AgentEvent, AgentFinish, LogTools},
         messages::Message,
     },
-    tools::Tool,
+    tools::DynTool,
 };
 use langchainx_llm::schemas::FunctionCallResponse;
 use langchainx_prompt::{
@@ -23,8 +23,8 @@ use crate::agent::Agent;
 use crate::error::AgentError;
 
 pub struct OpenAiToolAgent {
-    pub(crate) chain: Box<dyn Chain>,
-    pub(crate) tools: Vec<Arc<dyn Tool>>,
+    pub(crate) chain: Box<dyn DynChain>,
+    pub(crate) tools: Vec<Arc<dyn DynTool>>,
 }
 
 impl OpenAiToolAgent {
@@ -95,7 +95,7 @@ impl Agent for OpenAiToolAgent {
         }
     }
 
-    fn get_tools(&self) -> Vec<Arc<dyn Tool>> {
+    fn get_tools(&self) -> Vec<Arc<dyn DynTool>> {
         self.tools.clone()
     }
 }

@@ -1,6 +1,5 @@
 use std::pin::Pin;
 
-use async_trait::async_trait;
 use futures::Stream;
 use serde_json::Value;
 
@@ -142,14 +141,13 @@ impl SQLDatabaseChain {
             "input".to_string(),
             Value::from(format!(
                 "{}{}{}{}{}",
-                &query, QUERY_PREFIX_WITH, sql_query, STOP_WORD, &query_result,
+                query, QUERY_PREFIX_WITH, sql_query, STOP_WORD, query_result,
             )),
         );
         Ok((llm_inputs, token_usage))
     }
 }
 
-#[async_trait]
 impl Chain for SQLDatabaseChain {
     fn get_input_keys(&self) -> Vec<String> {
         self.llmchain.get_input_keys()

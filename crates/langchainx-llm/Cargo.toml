@@ -11,7 +11,6 @@ langchainx-core = { path = "../langchainx-core" }
 
 serde          = { version = "1.0", features = ["derive"] }
 serde_json     = "1.0"
-async-trait    = "0.1.80"
 tokio          = { version = "1", features = ["full"] }
 futures        = "0.3"
 futures-util   = "0.3.30"
@@ -34,3 +33,6 @@ mistralai-client = { version = "0.14.0", optional = true }
 default  = []
 ollama   = ["dep:ollama-rs"]
 mistralai = ["dep:mistralai-client"]
+
+[dev-dependencies]
+base64 = "0.22.1"

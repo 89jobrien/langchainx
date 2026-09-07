@@ -72,7 +72,7 @@ impl Default for OllamaConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{language_models::llm::LLM, llm::openai::OpenAI, schemas::Message};
+    use crate::{language_models::llm::LLM, openai::OpenAI, schemas::Message};
     use tokio::io::AsyncWriteExt;
     use tokio_stream::StreamExt;
 

@@ -1,6 +1,5 @@
-use std::{collections::HashMap, pin::Pin};
+use std::{collections::HashMap, future::Future, pin::Pin};
 
-use async_trait::async_trait;
 use futures::Stream;
 use serde_json::{Value, json};
 
@@ -10,8 +9,8 @@ use super::ChainError;
 
 pub(crate) const DEFAULT_OUTPUT_KEY: &str = "output";
 pub(crate) const DEFAULT_RESULT_KEY: &str = "generate_result";
+pub type ChainStream = Pin<Box<dyn Stream<Item = Result<StreamData, ChainError>> + Send>>;
 
-#[async_trait]
 pub trait Chain: Sync + Send {
     /// Call the `Chain` and receive as output the result of the generation process along with
     /// additional information like token consumption. The input is a set of variables passed
@@ -42,7 +41,10 @@ pub trait Chain: Sync + Send {
     /// };
     /// # };
     /// ```
-    async fn call(&self, input_variables: PromptArgs) -> Result<GenerateResult, ChainError>;
+    fn call(
+        &self,
+        input_variables: PromptArgs,
+    ) -> impl Future<Output = Result<GenerateResult, ChainError>> + Send;
 
     /// Invoke the `Chain` and receive just the generation result as a String.
     /// The input is a set of variables passed as a `PromptArgs` hashmap.
@@ -72,10 +74,15 @@ pub trait Chain: Sync + Send {
     /// };
     /// # };
     /// ```
-    async fn invoke(&self, input_variables: PromptArgs) -> Result<String, ChainError> {
-        self.call(input_variables)
-            .await
-            .map(|result| result.generation)
+    fn invoke(
+        &self,
+        input_variables: PromptArgs,
+    ) -> impl Future<Output = Result<String, ChainError>> + Send {
+        async move {
+            self.call(input_variables)
+                .await
+                .map(|result| result.generation)
+        }
     }
 
     /// Execute the `Chain` and return the result of the generation process
@@ -110,21 +117,23 @@ pub trait Chain: Sync + Send {
     /// };
     /// # };
     /// ```
-    async fn execute(
+    fn execute(
         &self,
         input_variables: PromptArgs,
-    ) -> Result<HashMap<String, Value>, ChainError> {
-        log::info!("Using default implementation");
-        let result = self.call(input_variables.clone()).await?;
-        let mut output = HashMap::new();
-        let output_key = self
-            .get_output_keys()
-            .first()
-            .unwrap_or(&DEFAULT_OUTPUT_KEY.to_string())
-            .clone();
-        output.insert(output_key, json!(result.generation));
-        output.insert(DEFAULT_RESULT_KEY.to_string(), json!(result));
-        Ok(output)
+    ) -> impl Future<Output = Result<HashMap<String, Value>, ChainError>> + Send {
+        async move {
+            log::info!("Using default implementation");
+            let result = self.call(input_variables.clone()).await?;
+            let mut output = HashMap::new();
+            let output_key = self
+                .get_output_keys()
+                .first()
+                .unwrap_or(&DEFAULT_OUTPUT_KEY.to_string())
+                .clone();
+            output.insert(output_key, json!(result.generation));
+            output.insert(DEFAULT_RESULT_KEY.to_string(), json!(result));
+            Ok(output)
+        }
     }
     /// Stream the `Chain` and get an asynchronous stream of chain generations.
     /// The input is a set of variables passed as a `PromptArgs` hashmap.
@@ -171,13 +180,14 @@ pub trait Chain: Sync + Send {
     /// # };
     /// ```
     ///
-    async fn stream(
+    fn stream(
         &self,
         _input_variables: PromptArgs,
-    ) -> Result<Pin<Box<dyn Stream<Item = Result<StreamData, ChainError>> + Send>>, ChainError>
-    {
-        log::warn!("stream not implemented for this chain");
-        unimplemented!()
+    ) -> impl Future<Output = Result<ChainStream, ChainError>> + Send {
+        async {
+            log::warn!("stream not implemented for this chain");
+            unimplemented!()
+        }
     }
 
     /// Returns the keys that must be present in input_variables for this chain.
@@ -212,7 +222,76 @@ pub trait Chain: Sync + Send {
     }
 }
 
-impl<C> From<C> for Box<dyn Chain>
+pub type BoxChainFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
+
+pub trait DynChain: Sync + Send {
+    fn call(
+        &self,
+        input_variables: PromptArgs,
+    ) -> BoxChainFuture<'_, Result<GenerateResult, ChainError>>;
+    fn invoke(&self, input_variables: PromptArgs)
+    -> BoxChainFuture<'_, Result<String, ChainError>>;
+    fn execute(
+        &self,
+        input_variables: PromptArgs,
+    ) -> BoxChainFuture<'_, Result<HashMap<String, Value>, ChainError>>;
+    fn stream(
+        &self,
+        input_variables: PromptArgs,
+    ) -> BoxChainFuture<'_, Result<ChainStream, ChainError>>;
+    fn required_keys(&self) -> Vec<String>;
+    fn validate_input(&self, input_variables: &PromptArgs) -> Result<(), ChainError>;
+    fn get_input_keys(&self) -> Vec<String>;
+    fn get_output_keys(&self) -> Vec<String>;
+}
+
+impl<C: Chain> DynChain for C {
+    fn call(
+        &self,
+        input_variables: PromptArgs,
+    ) -> BoxChainFuture<'_, Result<GenerateResult, ChainError>> {
+        Box::pin(Chain::call(self, input_variables))
+    }
+
+    fn invoke(
+        &self,
+        input_variables: PromptArgs,
+    ) -> BoxChainFuture<'_, Result<String, ChainError>> {
+        Box::pin(Chain::invoke(self, input_variables))
+    }
+
+    fn execute(
+        &self,
+        input_variables: PromptArgs,
+    ) -> BoxChainFuture<'_, Result<HashMap<String, Value>, ChainError>> {
+        Box::pin(Chain::execute(self, input_variables))
+    }
+
+    fn stream(
+        &self,
+        input_variables: PromptArgs,
+    ) -> BoxChainFuture<'_, Result<ChainStream, ChainError>> {
+        Box::pin(Chain::stream(self, input_variables))
+    }
+
+    fn required_keys(&self) -> Vec<String> {
+        Chain::required_keys(self)
+    }
+
+    fn validate_input(&self, input_variables: &PromptArgs) -> Result<(), ChainError> {
+        Chain::validate_input(self, input_variables)
+    }
+
+    fn get_input_keys(&self) -> Vec<String> {
+        Chain::get_input_keys(self)
+    }
+
+    fn get_output_keys(&self) -> Vec<String> {
+        Chain::get_output_keys(self)
+    }
+}
+
+impl<C> From<C> for Box<dyn DynChain>
 where
     C: Chain + 'static,
 {

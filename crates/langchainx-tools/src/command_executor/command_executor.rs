@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -44,7 +43,6 @@ struct CommandsWrapper {
     commands: Vec<CommandInput>,
 }
 
-#[async_trait]
 impl Tool for CommandExecutor {
     fn name(&self) -> String {
         String::from("Command_Executor")

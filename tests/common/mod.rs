@@ -42,7 +42,6 @@ impl FakeLLM {
     }
 }
 
-#[async_trait]
 impl LLM for FakeLLM {
     async fn generate(&self, _messages: &[Message]) -> Result<GenerateResult, LLMError> {
         self.call_count.fetch_add(1, Ordering::SeqCst);

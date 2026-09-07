@@ -1,6 +1,5 @@
 use std::pin::Pin;
 
-use async_trait::async_trait;
 use futures::Stream;
 use serde_json::Value;
 
@@ -117,7 +116,6 @@ impl StuffDocument {
     }
 }
 
-#[async_trait]
 impl Chain for StuffDocument {
     async fn call(&self, input_variables: PromptArgs) -> Result<GenerateResult, ChainError> {
         let docs = input_variables

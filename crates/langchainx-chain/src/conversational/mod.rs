@@ -1,7 +1,6 @@
 use std::{pin::Pin, sync::Arc};
 
 use async_stream::stream;
-use async_trait::async_trait;
 use futures::Stream;
 use futures_util::{StreamExt, pin_mut};
 use tokio::sync::Mutex;
@@ -57,7 +56,6 @@ impl ConversationalChain {
     }
 }
 
-#[async_trait]
 impl Chain for ConversationalChain {
     async fn call(&self, input_variables: PromptArgs) -> Result<GenerateResult, ChainError> {
         let input_variable = &input_variables

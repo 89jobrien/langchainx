@@ -5,7 +5,7 @@ use crate::chain::Chain;
 use super::SequentialChain;
 
 pub struct SequentialChainBuilder {
-    chains: Vec<Box<dyn Chain>>,
+    chains: Vec<Box<dyn crate::chain::DynChain>>,
 }
 
 impl SequentialChainBuilder {

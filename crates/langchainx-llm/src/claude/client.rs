@@ -3,7 +3,6 @@ use crate::{
     language_models::{GenerateResult, LLMError, TokenUsage, llm::LLM, options::CallOptions},
     schemas::{Message, MessageType, StreamData},
 };
-use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 use reqwest::Client;
 use serde_json::Value;
@@ -144,7 +143,6 @@ impl Claude {
     }
 }
 
-#[async_trait]
 impl LLM for Claude {
     async fn generate(&self, messages: &[Message]) -> Result<GenerateResult, LLMError> {
         self.generate(messages).await

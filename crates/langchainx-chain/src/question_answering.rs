@@ -1,6 +1,5 @@
 use std::pin::Pin;
 
-use async_trait::async_trait;
 use futures::Stream;
 
 use crate::{
@@ -75,7 +74,6 @@ impl CondenseQuestionGeneratorChain {
     }
 }
 
-#[async_trait]
 impl Chain for CondenseQuestionGeneratorChain {
     async fn call(&self, input_variables: PromptArgs) -> Result<GenerateResult, ChainError> {
         self.chain.call(input_variables).await

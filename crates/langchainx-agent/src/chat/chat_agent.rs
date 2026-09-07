@@ -3,13 +3,13 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use serde_json::json;
 
-use langchainx_chain::chain_trait::Chain;
+use langchainx_chain::chain_trait::DynChain;
 use langchainx_core::{
     schemas::{
         agent::{AgentAction, AgentEvent},
         messages::Message,
     },
-    tools::Tool,
+    tools::DynTool,
 };
 use langchainx_prompt::{
     message_formatter,
@@ -29,14 +29,14 @@ use super::{
 };
 
 pub struct ConversationalAgent {
-    pub(crate) chain: Box<dyn Chain>,
-    pub(crate) tools: Vec<Arc<dyn Tool>>,
+    pub(crate) chain: Box<dyn DynChain>,
+    pub(crate) tools: Vec<Arc<dyn DynTool>>,
     pub(crate) output_parser: ChatOutputParser,
 }
 
 impl ConversationalAgent {
     pub fn create_prompt(
-        tools: &[Arc<dyn Tool>],
+        tools: &[Arc<dyn DynTool>],
         suffix: &str,
         prefix: &str,
     ) -> Result<MessageFormatterStruct, AgentError> {
@@ -105,7 +105,7 @@ impl Agent for ConversationalAgent {
         Ok(parsed_output)
     }
 
-    fn get_tools(&self) -> Vec<Arc<dyn Tool>> {
+    fn get_tools(&self) -> Vec<Arc<dyn DynTool>> {
         self.tools.clone()
     }
 }

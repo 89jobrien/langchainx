@@ -3,7 +3,6 @@ use futures_util::{StreamExt, pin_mut};
 use std::{collections::HashMap, pin::Pin, sync::Arc};
 
 use async_stream::stream;
-use async_trait::async_trait;
 use serde_json::{Value, json};
 use tokio::sync::Mutex;
 
@@ -26,8 +25,8 @@ const CONVERSATIONAL_RETRIEVAL_QA_DEFAULT_GENERATED_QUESTION_KEY: &str = "genera
 pub struct ConversationalRetrieverChain {
     pub(crate) retriever: Box<dyn Retriever>,
     pub memory: Arc<Mutex<dyn BaseMemory>>,
-    pub(crate) combine_documents_chain: Box<dyn Chain>,
-    pub(crate) condense_question_chain: Box<dyn Chain>,
+    pub(crate) combine_documents_chain: Box<dyn crate::chain::DynChain>,
+    pub(crate) condense_question_chain: Box<dyn crate::chain::DynChain>,
     pub(crate) rephrase_question: bool,
     pub(crate) return_source_documents: bool,
     pub(crate) input_key: String,  //Default is `question`
@@ -66,7 +65,6 @@ impl ConversationalRetrieverChain {
     }
 }
 
-#[async_trait]
 impl Chain for ConversationalRetrieverChain {
     async fn call(&self, input_variables: PromptArgs) -> Result<GenerateResult, ChainError> {
         let output = self.execute(input_variables).await?;
@@ -243,7 +241,7 @@ mod tests {
 
     struct RetrieverTest {}
 
-    #[async_trait]
+    #[async_trait::async_trait]
     impl Retriever for RetrieverTest {
         async fn get_relevant_documents(
             &self,

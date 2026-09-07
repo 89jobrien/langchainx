@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use langchainx_core::{
     schemas::agent::{AgentAction, AgentEvent},
-    tools::Tool,
+    tools::DynTool,
 };
 use langchainx_prompt::PromptArgs;
 
@@ -18,5 +18,5 @@ pub trait Agent: Send + Sync {
         inputs: PromptArgs,
     ) -> Result<AgentEvent, AgentError>;
 
-    fn get_tools(&self) -> Vec<Arc<dyn Tool>>;
+    fn get_tools(&self) -> Vec<Arc<dyn DynTool>>;
 }

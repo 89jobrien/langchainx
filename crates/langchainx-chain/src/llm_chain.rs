@@ -1,14 +1,13 @@
 use std::pin::Pin;
 use std::sync::Arc;
 
-use async_trait::async_trait;
 use futures::Stream;
 use futures_util::TryStreamExt;
 
 use crate::{
     language_models::{
         GenerateResult,
-        llm::{IntoArcLLM, LLM},
+        llm::{DynLLM, IntoArcLLM},
     },
     output_parsers::{OutputParser, SimpleParser},
     prompt::{FormatPrompter, PromptArgs},
@@ -19,7 +18,7 @@ use super::{ChainError, chain_trait::Chain, options::ChainCallOptions};
 
 pub struct LLMChainBuilder {
     prompt: Option<Box<dyn FormatPrompter>>,
-    llm: Option<Arc<dyn LLM>>,
+    llm: Option<Arc<dyn DynLLM>>,
     output_key: Option<String>,
     options: Option<ChainCallOptions>,
     output_parser: Option<Box<dyn OutputParser>>,
@@ -75,7 +74,7 @@ impl LLMChainBuilder {
                 llm_mut.add_options(llm_options);
             } else {
                 log::warn!(
-                    "LLMChain: Arc<dyn LLM> is shared; chain-level options were not applied. \
+                    "LLMChain: Arc<dyn DynLLM> is shared; chain-level options were not applied. \
                      Pass options directly to the LLM before wrapping in Arc."
                 );
             }
@@ -96,12 +95,11 @@ impl LLMChainBuilder {
 
 pub struct LLMChain {
     prompt: Box<dyn FormatPrompter>,
-    llm: Arc<dyn LLM>,
+    llm: Arc<dyn DynLLM>,
     output_key: String,
     output_parser: Box<dyn OutputParser>,
 }
 
-#[async_trait]
 impl Chain for LLMChain {
     fn required_keys(&self) -> Vec<String> {
         self.prompt.get_input_variables()

@@ -9,6 +9,7 @@ pub use langchainx_tools::text2speech::openai::{
     Config, OpenAIConfig, SpeechModel, SpeechResponseFormat, Voice,
 };
 pub use langchainx_tools::{
-    CommandExecutor, Dialect, DuckDuckGoSearchResults, Engine, SQLDatabase, SQLDatabaseBuilder,
-    SearchResult, SerpApi, SpeechStorage, Text2SpeechOpenAI, Tool, ToolError, WebScrapper, Wolfram,
+    CommandExecutor, Dialect, DuckDuckGoSearchResults, DynTool, Engine, SQLDatabase,
+    SQLDatabaseBuilder, SearchResult, SerpApi, SpeechStorage, Text2SpeechOpenAI, Tool, ToolError,
+    WebScrapper, Wolfram,
 };

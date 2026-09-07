@@ -15,7 +15,6 @@ use async_openai::{
         CreateChatCompletionRequest, CreateChatCompletionRequestArgs,
     },
 };
-use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 
 use crate::schemas::convert::{LangchainIntoOpenAI, TryLangchainIntoOpenAI};
@@ -93,7 +92,6 @@ impl Default for OpenAI<OpenAIConfig> {
     }
 }
 
-#[async_trait]
 impl<C: Config + Send + Sync + 'static> LLM for OpenAI<C> {
     async fn generate(&self, prompt: &[Message]) -> Result<GenerateResult, LLMError> {
         let client = Client::with_config(self.config.clone());

@@ -6,7 +6,7 @@ use crate::{
     chain::{
         ChainError, DEFAULT_OUTPUT_KEY, llm_chain::LLMChainBuilder, options::ChainCallOptions,
     },
-    language_models::llm::{IntoArcLLM, LLM},
+    language_models::llm::{DynLLM, IntoArcLLM},
     memory::SimpleMemory,
     output_parsers::OutputParser,
     prompt::{FormatPrompter, HumanMessagePromptTemplate},
@@ -17,7 +17,7 @@ use crate::{
 use super::{ConversationalChain, DEFAULT_INPUT_VARIABLE, prompt::DEFAULT_TEMPLATE};
 
 pub struct ConversationalChainBuilder {
-    llm: Option<Arc<dyn LLM>>,
+    llm: Option<Arc<dyn DynLLM>>,
     options: Option<ChainCallOptions>,
     memory: Option<Arc<Mutex<dyn BaseMemory>>>,
     output_key: Option<String>,

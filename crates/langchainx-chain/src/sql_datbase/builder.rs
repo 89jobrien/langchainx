@@ -4,7 +4,7 @@ use crate::{
     chain::{
         ChainError, DEFAULT_OUTPUT_KEY, llm_chain::LLMChainBuilder, options::ChainCallOptions,
     },
-    language_models::llm::{IntoArcLLM, LLM},
+    language_models::llm::{DynLLM, IntoArcLLM},
     output_parsers::OutputParser,
     prompt::HumanMessagePromptTemplate,
     template_jinja2,
@@ -18,7 +18,7 @@ use super::{
 };
 
 pub struct SQLDatabaseChainBuilder {
-    llm: Option<Arc<dyn LLM>>,
+    llm: Option<Arc<dyn DynLLM>>,
     options: Option<ChainCallOptions>,
     top_k: Option<usize>,
     database: Option<SQLDatabase>,

@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use serde_json::Value;
 
 use crate::{Tool, ToolError};
@@ -112,7 +111,6 @@ impl Default for Wolfram {
     }
 }
 
-#[async_trait]
 impl Tool for Wolfram {
     fn name(&self) -> String {
         String::from("Wolfram")
@@ -132,7 +130,7 @@ impl Tool for Wolfram {
             .ok_or_else(|| ToolError::InvalidInput("input must be a string".to_string()))?;
         let mut url = format!(
             "https://api.wolframalpha.com/v2/query?appid={}&input={}&output=JSON&format=plaintext&podstate=Result__Step-by-step+solution",
-            &self.app_id,
+            self.app_id,
             urlencoding::encode(input)
         );
 

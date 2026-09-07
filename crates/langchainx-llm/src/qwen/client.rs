@@ -3,7 +3,6 @@ use crate::{
     language_models::{GenerateResult, LLMError, TokenUsage, llm::LLM, options::CallOptions},
     schemas::{Message, StreamData},
 };
-use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 use reqwest::Client;
 use serde_json::Value;
@@ -247,7 +246,7 @@ impl Qwen {
         let payload = self.build_payload(messages, false);
         let res = client
             .post(&self.base_url)
-            .header("Authorization", format!("Bearer {}", &self.api_key))
+            .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
             .json(&payload)
             .send()
@@ -353,7 +352,6 @@ impl Qwen {
     }
 }
 
-#[async_trait]
 impl LLM for Qwen {
     async fn generate(&self, messages: &[Message]) -> Result<GenerateResult, LLMError> {
         self.generate(messages).await
@@ -367,7 +365,7 @@ impl LLM for Qwen {
         let payload = self.build_payload(messages, true);
         let request = client
             .post(&self.base_url)
-            .header("Authorization", format!("Bearer {}", &self.api_key))
+            .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
             .header("Accept", "text/event-stream")
             .json(&payload)
