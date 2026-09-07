@@ -77,22 +77,23 @@ impl SitemapLoader {
         reader.config_mut().trim_text(true);
 
         let mut urls = Vec::new();
-        let mut in_loc = false;
 
         loop {
             match reader.read_event() {
                 Ok(Event::Start(e)) if e.name().as_ref() == b"loc" => {
-                    in_loc = true;
-                }
-                Ok(Event::Text(e)) if in_loc => {
-                    let loc = e.unescape().map_err(|e| {
+                    let end = e.to_end().into_owned();
+                    let text = reader.read_text(end.name()).map_err(|e| {
+                        LoaderError::OtherError(format!(
+                            "Invalid {tag} XML while reading <loc>: {e}"
+                        ))
+                    })?;
+                    let decoded = text.decode().map_err(|e| {
+                        LoaderError::OtherError(format!("Invalid {tag} <loc> encoding: {e}"))
+                    })?;
+                    let loc = quick_xml::escape::unescape(&decoded).map_err(|e| {
                         LoaderError::OtherError(format!("Invalid {tag} <loc> text: {e}"))
                     })?;
                     urls.push(loc.into_owned());
-                    in_loc = false;
-                }
-                Ok(Event::End(e)) if e.name().as_ref() == b"loc" => {
-                    in_loc = false;
                 }
                 Ok(Event::Eof) => break,
                 Err(e) => {
@@ -417,6 +418,14 @@ mod tests {
         assert_eq!(locs.len(), 3);
         assert!(locs.contains(&"https://example.com/a".to_string()));
         assert!(locs.contains(&"https://example.com/c".to_string()));
+    }
+
+    #[test]
+    fn extract_locs_decodes_xml_entities() {
+        let xml = r#"<urlset><url><loc>https://example.com/?a=1&amp;b=2</loc></url></urlset>"#;
+        let locs = SitemapLoader::extract_locs(xml, "urlset").unwrap();
+
+        assert_eq!(locs, ["https://example.com/?a=1&b=2"]);
     }
 
     #[tokio::test]
