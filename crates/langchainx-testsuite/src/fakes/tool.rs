@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use langchainx_core::tools::{Tool, ToolError};
 use serde_json::Value;
 
@@ -6,7 +5,6 @@ use serde_json::Value;
 #[derive(Clone, Copy, Debug, Default)]
 pub struct EchoTool;
 
-#[async_trait]
 impl Tool for EchoTool {
     fn name(&self) -> String {
         "echo".into()

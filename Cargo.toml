@@ -180,6 +180,10 @@ tree-sitter = [
 name = "e2e_local_llm"
 required-features = ["ollama"]
 
+[[bench]]
+name = "dispatch_allocations"
+harness = false
+
 [[example]]
 name = "openapi_toolkit"
 required-features = ["openapi-toolkit"]

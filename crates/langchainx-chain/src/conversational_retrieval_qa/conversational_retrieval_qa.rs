@@ -4,7 +4,6 @@ use futures_util::{StreamExt, pin_mut};
 use std::{collections::HashMap, pin::Pin, sync::Arc};
 
 use async_stream::stream;
-use async_trait::async_trait;
 use serde_json::{Value, json};
 use tokio::sync::Mutex;
 
@@ -29,8 +28,8 @@ pub struct ConversationalRetrieverChain {
     pub(crate) retriever: Box<dyn Retriever>,
     /// Shared conversation history used to contextualize follow-up questions.
     pub memory: Arc<Mutex<dyn BaseMemory>>,
-    pub(crate) combine_documents_chain: Box<dyn Chain>,
-    pub(crate) condense_question_chain: Box<dyn Chain>,
+    pub(crate) combine_documents_chain: Box<dyn crate::chain::DynChain>,
+    pub(crate) condense_question_chain: Box<dyn crate::chain::DynChain>,
     pub(crate) rephrase_question: bool,
     pub(crate) return_source_documents: bool,
     pub(crate) input_key: String,  //Default is `question`
@@ -50,7 +49,7 @@ impl ConversationalRetrieverChain {
             true => {
                 let result = self
                     .condense_question_chain
-                    .call(
+                    .dyn_call(
                         CondenseQuestionPromptBuilder::new()
                             .question(input)
                             .chat_history(history)
@@ -69,7 +68,6 @@ impl ConversationalRetrieverChain {
     }
 }
 
-#[async_trait]
 impl Chain for ConversationalRetrieverChain {
     fn required_keys(&self) -> Vec<String> {
         vec![self.input_key.clone()]
@@ -109,7 +107,7 @@ impl Chain for ConversationalRetrieverChain {
 
         let mut output = self
             .combine_documents_chain
-            .call(
+            .dyn_call(
                 StuffQAPromptBuilder::new()
                     .documents(&documents)
                     .question(question.clone())
@@ -176,7 +174,7 @@ impl Chain for ConversationalRetrieverChain {
 
         let stream = self
             .combine_documents_chain
-            .stream(
+            .dyn_stream(
                 StuffQAPromptBuilder::new()
                     .documents(&documents)
                     .question(question.clone())
@@ -246,7 +244,7 @@ mod tests {
 
     struct RetrieverTest {}
 
-    #[async_trait]
+    #[async_trait::async_trait]
     impl Retriever for RetrieverTest {
         async fn get_relevant_documents(
             &self,

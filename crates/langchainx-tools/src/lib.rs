@@ -1,6 +1,6 @@
 //! Built-in agent tools for search, databases, files, commands, containers, and analysis.
 #![deny(missing_docs)]
-pub use langchainx_core::tools::{Tool, ToolError};
+pub use langchainx_core::tools::{DynTool, Tool, ToolError};
 
 pub mod wolfram;
 pub use wolfram::Wolfram;

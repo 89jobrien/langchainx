@@ -4603,7 +4603,6 @@ version = "0.4.6"
 dependencies = [
  "async-openai",
  "async-stream",
- "async-trait",
  "base64 0.22.1",
  "futures",
  "futures-util",

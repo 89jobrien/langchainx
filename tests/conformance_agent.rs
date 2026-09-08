@@ -15,7 +15,7 @@ use langchainx::{
     chain::Chain,
     prompt_args,
     schemas::agent::{AgentAction, AgentEvent, AgentFinish},
-    tools::Tool,
+    tools::DynTool,
 };
 use langchainx_testsuite::contracts::agent::{
     assert_agent_contract, assert_executor_finishes, assert_executor_rejects_missing_input,
@@ -35,7 +35,7 @@ async fn agent_plan_returns_finish() {
 
 #[tokio::test]
 async fn agent_get_tools_returns_configured_tools() {
-    let tool: Arc<dyn Tool> = Arc::new(EchoTool);
+    let tool: Arc<dyn DynTool> = Arc::new(EchoTool);
     let agent = ScriptedAgent::new(vec![], vec![tool]);
     assert_tool_names(&agent, &["echo"]);
 }
@@ -48,7 +48,7 @@ async fn executor_drives_agent_to_finish() {
 
 #[tokio::test]
 async fn reusable_agent_contract_checks_plan_and_stable_tools() {
-    let tool: Arc<dyn Tool> = Arc::new(EchoTool);
+    let tool: Arc<dyn DynTool> = Arc::new(EchoTool);
     let agent = ScriptedAgent::new(
         vec![AgentEvent::Finish(AgentFinish {
             output: "done".into(),
@@ -66,7 +66,7 @@ async fn executor_missing_input_contract_returns_typed_error() {
 
 #[tokio::test]
 async fn executor_calls_tool_then_finishes() {
-    let tool: Arc<dyn Tool> = Arc::new(EchoTool);
+    let tool: Arc<dyn DynTool> = Arc::new(EchoTool);
     let agent = ScriptedAgent::new(
         vec![
             AgentEvent::Action(vec![AgentAction {
@@ -90,7 +90,7 @@ async fn executor_calls_tool_then_finishes() {
 
 #[tokio::test]
 async fn executor_respects_max_iterations() {
-    let tool: Arc<dyn Tool> = Arc::new(EchoTool);
+    let tool: Arc<dyn DynTool> = Arc::new(EchoTool);
     let events: Vec<AgentEvent> = (0..20)
         .map(|_| {
             AgentEvent::Action(vec![AgentAction {

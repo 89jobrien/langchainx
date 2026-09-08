@@ -1,7 +1,6 @@
 //! Direct `mbx` CLI tool for minibox container operations.
 mod input;
 
-use async_trait::async_trait;
 use input::{MiniboxInput, SnapshotAction};
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -133,7 +132,6 @@ impl MiniboxToolBuilder {
 
 // -- Tool impl ---------------------------------------------------------------
 
-#[async_trait]
 impl Tool for MiniboxTool {
     fn name(&self) -> String {
         "Minibox".into()

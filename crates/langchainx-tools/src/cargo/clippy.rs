@@ -1,5 +1,4 @@
 //! `Tool` adapter for collecting Clippy diagnostics.
-use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -35,7 +34,6 @@ struct ClippyInput {
     deny_warnings: bool,
 }
 
-#[async_trait]
 impl Tool for ClippyTool {
     fn name(&self) -> String {
         "Clippy".into()

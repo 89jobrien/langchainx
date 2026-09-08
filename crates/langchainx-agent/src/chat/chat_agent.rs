@@ -4,13 +4,13 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use serde_json::json;
 
-use langchainx_chain::chain_trait::Chain;
+use langchainx_chain::chain_trait::DynChain;
 use langchainx_core::{
     schemas::{
         agent::{AgentAction, AgentEvent},
         messages::Message,
     },
-    tools::Tool,
+    tools::DynTool,
 };
 use langchainx_prompt::{
     message_formatter,
@@ -31,26 +31,26 @@ use super::{
 
 /// A conversational agent that exchanges JSON-formatted actions with an LLM chain.
 pub struct ConversationalAgent {
-    pub(crate) chain: Box<dyn Chain>,
-    pub(crate) tools: Vec<Arc<dyn Tool>>,
+    pub(crate) chain: Box<dyn DynChain>,
+    pub(crate) tools: Vec<Arc<dyn DynTool>>,
     pub(crate) output_parser: ChatOutputParser,
 }
 
 impl ConversationalAgent {
     /// Creates the chat prompt with history, user input, and scratchpad placeholders.
     pub fn create_prompt(
-        tools: &[Arc<dyn Tool>],
+        tools: &[Arc<dyn DynTool>],
         suffix: &str,
         prefix: &str,
     ) -> Result<MessageFormatterStruct, AgentError> {
         let tool_string = tools
             .iter()
-            .map(|tool| format!("> {}: {}", tool.name(), tool.description()))
+            .map(|tool| format!("> {}: {}", tool.dyn_name(), tool.dyn_description()))
             .collect::<Vec<_>>()
             .join("\n");
         let tool_names = tools
             .iter()
-            .map(|tool| tool.name())
+            .map(|tool| tool.dyn_name())
             .collect::<Vec<_>>()
             .join(", ");
 
@@ -103,12 +103,12 @@ impl Agent for ConversationalAgent {
         let scratchpad = self.construct_scratchpad(intermediate_steps)?;
         let mut inputs = inputs.clone();
         inputs.insert("agent_scratchpad".to_string(), json!(scratchpad));
-        let output = self.chain.call(inputs.clone()).await?.generation;
+        let output = self.chain.dyn_call(inputs.clone()).await?.generation;
         let parsed_output = self.output_parser.parse(&output)?;
         Ok(parsed_output)
     }
 
-    fn get_tools(&self) -> Vec<Arc<dyn Tool>> {
+    fn get_tools(&self) -> Vec<Arc<dyn DynTool>> {
         self.tools.clone()
     }
 }

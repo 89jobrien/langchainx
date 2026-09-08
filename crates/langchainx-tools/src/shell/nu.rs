@@ -1,5 +1,4 @@
 //! Structured Nushell pipeline execution.
-use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -138,7 +137,6 @@ struct NuInput {
 
 // ── Tool impl ─────────────────────────────────────────────────────────────────
 
-#[async_trait]
 impl Tool for NuTool {
     fn name(&self) -> String {
         "NuTool".into()

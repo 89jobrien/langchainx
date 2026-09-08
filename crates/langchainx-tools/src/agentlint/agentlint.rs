@@ -1,5 +1,4 @@
 //! `Tool` adapter for validating agent configuration files with `agentlint`.
-use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -32,7 +31,6 @@ struct AgentlintInput {
     format: Option<String>,
 }
 
-#[async_trait]
 impl Tool for AgentlintTool {
     fn name(&self) -> String {
         "Agentlint".into()

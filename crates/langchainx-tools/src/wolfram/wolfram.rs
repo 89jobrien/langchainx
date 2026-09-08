@@ -1,5 +1,4 @@
 //! Wolfram Alpha API queries and plaintext pod extraction.
-use async_trait::async_trait;
 use serde_json::Value;
 
 use crate::{Tool, ToolError};
@@ -116,7 +115,6 @@ impl Default for Wolfram {
     }
 }
 
-#[async_trait]
 impl Tool for Wolfram {
     fn name(&self) -> String {
         String::from("Wolfram")

@@ -1,7 +1,6 @@
 //! Chain that joins document contents and passes them to an LLM chain.
 use std::pin::Pin;
 
-use async_trait::async_trait;
 use futures::Stream;
 use serde_json::Value;
 
@@ -93,7 +92,6 @@ impl StuffDocument {
     }
 }
 
-#[async_trait]
 impl Chain for StuffDocument {
     fn required_keys(&self) -> Vec<String> {
         vec![self.input_key.clone()]

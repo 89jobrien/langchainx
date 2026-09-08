@@ -16,7 +16,7 @@ use langchainx::{
     message_formatter,
     prompt::HumanMessagePromptTemplate,
     prompt_args, template_fstring,
-    tools::{Tool, ToolError},
+    tools::{DynTool, Tool, ToolError},
 };
 
 use common::FakeLLM;
@@ -212,7 +212,6 @@ async fn test_llm_chain_input_keys() {
 /// via the re-exported `langchainx::tools::Tool` trait.
 struct EchoTool;
 
-#[async_trait::async_trait]
 impl Tool for EchoTool {
     fn name(&self) -> String {
         "echo".into()
@@ -229,13 +228,13 @@ impl Tool for EchoTool {
 
 #[tokio::test]
 async fn test_tool_trait_unified_across_crates() {
-    // Prove that a Tool impl can be wrapped in Arc<dyn Tool> and used via the
+    // Prove that a Tool impl can be wrapped in Arc<dyn DynTool> and used via the
     // same trait that langchainx-agent and langchainx-tools expect.
-    let tool: Arc<dyn Tool> = Arc::new(EchoTool);
+    let tool: Arc<dyn DynTool> = Arc::new(EchoTool);
 
-    assert_eq!(tool.name(), "echo");
+    assert_eq!(tool.dyn_name(), "echo");
 
-    let result = tool.call("hello").await.unwrap();
+    let result = tool.dyn_call("hello").await.unwrap();
     assert_eq!(result, "hello");
 
     // Verify ToolError variants are accessible from the same path
@@ -246,9 +245,9 @@ async fn test_tool_trait_unified_across_crates() {
 #[tokio::test]
 async fn test_tool_from_langchainx_tools_crate() {
     // CommandExecutor is defined in langchainx-tools and implements
-    // langchainx_core::tools::Tool. Verify it can be used as Arc<dyn Tool>
+    // langchainx_core::tools::Tool. Verify it can be used as Arc<dyn DynTool>
     // through the root re-export — proving no trait mismatch.
     let executor = langchainx::tools::CommandExecutor::new("bash");
-    let tool: Arc<dyn Tool> = Arc::new(executor);
-    assert_eq!(tool.name(), "Command_Executor");
+    let tool: Arc<dyn DynTool> = Arc::new(executor);
+    assert_eq!(tool.dyn_name(), "Command_Executor");
 }

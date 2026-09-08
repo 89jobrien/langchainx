@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use langchainx_agent::{Agent, AgentError};
 use langchainx_core::{
     schemas::agent::{AgentAction, AgentEvent, AgentFinish},
-    tools::Tool,
+    tools::DynTool,
 };
 use langchainx_prompt::PromptArgs;
 use tokio::sync::Mutex;
@@ -14,12 +14,12 @@ use tokio::sync::Mutex;
 #[derive(Clone)]
 pub struct ScriptedAgent {
     events: Arc<Mutex<VecDeque<AgentEvent>>>,
-    tools: Vec<Arc<dyn Tool>>,
+    tools: Vec<Arc<dyn DynTool>>,
 }
 
 impl ScriptedAgent {
     /// Creates an agent with the supplied event sequence and available tools.
-    pub fn new(events: Vec<AgentEvent>, tools: Vec<Arc<dyn Tool>>) -> Self {
+    pub fn new(events: Vec<AgentEvent>, tools: Vec<Arc<dyn DynTool>>) -> Self {
         Self {
             events: Arc::new(Mutex::new(events.into())),
             tools,
@@ -51,7 +51,7 @@ impl Agent for ScriptedAgent {
         }))
     }
 
-    fn get_tools(&self) -> Vec<Arc<dyn Tool>> {
+    fn get_tools(&self) -> Vec<Arc<dyn DynTool>> {
         self.tools.clone()
     }
 }

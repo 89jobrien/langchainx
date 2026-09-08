@@ -5,7 +5,6 @@ use crate::{
     schemas::{Message, StreamData},
     sse::SseDecoder,
 };
-use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 use reqwest::Client;
 use serde_json::Value;
@@ -208,7 +207,6 @@ impl Deepseek {
     }
 }
 
-#[async_trait]
 impl LLM for Deepseek {
     async fn generate(&self, messages: &[Message]) -> Result<GenerateResult, LLMError> {
         self.generate(messages).await

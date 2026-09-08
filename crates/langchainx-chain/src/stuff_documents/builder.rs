@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use crate::{
     chain::{ChainError, LLMChainBuilder, options::ChainCallOptions},
-    language_models::llm::{IntoArcLLM, LLM},
+    language_models::llm::{DynLLM, IntoArcLLM},
     output_parsers::OutputParser,
     prompt::FormatPrompter,
     template_jinja2,
@@ -13,7 +13,7 @@ use super::StuffDocument;
 
 /// Configures the model, prompt, and call options for a [`StuffDocument`] chain.
 pub struct StuffDocumentBuilder {
-    llm: Option<Arc<dyn LLM>>,
+    llm: Option<Arc<dyn DynLLM>>,
     options: Option<ChainCallOptions>,
     output_key: Option<String>,
     output_parser: Option<Box<dyn OutputParser>>,

@@ -1,25 +1,28 @@
-use langchainx_chain::Chain;
+use langchainx_chain::DynChain;
 use langchainx_prompt::PromptArgs;
 
 /// Asserts that `call` succeeds with exactly the expected generation.
-pub async fn assert_call_generation(chain: &dyn Chain, inputs: PromptArgs, expected: &str) {
-    let result = chain.call(inputs).await.expect("Chain::call must succeed");
+pub async fn assert_call_generation(chain: &dyn DynChain, inputs: PromptArgs, expected: &str) {
+    let result = chain
+        .dyn_call(inputs)
+        .await
+        .expect("Chain::call must succeed");
     assert_eq!(result.generation, expected);
 }
 
 /// Asserts that `invoke` succeeds with exactly the expected generation.
-pub async fn assert_invoke_generation(chain: &dyn Chain, inputs: PromptArgs, expected: &str) {
+pub async fn assert_invoke_generation(chain: &dyn DynChain, inputs: PromptArgs, expected: &str) {
     let result = chain
-        .invoke(inputs)
+        .dyn_invoke(inputs)
         .await
         .expect("Chain::invoke must succeed");
     assert_eq!(result, expected);
 }
 
 /// Asserts that `execute` exposes text under `output` and the complete generation result.
-pub async fn assert_execute_output(chain: &dyn Chain, inputs: PromptArgs, expected: &str) {
+pub async fn assert_execute_output(chain: &dyn DynChain, inputs: PromptArgs, expected: &str) {
     let output = chain
-        .execute(inputs)
+        .dyn_execute(inputs)
         .await
         .expect("Chain::execute must succeed");
     assert_eq!(
@@ -33,16 +36,16 @@ pub async fn assert_execute_output(chain: &dyn Chain, inputs: PromptArgs, expect
 }
 
 /// Asserts that inputs missing a required key are rejected rather than panicking.
-pub async fn assert_missing_input(chain: &dyn Chain, inputs: PromptArgs) {
+pub async fn assert_missing_input(chain: &dyn DynChain, inputs: PromptArgs) {
     assert!(
-        chain.invoke(inputs).await.is_err(),
+        chain.dyn_invoke(inputs).await.is_err(),
         "Chain::invoke must reject missing input"
     );
 }
 
 /// Asserts that output keys exactly match the implementation's declared contract.
-pub fn assert_output_keys(chain: &dyn Chain, expected: &[&str]) {
-    let actual = chain.get_output_keys();
+pub fn assert_output_keys(chain: &dyn DynChain, expected: &[&str]) {
+    let actual = chain.dyn_get_output_keys();
     assert!(!actual.is_empty(), "Chain output keys must not be empty");
     assert_eq!(actual, expected);
 }

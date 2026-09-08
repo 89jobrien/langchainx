@@ -1,5 +1,6 @@
 //! Traits and errors for tools that agents can call.
-use async_trait::async_trait;
+use std::{future::Future, pin::Pin};
+
 use serde_json::{Value, json};
 use thiserror::Error;
 
@@ -17,7 +18,6 @@ pub enum ToolError {
     Other(#[from] Box<dyn std::error::Error + Send + Sync>),
 }
 
-#[async_trait]
 /// Defines a callable tool that agents can inspect and execute.
 pub trait Tool: Send + Sync {
     /// Returns the name exposed to agents.
@@ -40,26 +40,75 @@ pub trait Tool: Send + Sync {
     }
 
     /// Parses a string input and executes the tool.
-    async fn call(&self, input: &str) -> Result<String, ToolError> {
-        let input = self.parse_input(input).await;
-        self.run(input).await
+    fn call(&self, input: &str) -> impl Future<Output = Result<String, ToolError>> + Send {
+        async move {
+            let input = self.parse_input(input).await;
+            self.run(input).await
+        }
     }
 
     /// Executes the tool with parsed JSON input.
-    async fn run(&self, input: Value) -> Result<String, ToolError>;
+    fn run(&self, input: Value) -> impl Future<Output = Result<String, ToolError>> + Send;
 
     /// Converts a string input into the JSON value accepted by [`Tool::run`].
-    async fn parse_input(&self, input: &str) -> Value {
-        log::info!("Using default implementation: {}", input);
-        match serde_json::from_str::<Value>(input) {
-            Ok(input) => {
-                if let Some(s) = input["input"].as_str() {
-                    Value::String(s.to_string())
-                } else {
-                    Value::String(input.to_string())
+    fn parse_input(&self, input: &str) -> impl Future<Output = Value> + Send {
+        async move {
+            log::info!("Using default implementation: {}", input);
+            match serde_json::from_str::<Value>(input) {
+                Ok(input) => {
+                    if let Some(s) = input["input"].as_str() {
+                        Value::String(s.to_string())
+                    } else {
+                        Value::String(input.to_string())
+                    }
                 }
+                Err(_) => Value::String(input.to_string()),
             }
-            Err(_) => Value::String(input.to_string()),
         }
+    }
+}
+
+/// A boxed, sendable future used at dynamic tool boundaries.
+pub type BoxToolFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
+
+/// Object-safe adapter for dynamically dispatched [`Tool`] implementations.
+pub trait DynTool: Send + Sync {
+    /// Returns the wrapped tool name.
+    fn dyn_name(&self) -> String;
+    /// Returns the wrapped tool description.
+    fn dyn_description(&self) -> String;
+    /// Returns the wrapped tool argument schema.
+    fn dyn_parameters(&self) -> Value;
+    /// Parses and executes the wrapped tool through a boxed future.
+    fn dyn_call<'a>(&'a self, input: &'a str) -> BoxToolFuture<'a, Result<String, ToolError>>;
+    /// Executes the wrapped tool through a boxed future.
+    fn dyn_run(&self, input: Value) -> BoxToolFuture<'_, Result<String, ToolError>>;
+    /// Parses input through a boxed future.
+    fn dyn_parse_input<'a>(&'a self, input: &'a str) -> BoxToolFuture<'a, Value>;
+}
+
+impl<T: Tool> DynTool for T {
+    fn dyn_name(&self) -> String {
+        Tool::name(self)
+    }
+
+    fn dyn_description(&self) -> String {
+        Tool::description(self)
+    }
+
+    fn dyn_parameters(&self) -> Value {
+        Tool::parameters(self)
+    }
+
+    fn dyn_call<'a>(&'a self, input: &'a str) -> BoxToolFuture<'a, Result<String, ToolError>> {
+        Box::pin(Tool::call(self, input))
+    }
+
+    fn dyn_run(&self, input: Value) -> BoxToolFuture<'_, Result<String, ToolError>> {
+        Box::pin(Tool::run(self, input))
+    }
+
+    fn dyn_parse_input<'a>(&'a self, input: &'a str) -> BoxToolFuture<'a, Value> {
+        Box::pin(Tool::parse_input(self, input))
     }
 }

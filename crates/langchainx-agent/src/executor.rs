@@ -1,7 +1,6 @@
 //! Execution loop that turns an [`Agent`] into a chain.
 use std::{collections::HashMap, sync::Arc};
 
-use async_trait::async_trait;
 use serde_json::json;
 use tokio::sync::Mutex;
 
@@ -14,7 +13,7 @@ use langchainx_core::{
         memory::BaseMemory,
         messages::Message,
     },
-    tools::Tool,
+    tools::DynTool,
 };
 use langchainx_memory::SimpleMemory;
 use langchainx_prompt::prompt::PromptArgs;
@@ -68,17 +67,16 @@ where
         self
     }
 
-    fn get_name_to_tools(&self) -> HashMap<String, Arc<dyn Tool>> {
+    fn get_name_to_tools(&self) -> HashMap<String, Arc<dyn DynTool>> {
         let mut name_to_tool = HashMap::new();
         for tool in self.agent.get_tools().iter() {
-            log::debug!("Loading Tool:{}", tool.name());
-            name_to_tool.insert(tool.name().trim().replace(" ", "_"), tool.clone());
+            log::debug!("Loading Tool:{}", tool.dyn_name());
+            name_to_tool.insert(tool.dyn_name().trim().replace(" ", "_"), tool.clone());
         }
         name_to_tool
     }
 }
 
-#[async_trait]
 impl<A> Chain for AgentExecutor<A>
 where
     A: Agent + Send + Sync,
@@ -116,7 +114,7 @@ where
                             })
                             .map_err(|e| ChainError::AgentError(e.to_string()))?;
 
-                        let observation_result = tool.call(&action.tool_input).await;
+                        let observation_result = tool.dyn_call(&action.tool_input).await;
 
                         let observation = match observation_result {
                             Ok(result) => result,
@@ -208,7 +206,7 @@ mod tests {
     use langchainx_chain::Chain;
     use langchainx_core::{
         schemas::agent::{AgentAction, AgentEvent, AgentFinish},
-        tools::ToolError,
+        tools::{Tool, ToolError},
     };
     use langchainx_prompt::prompt_args;
 
@@ -216,7 +214,7 @@ mod tests {
 
     struct FakeAgent {
         events: Arc<Mutex<Vec<AgentEvent>>>,
-        tools: Vec<Arc<dyn Tool>>,
+        tools: Vec<Arc<dyn DynTool>>,
     }
 
     impl FakeAgent {
@@ -227,7 +225,7 @@ mod tests {
             }
         }
 
-        fn with_tools(mut self, tools: Vec<Arc<dyn Tool>>) -> Self {
+        fn with_tools(mut self, tools: Vec<Arc<dyn DynTool>>) -> Self {
             self.tools = tools;
             self
         }
@@ -250,7 +248,7 @@ mod tests {
             }
         }
 
-        fn get_tools(&self) -> Vec<Arc<dyn Tool>> {
+        fn get_tools(&self) -> Vec<Arc<dyn DynTool>> {
             self.tools.clone()
         }
     }
@@ -269,7 +267,6 @@ mod tests {
         }
     }
 
-    #[async_trait]
     impl Tool for FakeTool {
         fn name(&self) -> String {
             self.name.clone()

@@ -2,7 +2,7 @@
 use std::sync::Arc;
 
 use langchainx_chain::{llm_chain::LLMChainBuilder, options::ChainCallOptions};
-use langchainx_core::tools::Tool;
+use langchainx_core::tools::DynTool;
 use langchainx_llm::language_models::llm::IntoArcLLM;
 
 use crate::error::AgentError;
@@ -18,7 +18,7 @@ use super::{
 #[derive(Default)]
 /// Configures the tools, prompt text, and model options for a [`ConversationalAgent`].
 pub struct ConversationalAgentBuilder {
-    tools: Option<Vec<Arc<dyn Tool>>>,
+    tools: Option<Vec<Arc<dyn DynTool>>>,
     prefix: Option<String>,
     suffix: Option<String>,
     options: Option<ChainCallOptions>,
@@ -36,7 +36,7 @@ impl ConversationalAgentBuilder {
     }
 
     /// Sets the tools advertised to and callable by the agent.
-    pub fn tools(mut self, tools: &[Arc<dyn Tool>]) -> Self {
+    pub fn tools(mut self, tools: &[Arc<dyn DynTool>]) -> Self {
         self.tools = Some(tools.to_vec());
         self
     }

@@ -1,5 +1,4 @@
 //! Line-oriented text file reading.
-use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -32,7 +31,6 @@ struct ReadFileInput {
     limit: Option<u64>,
 }
 
-#[async_trait]
 impl Tool for ReadFileTool {
     fn name(&self) -> String {
         "ReadFile".into()

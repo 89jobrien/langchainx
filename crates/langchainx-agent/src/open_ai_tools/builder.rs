@@ -2,7 +2,7 @@
 use std::sync::Arc;
 
 use langchainx_chain::{LLMChainBuilder, options::ChainCallOptions};
-use langchainx_core::tools::Tool;
+use langchainx_core::tools::DynTool;
 use langchainx_llm::{
     language_models::{llm::LLM, options::CallOptions},
     schemas::FunctionDefinition,
@@ -15,7 +15,7 @@ use super::{OpenAiToolAgent, prompt::PREFIX};
 #[derive(Default)]
 /// Configures tools, prompt text, and model options for an [`OpenAiToolAgent`].
 pub struct OpenAiToolAgentBuilder {
-    tools: Option<Vec<Arc<dyn Tool>>>,
+    tools: Option<Vec<Arc<dyn DynTool>>>,
     prefix: Option<String>,
     options: Option<ChainCallOptions>,
 }
@@ -31,7 +31,7 @@ impl OpenAiToolAgentBuilder {
     }
 
     /// Sets the tools exposed as model function definitions.
-    pub fn tools(mut self, tools: &[Arc<dyn Tool>]) -> Self {
+    pub fn tools(mut self, tools: &[Arc<dyn DynTool>]) -> Self {
         self.tools = Some(tools.to_vec());
         self
     }
@@ -60,7 +60,11 @@ impl OpenAiToolAgentBuilder {
         let functions = tools
             .iter()
             .map(|tool| {
-                FunctionDefinition::new(&tool.name(), &tool.description(), tool.parameters())
+                FunctionDefinition::new(
+                    &tool.dyn_name(),
+                    &tool.dyn_description(),
+                    tool.dyn_parameters(),
+                )
             })
             .collect::<Vec<FunctionDefinition>>();
         llm.add_options(CallOptions::new().with_functions(functions));

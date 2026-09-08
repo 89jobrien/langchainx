@@ -1,5 +1,4 @@
 //! Recursive regular-expression search over UTF-8 files.
-use async_trait::async_trait;
 use regex::Regex;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -96,7 +95,6 @@ fn search_file(
     Ok(())
 }
 
-#[async_trait]
 impl Tool for GrepTool {
     fn name(&self) -> String {
         "Grep".into()

@@ -1,5 +1,4 @@
 //! Full-file writes with automatic parent-directory creation.
-use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -29,7 +28,6 @@ struct WriteFileInput {
     content: String,
 }
 
-#[async_trait]
 impl Tool for WriteFileTool {
     fn name(&self) -> String {
         "WriteFile".into()

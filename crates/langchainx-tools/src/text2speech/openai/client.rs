@@ -7,7 +7,6 @@ pub use async_openai::{
     config::{Config, OpenAIConfig},
     types::{SpeechModel, SpeechResponseFormat, Voice},
 };
-use async_trait::async_trait;
 use serde_json::Value;
 
 use crate::{SpeechStorage, Tool, ToolError};
@@ -79,7 +78,6 @@ impl Default for Text2SpeechOpenAI<OpenAIConfig> {
     }
 }
 
-#[async_trait]
 impl<C: Config + Send + Sync> Tool for Text2SpeechOpenAI<C> {
     fn name(&self) -> String {
         "Text2SpeechOpenAI".to_string()
@@ -135,7 +133,6 @@ impl<C: Config + Send + Sync> Tool for Text2SpeechOpenAI<C> {
 mod tests {
     use std::sync::Arc;
 
-    use async_trait::async_trait;
     use tokio::sync::Mutex;
 
     use crate::SpeechStorage;
@@ -156,7 +153,7 @@ mod tests {
         saved: SavedAudio,
     }
 
-    #[async_trait]
+    #[async_trait::async_trait]
     impl SpeechStorage for CapturingStorage {
         async fn save(&self, key: &str, data: &[u8]) -> Result<String, Box<dyn std::error::Error>> {
             self.saved

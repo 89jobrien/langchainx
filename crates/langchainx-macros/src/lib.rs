@@ -1,9 +1,6 @@
 //! Declarative helpers for defining tools and constructing prompts, models, and chains.
 #![deny(missing_docs)]
 // Re-exports used by macros. Not part of the public API.
-#[doc(hidden)]
-pub use async_trait::async_trait;
-#[doc(hidden)]
 pub use langchainx_core::{tools::Tool, tools::ToolError};
 #[doc(hidden)]
 pub use serde_json;
@@ -44,7 +41,6 @@ macro_rules! tool {
     ($name:ident, $desc:expr, |$input:ident| $body:expr) => {
         pub struct $name;
 
-        #[$crate::async_trait]
         impl $crate::Tool for $name {
             fn name(&self) -> ::std::string::String {
                 stringify!($name).to_string()
@@ -66,7 +62,6 @@ macro_rules! tool {
     ($name:ident, $desc:expr, parameters = $params:expr, |$input:ident| $body:expr) => {
         pub struct $name;
 
-        #[$crate::async_trait]
         impl $crate::Tool for $name {
             fn name(&self) -> ::std::string::String {
                 stringify!($name).to_string()
@@ -272,8 +267,9 @@ mod tests {
 
     #[tokio::test]
     async fn tool_is_arc_dyn_compatible() {
-        let tool: std::sync::Arc<dyn Tool> = std::sync::Arc::new(DateTool);
-        assert_eq!(tool.name(), "DateTool");
+        let tool: std::sync::Arc<dyn langchainx_core::tools::DynTool> =
+            std::sync::Arc::new(DateTool);
+        assert_eq!(tool.dyn_name(), "DateTool");
     }
 
     // -- prompt! tests --
@@ -335,7 +331,6 @@ mod tests {
     use langchainx_llm::language_models::{GenerateResult, LLMError, llm::LLM};
 
     struct FakeLLM(String);
-    #[async_trait::async_trait]
     impl LLM for FakeLLM {
         async fn generate(&self, _msgs: &[Message]) -> Result<GenerateResult, LLMError> {
             Ok(GenerateResult {

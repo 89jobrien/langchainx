@@ -1,5 +1,4 @@
 //! HTML body text extraction that omits script contents.
-use async_trait::async_trait;
 use regex::Regex;
 use scraper::{ElementRef, Html, Selector};
 use serde_json::Value;
@@ -40,7 +39,6 @@ impl Default for WebScrapper {
     }
 }
 
-#[async_trait]
 impl Tool for WebScrapper {
     fn name(&self) -> String {
         String::from("Web Scraper")
@@ -62,8 +60,8 @@ impl Tool for WebScrapper {
     }
 }
 
-impl From<WebScrapper> for Arc<dyn Tool> {
-    fn from(ws: WebScrapper) -> Arc<dyn Tool> {
+impl From<WebScrapper> for Arc<dyn crate::DynTool> {
+    fn from(ws: WebScrapper) -> Arc<dyn crate::DynTool> {
         Arc::new(ws)
     }
 }

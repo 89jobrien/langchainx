@@ -10,7 +10,7 @@ use tokio::{
     process::Command,
 };
 
-use crate::Tool;
+use crate::DynTool;
 
 /// Canonicalizes `path` and rejects values that escape `base_dir`.
 pub fn validate_path(base_dir: &Path, path: &str) -> Result<PathBuf, crate::ToolError> {
@@ -198,11 +198,11 @@ pub use nu::NuTool;
 /// - `AgentlintTool` (requires `agentlint` binary)
 ///
 /// If a CLI binary is missing, the tool returns `ToolError::ExecutionFailed`.
-pub fn coding_tools(base_dir: impl Into<PathBuf>) -> Vec<Arc<dyn Tool>> {
+pub fn coding_tools(base_dir: impl Into<PathBuf>) -> Vec<Arc<dyn DynTool>> {
     let base: PathBuf = base_dir.into();
 
     #[allow(unused_mut)]
-    let mut tools: Vec<Arc<dyn Tool>> = vec![
+    let mut tools: Vec<Arc<dyn DynTool>> = vec![
         Arc::new(ReadFileTool::new(base.clone())),
         Arc::new(WriteFileTool::new(base.clone())),
         Arc::new(EditFileTool::new(base.clone())),
@@ -253,7 +253,7 @@ mod tests {
     #[test]
     fn tool_names_are_unique() {
         let tools = coding_tools(".");
-        let mut names: Vec<String> = tools.iter().map(|t| t.name()).collect();
+        let mut names: Vec<String> = tools.iter().map(|t| t.dyn_name()).collect();
         names.sort();
         names.dedup();
         assert_eq!(names.len(), tools.len());

@@ -3,10 +3,8 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use crate::{
-    chain::{
-        Chain, ChainError, CondenseQuestionGeneratorChain, DEFAULT_OUTPUT_KEY, StuffDocumentBuilder,
-    },
-    language_models::llm::{IntoArcLLM, LLM},
+    chain::{ChainError, CondenseQuestionGeneratorChain, DEFAULT_OUTPUT_KEY, StuffDocumentBuilder},
+    language_models::llm::{DynLLM, IntoArcLLM},
     memory::SimpleMemory,
     prompt::FormatPrompter,
     schemas::{BaseMemory, Retriever},
@@ -21,11 +19,11 @@ const CONVERSATIONAL_RETRIEVAL_QA_DEFAULT_INPUT_KEY: &str = "question";
 /// Supplying an LLM creates both internal chains during [`build`](Self::build). To use custom
 /// chains, omit the LLM and configure both chain fields explicitly.
 pub struct ConversationalRetrieverChainBuilder {
-    llm: Option<Arc<dyn LLM>>,
+    llm: Option<Arc<dyn DynLLM>>,
     retriever: Option<Box<dyn Retriever>>,
     memory: Option<Arc<Mutex<dyn BaseMemory>>>,
-    combine_documents_chain: Option<Box<dyn Chain>>,
-    condense_question_chain: Option<Box<dyn Chain>>,
+    combine_documents_chain: Option<Box<dyn crate::chain::DynChain>>,
+    condense_question_chain: Option<Box<dyn crate::chain::DynChain>>,
     prompt: Option<Box<dyn FormatPrompter>>,
     rephrase_question: bool,
     return_source_documents: bool,
@@ -81,7 +79,7 @@ impl ConversationalRetrieverChainBuilder {
     }
 
     /// Sets the chain that generates an answer from documents and a question.
-    pub fn combine_documents_chain<C: Into<Box<dyn Chain>>>(
+    pub fn combine_documents_chain<C: Into<Box<dyn crate::chain::DynChain>>>(
         mut self,
         combine_documents_chain: C,
     ) -> Self {
@@ -90,7 +88,7 @@ impl ConversationalRetrieverChainBuilder {
     }
 
     /// Sets the chain that rewrites a question using chat history.
-    pub fn condense_question_chain<C: Into<Box<dyn Chain>>>(
+    pub fn condense_question_chain<C: Into<Box<dyn crate::chain::DynChain>>>(
         mut self,
         condense_question_chain: C,
     ) -> Self {

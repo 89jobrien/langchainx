@@ -4,7 +4,7 @@ use http::{HeaderMap, HeaderName};
 use secrecy::{ExposeSecret, SecretString};
 use url::Url;
 
-use crate::Tool;
+use crate::DynTool;
 
 use super::{
     HttpEgressPolicy, HttpOrigin, HttpTransport, OpenApiFormat, OpenApiLimits, OpenApiToolkitError,
@@ -182,7 +182,7 @@ pub struct OpenApiToolkit {
 
 impl OpenApiToolkit {
     /// Returns one independent adapter for every validated operation.
-    pub fn tools(&self) -> Vec<Arc<dyn Tool>> {
+    pub fn tools(&self) -> Vec<Arc<dyn DynTool>> {
         self.operations
             .iter()
             .cloned()
@@ -194,7 +194,7 @@ impl OpenApiToolkit {
                     self.operation_policy.clone(),
                     self.credential_headers.clone(),
                     self.limits,
-                )) as Arc<dyn Tool>
+                )) as Arc<dyn DynTool>
             })
             .collect()
     }

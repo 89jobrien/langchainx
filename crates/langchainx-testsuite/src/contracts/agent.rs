@@ -16,7 +16,7 @@ pub fn assert_tool_names(agent: &dyn Agent, expected: &[&str]) {
     let actual: Vec<String> = agent
         .get_tools()
         .into_iter()
-        .map(|tool| tool.name())
+        .map(|tool| tool.dyn_name())
         .collect();
     assert_eq!(actual, expected, "Agent::get_tools returned wrong names");
 }

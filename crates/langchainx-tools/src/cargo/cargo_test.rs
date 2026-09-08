@@ -1,5 +1,4 @@
 //! `Tool` adapter for Cargo and nextest test execution.
-use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -43,7 +42,6 @@ struct CargoTestInput {
     no_capture: bool,
 }
 
-#[async_trait]
 impl Tool for CargoTestTool {
     fn name(&self) -> String {
         "CargoTest".into()

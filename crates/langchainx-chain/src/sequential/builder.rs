@@ -7,7 +7,7 @@ use super::SequentialChain;
 
 /// Collects chains in the order they should execute.
 pub struct SequentialChainBuilder {
-    chains: Vec<Box<dyn Chain>>,
+    chains: Vec<Box<dyn crate::chain::DynChain>>,
 }
 
 #[allow(clippy::new_without_default)] // Builder pattern
@@ -28,13 +28,13 @@ impl SequentialChainBuilder {
         let outputs: HashSet<String> = self
             .chains
             .iter()
-            .flat_map(|c| c.get_output_keys())
+            .flat_map(|c| c.dyn_get_output_keys())
             .collect();
 
         let input_keys: HashSet<String> = self
             .chains
             .iter()
-            .flat_map(|c| c.get_input_keys())
+            .flat_map(|c| c.dyn_get_input_keys())
             .collect();
 
         SequentialChain {

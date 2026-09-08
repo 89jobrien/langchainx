@@ -14,7 +14,6 @@ langchainx-memory         = { path = "../langchainx-memory" }
 langchainx-output-parsers = { path = "../langchainx-output-parsers" }
 langchainx-tools          = { path = "../langchainx-tools", optional = true }
 
-async-trait    = "0.1.80"
 tokio          = { version = "1", features = ["full"] }
 futures        = "0.3"
 futures-util   = "0.3.30"
@@ -43,5 +42,6 @@ sqlite-vss = ["sqlx"]
 sqlite-vec = ["sqlx"]
 
 [dev-dependencies]
+async-trait = "0.1.80"
 tokio    = { version = "1", features = ["full"] }
 tempfile = "3"

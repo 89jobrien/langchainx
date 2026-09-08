@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use async_trait::async_trait;
 use http::HeaderMap;
 use secrecy::SecretString;
 use serde_json::{Value, json};
@@ -92,7 +91,6 @@ impl OpenApiTool {
     }
 }
 
-#[async_trait]
 impl Tool for OpenApiTool {
     fn name(&self) -> String {
         self.operation.exposed_name.clone()

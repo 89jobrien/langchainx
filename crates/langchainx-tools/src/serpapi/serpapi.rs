@@ -1,7 +1,6 @@
 //! SerpApi request configuration and concise answer extraction.
 use std::error::Error;
 
-use async_trait::async_trait;
 use serde_json::Value;
 
 use crate::{Tool, ToolError};
@@ -151,7 +150,6 @@ fn get_organic_result(result: &Value) -> String {
     "".to_string()
 }
 
-#[async_trait]
 impl Tool for SerpApi {
     fn name(&self) -> String {
         String::from("GoogleSearch")

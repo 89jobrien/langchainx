@@ -1,7 +1,6 @@
 //! Chain implementation that executes a pipeline of child chains.
 use std::collections::{HashMap, HashSet};
 
-use async_trait::async_trait;
 use serde_json::{Value, json};
 
 use crate::{
@@ -13,13 +12,12 @@ use crate::{
 //THIS IS EXPERIMENTAL
 /// Executes child chains in order, exposing each generation to later steps by output key.
 pub struct SequentialChain {
-    pub(crate) chains: Vec<Box<dyn Chain>>,
+    pub(crate) chains: Vec<Box<dyn crate::chain::DynChain>>,
     #[allow(dead_code)] // Planned for input validation in SequentialChain
     pub(crate) input_keys: HashSet<String>,
     pub(crate) outputs: HashSet<String>,
 }
 
-#[async_trait]
 impl Chain for SequentialChain {
     fn required_keys(&self) -> Vec<String> {
         // Only require keys that aren't produced by earlier chains in the sequence
@@ -59,10 +57,10 @@ impl Chain for SequentialChain {
         let mut output_result = HashMap::new();
         let mut final_result = GenerateResult::default();
         for chain in self.chains.iter() {
-            let output = chain.execute(input_variables.clone()).await?;
+            let output = chain.dyn_execute(input_variables.clone()).await?;
             //Get the oput key for the chain result
             let output_key = chain
-                .get_output_keys()
+                .dyn_get_output_keys()
                 .first()
                 .unwrap_or(&DEFAULT_OUTPUT_KEY.to_string())
                 .clone();

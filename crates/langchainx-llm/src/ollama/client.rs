@@ -3,7 +3,6 @@ use crate::{
     language_models::{GenerateResult, LLMError, TokenUsage, llm::LLM},
     schemas::{Message, MessageType, StreamData},
 };
-use async_trait::async_trait;
 use futures::Stream;
 use ollama_rs::generation::{chat::ChatMessageResponse, images::Image};
 pub use ollama_rs::{
@@ -110,7 +109,6 @@ impl Default for Ollama {
     }
 }
 
-#[async_trait]
 impl LLM for Ollama {
     async fn generate(&self, messages: &[Message]) -> Result<GenerateResult, LLMError> {
         let request = self.generate_request(messages);

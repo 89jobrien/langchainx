@@ -1,6 +1,6 @@
 use std::{collections::HashSet, sync::Arc};
 
-use crate::{Tool, toolkits::common::normalize_unique_tool_names};
+use crate::{DynTool, toolkits::common::normalize_unique_tool_names};
 
 use super::{
     McpClient, McpClientError, McpToolDefinition, McpToolkitError, McpToolkitLimits,
@@ -61,7 +61,7 @@ impl McpToolkit {
     }
 
     /// Returns generated adapters for all discovered tools.
-    pub fn tools(&self) -> Vec<Arc<dyn Tool>> {
+    pub fn tools(&self) -> Vec<Arc<dyn DynTool>> {
         self.definitions
             .iter()
             .cloned()
@@ -72,7 +72,7 @@ impl McpToolkit {
                     definition,
                     exposed_name,
                     self.limits,
-                )) as Arc<dyn Tool>
+                )) as Arc<dyn DynTool>
             })
             .collect()
     }

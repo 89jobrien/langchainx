@@ -1,7 +1,6 @@
 //! DuckDuckGo HTML result retrieval and parsing.
 use std::{collections::HashMap, error::Error};
 
-use async_trait::async_trait;
 use reqwest::Client;
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
@@ -99,7 +98,6 @@ pub struct SearchResult {
     snippet: String,
 }
 
-#[async_trait]
 impl Tool for DuckDuckGoSearchResults {
     fn name(&self) -> String {
         String::from("DuckDuckGoSearch")

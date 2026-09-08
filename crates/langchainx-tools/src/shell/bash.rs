@@ -1,5 +1,4 @@
 //! Timeout-bounded POSIX shell command execution.
-use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::time::Duration;
@@ -21,7 +20,6 @@ struct BashInput {
     timeout_secs: Option<u64>,
 }
 
-#[async_trait]
 impl Tool for BashTool {
     fn name(&self) -> String {
         "Bash".into()

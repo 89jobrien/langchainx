@@ -1,7 +1,6 @@
 //! Two-stage chain that generates SQL, executes it, then summarizes the result.
 use std::pin::Pin;
 
-use async_trait::async_trait;
 use futures::Stream;
 use serde_json::Value;
 
@@ -119,7 +118,6 @@ impl SQLDatabaseChain {
     }
 }
 
-#[async_trait]
 impl Chain for SQLDatabaseChain {
     fn required_keys(&self) -> Vec<String> {
         vec![SQL_CHAIN_DEFAULT_INPUT_KEY_QUERY.to_string()]

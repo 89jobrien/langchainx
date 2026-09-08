@@ -10,6 +10,6 @@ fn main() {
     let tools = coding_tools(".");
     println!("Coding tools available ({} total):", tools.len());
     for tool in &tools {
-        println!("  - {} : {}", tool.name(), tool.description());
+        println!("  - {} : {}", tool.dyn_name(), tool.dyn_description());
     }
 }

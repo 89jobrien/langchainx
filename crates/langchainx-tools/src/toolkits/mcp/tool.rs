@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use async_trait::async_trait;
 use serde_json::{Value, json};
 
 use crate::{Tool, ToolError};
@@ -34,7 +33,6 @@ impl McpTool {
     }
 }
 
-#[async_trait]
 impl Tool for McpTool {
     fn name(&self) -> String {
         self.exposed_name.clone()

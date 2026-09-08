@@ -1,6 +1,5 @@
 //! [`ContainerTool`] — langchainx `Tool` adapter for any [`ContainerRuntime`].
 
-use async_trait::async_trait;
 use serde_json::{Value, json};
 
 use super::{ContainerRuntime, RunConfig, SandboxConfig, detect_runtime};
@@ -38,7 +37,6 @@ impl ContainerTool {
     }
 }
 
-#[async_trait]
 impl Tool for ContainerTool {
     fn name(&self) -> String {
         "Container".into()

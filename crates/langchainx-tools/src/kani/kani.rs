@@ -1,5 +1,4 @@
 //! `Tool` adapter for Kani verification harnesses.
-use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -34,7 +33,6 @@ struct KaniInput {
     tests: bool,
 }
 
-#[async_trait]
 impl Tool for KaniTool {
     fn name(&self) -> String {
         "Kani".into()

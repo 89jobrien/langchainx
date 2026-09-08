@@ -1,5 +1,4 @@
 //! `Tool` adapter for structured `rustqual` findings.
-use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -35,7 +34,6 @@ struct RustqualInput {
     verbose: bool,
 }
 
-#[async_trait]
 impl Tool for RustqualTool {
     fn name(&self) -> String {
         "Rustqual".into()
