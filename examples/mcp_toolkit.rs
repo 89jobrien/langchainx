@@ -55,7 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let toolkit = McpToolkit::new(Arc::new(MemoryMcpClient), McpToolkitLimits::default()).await?;
 
     for tool in toolkit.tools() {
-        println!("generated MCP tool: {}", tool.name());
+        println!("generated MCP tool: {}", tool.dyn_name());
     }
 
     toolkit.close().await?;

@@ -67,7 +67,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     .build()?;
 
     for tool in toolkit.tools() {
-        println!("generated OpenAPI tool: {}", tool.name());
+        println!("generated OpenAPI tool: {}", tool.dyn_name());
     }
 
     Ok(())
