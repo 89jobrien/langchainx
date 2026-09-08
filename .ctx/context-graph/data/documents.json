@@ -1,0 +1,147 @@
+{
+  "documents": {
+    "arch_workspace": {
+      "title": "Workspace Architecture",
+      "source": "Cargo.toml + src/lib.rs",
+      "ingested_at": "2026-05-21T23:05:33.256088+00:00",
+      "metadata": {},
+      "content_hash": "8647a9a03ee8d59f"
+    },
+    "core_traits": {
+      "title": "Core Trait Layer",
+      "source": "crates/langchainx-llm/src/language_models/llm.rs, chain_trait.rs, tools.rs, etc.",
+      "ingested_at": "2026-05-21T23:05:33.264149+00:00",
+      "metadata": {},
+      "content_hash": "5df3649e0a201d10"
+    },
+    "llm_backends": {
+      "title": "LLM Backend Implementations",
+      "source": "crates/langchainx-llm/src/",
+      "ingested_at": "2026-05-21T23:05:33.284522+00:00",
+      "metadata": {},
+      "content_hash": "901859cab614f91a"
+    },
+    "chain_impls": {
+      "title": "Chain Implementations",
+      "source": "crates/langchainx-chain/src/",
+      "ingested_at": "2026-05-21T23:05:33.296450+00:00",
+      "metadata": {},
+      "content_hash": "57c5d3a9083d8f3d"
+    },
+    "memory_impls": {
+      "title": "Memory Implementations",
+      "source": "crates/langchainx-memory/src/",
+      "ingested_at": "2026-05-21T23:05:33.318010+00:00",
+      "metadata": {},
+      "content_hash": "9bdf0c649d565273"
+    },
+    "embed_vectorstore": {
+      "title": "Embedding and VectorStore Backends",
+      "source": "crates/langchainx-embedding/src/, crates/langchainx-vectorstore/src/",
+      "ingested_at": "2026-05-21T23:05:33.325137+00:00",
+      "metadata": {},
+      "content_hash": "68a3d8928db135fd"
+    },
+    "agent_types": {
+      "title": "Agent Types",
+      "source": "crates/langchainx-agent/src/",
+      "ingested_at": "2026-05-21T23:05:33.354642+00:00",
+      "metadata": {},
+      "content_hash": "9b0d3742ff1fe809"
+    },
+    "prompt_macros": {
+      "title": "Prompt System and Macros",
+      "source": "crates/langchainx-prompt/src/, src/lib.rs",
+      "ingested_at": "2026-05-21T23:05:33.366750+00:00",
+      "metadata": {},
+      "content_hash": "068d3a182a90ac40"
+    }
+  },
+  "chunks": {
+    "arch_workspace_chunk_0": {
+      "doc_id": "arch_workspace",
+      "index": 0,
+      "text": "langchainx is a Rust port of LangChain."
+    },
+    "arch_workspace_chunk_1": {
+      "doc_id": "arch_workspace",
+      "index": 1,
+      "text": "It is a Cargo workspace with 13 crates:\nlangchainx (facade), langchainx-core (shared types, traits, errors),\nlangchainx-llm (LLM backends), langchainx-chain (chain abstractions),\nlangchainx-prompt (prompt templates and macros), langchainx-memory (memory impls),\nlangchainx-embedding (embedding backends), langchainx-vectorstore (vector store backends),\nlangchainx-agent (agent executor and agent types), langchainx-tools (tool trait and impls),\nlangchainx-loaders (document loaders), langchainx-text-splitter (text splitting),\nlangchainx-semantic-router (semantic routing), langchainx-output-parsers (output parsing)."
+    },
+    "arch_workspace_chunk_2": {
+      "doc_id": "arch_workspace",
+      "index": 2,
+      "text": "The facade crate re-exports key types from all sub-crates. Edition 2024, version 0.4.6. Feature flags gate optional integrations: postgres, qdrant, surrealdb, opensearch,\nsqlite-vss, sqlite-vec, ollama, fastembed, mistralai, git, lopdf, pdf-extract,\nhtml-to-markdown, tree-sitter, rss, sitemap."
+    },
+    "core_traits_chunk_0": {
+      "doc_id": "core_traits",
+      "index": 0,
+      "text": "The core trait layer defines the primary abstractions:\nLLM trait (in langchainx-llm): generate(&[Message]) -> Result<GenerateResult, LLMError>,\ninvoke(&str) -> Result<String, LLMError>, stream(&[Message]) -> Stream<StreamData>. Chain trait (in langchainx-chain): call(PromptArgs) -> Result<GenerateResult, ChainError>,\ninvoke(PromptArgs) -> Result<String, ChainError>, execute(PromptArgs) -> HashMap,\nstream(PromptArgs) -> Stream<StreamData>. Also has required_keys() and validate_input()."
+    },
+    "core_traits_chunk_1": {
+      "doc_id": "core_traits",
+      "index": 1,
+      "text": "Tool trait (in langchainx-core): name(), description(), parameters() -> JSON schema,\ncall(&str), run(Value), parse_input(&str). Embedder trait (in langchainx-embedding): embed_documents(&[String]) -> Vec<Vec<f64>>,\nembed_query(&str) -> Vec<f64>. VectorStore trait (in langchainx-vectorstore): add_documents(&[Document], &Options),\nsimilarity_search(&str, limit, &Options). Retriever trait (in langchainx-core): get_relevant_documents(&str) -> Vec<Document>."
+    },
+    "core_traits_chunk_2": {
+      "doc_id": "core_traits",
+      "index": 2,
+      "text": "BaseMemory trait (in langchainx-core): messages(), add_message(), add_user_message(),\nadd_ai_message(), clear(). Loader trait (in langchainx-loaders): load() -> Stream<Document>,\nload_and_split(TextSplitter) -> Stream<Document>. Agent trait (in langchainx-agent): plan(steps, inputs) -> AgentEvent, get_tools(). FormatPrompter trait (in langchainx-prompt): format_prompt(PromptArgs) -> PromptValue,\nget_input_variables(). OutputParser trait (in langchainx-output-parsers): parse(&str) -> String."
+    },
+    "core_traits_chunk_3": {
+      "doc_id": "core_traits",
+      "index": 3,
+      "text": "All traits use async-trait. LLM uses Arc<dyn LLM> via IntoArcLLM helper."
+    },
+    "llm_backends_chunk_0": {
+      "doc_id": "llm_backends",
+      "index": 0,
+      "text": "LLM backends implement the LLM trait. Each backend has client.rs, models.rs, error.rs. OpenAI: uses async-openai crate, supports GPT models, function calling, streaming. Claude: custom HTTP client to Anthropic API, supports Claude models. DeepSeek: OpenAI-compatible API with custom base URL, reuses OpenAI client patterns. Qwen: OpenAI-compatible API with custom base URL, reuses OpenAI client patterns. Ollama: local LLM inference via ollama-rs crate, feature-gated behind ollama flag."
+    },
+    "llm_backends_chunk_1": {
+      "doc_id": "llm_backends",
+      "index": 1,
+      "text": "All backends convert between their native message formats and the shared Message type. CallOptions struct controls temperature, max_tokens, stop_words, etc."
+    },
+    "chain_impls_chunk_0": {
+      "doc_id": "chain_impls",
+      "index": 0,
+      "text": "Chain implementations in langchainx-chain crate:\nLLMChain: basic prompt->LLM pipeline. Uses LLMChainBuilder with prompt, llm, output_key,\noutput_parser fields. Calls FormatPrompter to format prompt, then LLM.generate(). ConversationalChain: LLM chain with memory. Builder takes llm and memory (Arc<dyn BaseMemory>). ConversationalRetrievalQA: memory + retriever for RAG. Builder takes llm, memory, retriever."
+    },
+    "chain_impls_chunk_1": {
+      "doc_id": "chain_impls",
+      "index": 1,
+      "text": "SequentialChain: chains multiple Chain impls in series, passing output of one as input to next. StuffDocuments: stuffs retrieved documents into prompt context. SqlDatabase: generates SQL from natural language using LLM, executes against database. AgentExecutor (in langchainx-agent): runs Agent.plan() in a loop, dispatching tool calls. Implements Chain trait. Has max_iterations, break_if_error, optional memory."
+    },
+    "memory_impls_chunk_0": {
+      "doc_id": "memory_impls",
+      "index": 0,
+      "text": "Memory implementations of BaseMemory trait:\nSimpleMemory: stores all messages in a Vec<Message>. No limit. WindowBufferMemory: keeps only the last N messages (sliding window). DummyMemory: always returns empty messages. Used for chains that dont need memory. Memory is passed into chain builders as Arc<Mutex<dyn BaseMemory>> or Box<dyn BaseMemory>."
+    },
+    "embed_vectorstore_chunk_0": {
+      "doc_id": "embed_vectorstore",
+      "index": 0,
+      "text": "Embedding backends implement Embedder trait:\nOpenAI embedder: uses async-openai for text-embedding models. Ollama embedder: local embeddings via ollama-rs, feature-gated. FastEmbed: local embeddings via fastembed crate, feature-gated. MistralAI embedder: Mistral AI embedding API, feature-gated. VectorStore backends implement VectorStore trait:\nPostgres (pgvector): uses sqlx + pgvector crate, feature-gated. Qdrant: uses qdrant-client crate, feature-gated."
+    },
+    "embed_vectorstore_chunk_1": {
+      "doc_id": "embed_vectorstore",
+      "index": 1,
+      "text": "OpenSearch: uses opensearch crate with AWS auth, feature-gated. SQLite-VSS: uses sqlx with sqlite-vss extension, feature-gated. SQLite-Vec: uses sqlx with sqlite-vec extension, feature-gated. SurrealDB: uses surrealdb crate, feature-gated. VectorStore Retriever wraps a VectorStore and implements the core Retriever trait,\nbridging vectorstore queries into the chain/agent retrieval interface."
+    },
+    "agent_types_chunk_0": {
+      "doc_id": "agent_types",
+      "index": 0,
+      "text": "Two agent types implementing the Agent trait:\nChatAgent: ReAct-style agent that parses text output to determine actions. Uses a chat prompt with system instructions for ReAct format. OpenAIToolsAgent: Uses OpenAI function-calling API for structured tool invocation. Both are constructed via builders (ChatAgentBuilder, OpenAIToolsAgentBuilder). AgentEvent enum: Action(Vec<AgentAction>) or Finish(AgentFinish). AgentAction: tool name, tool_input, log. AgentFinish: output string."
+    },
+    "prompt_macros_chunk_0": {
+      "doc_id": "prompt_macros",
+      "index": 0,
+      "text": "The prompt system provides macros for composing prompt templates:\ntemplate_fstring!(template, var1, var2, ...) - creates FString-format PromptTemplate. template_jinja2!(template, var1, var2, ...) - creates Jinja2-format PromptTemplate. fmt_message!(Message) - wraps a Message in MessageOrTemplate. fmt_template!(HumanMessagePromptTemplate) - wraps a template in MessageOrTemplate. fmt_placeholder!(key) - placeholder for dynamic message insertion."
+    },
+    "prompt_macros_chunk_1": {
+      "doc_id": "prompt_macros",
+      "index": 1,
+      "text": "message_formatter![...] - composes multiple MessageOrTemplate into a MessageFormatter. prompt_args!{key => value, ...} - creates a PromptArgs HashMap. HumanMessagePromptTemplate, SystemMessagePromptTemplate, AIMessagePromptTemplate\nwrap PromptTemplate with specific message types. MessageFormatter implements FormatPrompter and composes prompt chains."
+    }
+  }
+}

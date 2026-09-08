@@ -1,12 +1,10 @@
+//! Document content and retrieval metadata.
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-/// The `Document` struct represents a document with content, metadata, and a score.
-/// The `page_content` field is a string that contains the content of the document.
-/// The `metadata` field is a `HashMap` where the keys represent metadata properties and the values represent property values.
-/// The `score` field represents a relevance score for the document and is a floating point number.
+/// Text content with arbitrary metadata and a relevance score.
 ///
 /// # Usage
 /// ```rust,ignore
@@ -20,13 +18,16 @@ use serde_json::Value;
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Document {
+    /// Text contained in the document.
     pub page_content: String,
+    /// Arbitrary attributes associated with the document.
     pub metadata: HashMap<String, Value>,
+    /// Relevance score assigned by a retriever or vector store.
     pub score: f64,
 }
 
 impl Document {
-    /// Constructs a new `Document` with provided `page_content`, an empty `metadata` map and a `score` of 0.
+    /// Creates a document with empty metadata and a score of zero.
     pub fn new<S: Into<String>>(page_content: S) -> Self {
         Document {
             page_content: page_content.into(),
@@ -35,13 +36,13 @@ impl Document {
         }
     }
 
-    /// Sets the `metadata` Map of the `Document` to the provided HashMap.
+    /// Replaces the document metadata.
     pub fn with_metadata(mut self, metadata: HashMap<String, Value>) -> Self {
         self.metadata = metadata;
         self
     }
 
-    /// Sets the `score` of the `Document` to the provided float.
+    /// Sets the document's relevance score.
     pub fn with_score(mut self, score: f64) -> Self {
         self.score = score;
         self
@@ -49,7 +50,7 @@ impl Document {
 }
 
 impl Default for Document {
-    /// Provides a default `Document` with an empty `page_content`, an empty `metadata` map and a `score` of 0.
+    /// Creates an empty document with a score of zero.
     fn default() -> Self {
         Document {
             page_content: "".to_string(),

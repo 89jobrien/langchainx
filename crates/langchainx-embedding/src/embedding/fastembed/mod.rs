@@ -1,3 +1,4 @@
+//! Local embedding generation through the FastEmbed library.
 #[allow(clippy::module_inception)]
 mod fastembed;
 pub use fastembed::*;

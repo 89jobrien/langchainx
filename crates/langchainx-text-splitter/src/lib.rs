@@ -1,3 +1,5 @@
+//! Character-, Markdown-, and token-aware document splitting.
+#![deny(missing_docs)]
 mod error;
 mod markdown;
 mod options;

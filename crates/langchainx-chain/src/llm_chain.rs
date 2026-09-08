@@ -1,3 +1,4 @@
+//! Prompt-to-model chain with configurable output parsing and streaming.
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -16,6 +17,7 @@ use crate::{
 
 use super::{ChainError, chain_trait::Chain, options::ChainCallOptions};
 
+/// Configures the prompt, language model, output parser, and result key for an [`LLMChain`].
 pub struct LLMChainBuilder {
     prompt: Option<Box<dyn FormatPrompter>>,
     llm: Option<Arc<dyn DynLLM>>,
@@ -24,7 +26,9 @@ pub struct LLMChainBuilder {
     output_parser: Option<Box<dyn OutputParser>>,
 }
 
+#[allow(clippy::new_without_default)] // Builder pattern
 impl LLMChainBuilder {
+    /// Creates an empty builder.
     pub fn new() -> Self {
         Self {
             prompt: None,
@@ -34,31 +38,38 @@ impl LLMChainBuilder {
             output_parser: None,
         }
     }
+    /// Sets model call options to apply when the model is not already shared by another [`Arc`].
     pub fn options(mut self, options: ChainCallOptions) -> Self {
         self.options = Some(options);
         self
     }
 
+    /// Sets the prompt formatter used to create model messages.
     pub fn prompt<P: Into<Box<dyn FormatPrompter>>>(mut self, prompt: P) -> Self {
         self.prompt = Some(prompt.into());
         self
     }
 
+    /// Sets the language model used for generation.
     pub fn llm<L: IntoArcLLM>(mut self, llm: L) -> Self {
         self.llm = Some(llm.into_arc_llm());
         self
     }
 
+    /// Sets the key under which [`Chain::execute`] stores generated text.
     pub fn output_key<S: Into<String>>(mut self, output_key: S) -> Self {
         self.output_key = Some(output_key.into());
         self
     }
 
+    /// Sets the parser applied to generations returned by [`Chain::call`].
     pub fn output_parser<P: Into<Box<dyn OutputParser>>>(mut self, output_parser: P) -> Self {
         self.output_parser = Some(output_parser.into());
         self
     }
 
+    // qual:allow(iosp) reason: "builder validation + construction"
+    /// Builds the chain, requiring both a prompt and language model.
     pub fn build(self) -> Result<LLMChain, ChainError> {
         let prompt = self
             .prompt
@@ -93,6 +104,7 @@ impl LLMChainBuilder {
     }
 }
 
+/// Formats named inputs, calls a language model, and optionally parses its output.
 pub struct LLMChain {
     prompt: Box<dyn FormatPrompter>,
     llm: Arc<dyn DynLLM>,
@@ -140,6 +152,7 @@ impl Chain for LLMChain {
         input_variables: PromptArgs,
     ) -> Result<Pin<Box<dyn Stream<Item = Result<StreamData, ChainError>> + Send>>, ChainError>
     {
+        self.validate_input(&input_variables)?;
         let prompt = self.prompt.format_prompt(input_variables.clone())?;
         log::debug!("Prompt: {:?}", prompt);
         let llm_stream = self.llm.dyn_stream(&prompt.to_chat_messages()).await?;
@@ -193,7 +206,29 @@ mod tests {
         let chain = make_chain(vec!["x".into()]);
         // "input" key is required by the prompt but not provided
         let result = chain.invoke(prompt_args! { "wrong_key" => "val" }).await;
-        assert!(result.is_err());
+        let err = result.unwrap_err();
+        match &err {
+            ChainError::MissingInputVariable {
+                key,
+                expected,
+                provided,
+            } => {
+                assert_eq!(key, "input");
+                assert!(expected.contains(&"input".to_string()));
+                assert!(provided.contains(&"wrong_key".to_string()));
+            }
+            other => panic!("expected MissingInputVariable, got: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn stream_validates_input_keys() {
+        let chain = make_chain(vec!["x".into()]);
+        let result = chain.stream(prompt_args! { "wrong" => "val" }).await;
+        assert!(matches!(
+            result,
+            Err(ChainError::MissingInputVariable { ref key, .. }) if key == "input"
+        ));
     }
 
     #[tokio::test]

@@ -1,3 +1,4 @@
+//! Semantic route selection and optional tool-input generation.
 use std::{collections::HashMap, sync::Arc};
 
 use serde_json::Value;
@@ -7,31 +8,44 @@ use langchainx_embedding::Embedder;
 
 use crate::{Index, RouteLayerError, Router};
 
+/// Strategy for combining multiple utterance scores for one route.
 pub enum AggregationMethod {
+    /// Arithmetic mean of the scores.
     Mean,
+    /// Highest score.
     Max,
+    /// Sum of the scores.
     Sum,
 }
 impl AggregationMethod {
+    /// Aggregates scores, returning `0.0` for an empty slice.
     pub fn aggregate(&self, values: &[f64]) -> f64 {
+        if values.is_empty() {
+            return 0.0;
+        }
         match self {
             AggregationMethod::Sum => values.iter().sum(),
             AggregationMethod::Mean => values.iter().sum::<f64>() / values.len() as f64,
             AggregationMethod::Max => *values
                 .iter()
-                .max_by(|a, b| a.partial_cmp(b).unwrap())
+                .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
                 .unwrap_or(&0.0),
         }
     }
 }
 
 #[derive(Debug, Clone)]
+/// The route selected for an input query.
 pub struct RouteChoise {
+    /// Selected route name.
     pub route: String,
+    /// Highest individual utterance similarity for the selected route.
     pub similarity_score: f64,
+    /// LLM-generated tool input when the route has a tool description.
     pub tool_input: Option<Value>,
 }
 
+/// Embeds queries, searches an index, and selects the highest-scoring route.
 pub struct RouteLayer {
     pub(crate) embedder: Arc<dyn Embedder>,
     pub(crate) index: Box<dyn Index>,
@@ -42,6 +56,7 @@ pub struct RouteLayer {
 }
 
 impl RouteLayer {
+    /// Embeds routes that need vectors and adds all routes to the index.
     pub async fn add_routes(&mut self, routers: &mut [Router]) -> Result<(), RouteLayerError> {
         for router in routers.iter_mut() {
             if router.embedding.is_none() {
@@ -53,6 +68,7 @@ impl RouteLayer {
         Ok(())
     }
 
+    /// Deletes a route from the index by name.
     pub async fn delete_route<S: Into<String>>(
         &mut self,
         route_name: S,
@@ -61,6 +77,7 @@ impl RouteLayer {
         Ok(())
     }
 
+    /// Returns all routes currently stored in the index.
     pub async fn get_routers(&self) -> Result<Vec<Router>, RouteLayerError> {
         let routes = self.index.get_routers().await?;
         Ok(routes)
@@ -117,8 +134,9 @@ impl RouteLayer {
         (top_route, top_scores)
     }
 
-    /// Call the route layer with a query and return the best route choise.
-    /// If route has a tool description, it will also return the tool input.
+    /// Selects the best route for a text query.
+    ///
+    /// Generates tool input when the selected route has a tool description.
     pub async fn call<S: Into<String>>(
         &self,
         query: S,
@@ -128,31 +146,25 @@ impl RouteLayer {
 
         let route_choise = self.call_embedding(&query_vector).await?;
 
-        if route_choise.is_none() {
+        let Some(choice) = route_choise else {
             return Ok(None);
-        }
+        };
 
-        let router = self
-            .index
-            .get_router(&route_choise.as_ref().unwrap().route) //safe to unwrap
-            .await?;
+        let router = self.index.get_router(&choice.route).await?;
 
-        if router.tool_description.is_none() {
-            return Ok(route_choise);
-        }
+        let Some(description) = router.tool_description else {
+            return Ok(Some(choice));
+        };
 
-        let tool_input = self
-            .generate_tool_input(&query, &router.tool_description.unwrap())
-            .await?;
+        let tool_input = self.generate_tool_input(&query, &description).await?;
 
-        Ok(route_choise.map(|route| RouteChoise {
+        Ok(Some(RouteChoise {
             tool_input: Some(tool_input),
-            ..route
+            ..choice
         }))
     }
 
-    /// Call the route layer with an embedding vector and return the best route choise.
-    /// Does not return tool input.
+    /// Selects the best route for a precomputed embedding without generating tool input.
     pub async fn call_embedding(
         &self,
         embedding: &[f64],
@@ -290,11 +302,54 @@ mod tests {
         assert!((result.similarity_score - 1.0).abs() < 1e-9);
     }
 
+    #[test]
+    fn test_mean_aggregate_empty_slice() {
+        // Should return 0.0, not panic with division by zero
+        assert_eq!(AggregationMethod::Mean.aggregate(&[]), 0.0);
+    }
+
+    #[test]
+    fn test_max_aggregate_empty_slice() {
+        assert_eq!(AggregationMethod::Max.aggregate(&[]), 0.0);
+    }
+
+    #[test]
+    fn test_sum_aggregate_empty_slice() {
+        assert_eq!(AggregationMethod::Sum.aggregate(&[]), 0.0);
+    }
+
+    mod proptests {
+        use super::*;
+        use proptest::prelude::*;
+
+        fn finite_f64() -> impl Strategy<Value = f64> {
+            -1e10f64..1e10f64
+        }
+
+        proptest! {
+            #[test]
+            fn mean_between_min_and_max(values in prop::collection::vec(finite_f64(), 1..100)) {
+                let mean = AggregationMethod::Mean.aggregate(&values);
+                let min = values.iter().cloned().fold(f64::INFINITY, f64::min);
+                let max = values.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+                prop_assert!(mean >= min && mean <= max,
+                    "mean {} not in [{}, {}]", mean, min, max);
+            }
+
+            #[test]
+            fn sum_gte_max_for_non_negative(values in prop::collection::vec(0.0f64..1e10, 1..100)) {
+                let sum = AggregationMethod::Sum.aggregate(&values);
+                let max = AggregationMethod::Max.aggregate(&values);
+                prop_assert!(sum >= max,
+                    "sum {} < max {}", sum, max);
+            }
+        }
+    }
+
     #[tokio::test]
     #[ignore]
     async fn test_route_layer_builder() {
         use langchainx_embedding::embedding::openai::OpenAiEmbedder;
-        use langchainx_llm::openai::OpenAI;
 
         let captial_route = Router::new(
             "captial",

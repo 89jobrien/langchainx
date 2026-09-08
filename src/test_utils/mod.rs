@@ -1,5 +1,5 @@
-mod fake_llm;
-mod temp_workspace;
-
-pub use fake_llm::FakeLLM;
-pub use temp_workspace::TempWorkspace;
+//! In-process LLM doubles and temporary workspaces for tests.
+#[cfg(feature = "test-utils")]
+pub use langchainx_chain::test_utils::FakeLLM;
+#[cfg(feature = "test-utils")]
+pub use langchainx_chain::test_utils::TempWorkspace;

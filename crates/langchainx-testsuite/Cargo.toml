@@ -1,0 +1,24 @@
+[package]
+name = "langchainx-testsuite"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Reusable conformance contracts and deterministic test doubles for langchainx"
+
+[dependencies]
+langchainx-agent = { path = "../langchainx-agent" }
+langchainx-chain = { path = "../langchainx-chain" }
+langchainx-core = { path = "../langchainx-core" }
+langchainx-embedding = { path = "../langchainx-embedding" }
+langchainx-llm = { path = "../langchainx-llm" }
+langchainx-loaders = { path = "../langchainx-loaders" }
+langchainx-output-parsers = { path = "../langchainx-output-parsers" }
+langchainx-prompt = { path = "../langchainx-prompt" }
+langchainx-vectorstore = { path = "../langchainx-vectorstore" }
+
+async-trait = "0.1.80"
+futures = "0.3"
+futures-util = "0.3.30"
+serde_json = "1.0"
+tokio = { version = "1", features = ["sync"] }

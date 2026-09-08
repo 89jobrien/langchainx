@@ -1,3 +1,4 @@
+//! Parser for fenced JSON actions emitted by the conversational agent.
 use std::collections::VecDeque;
 
 use regex::Regex;
@@ -58,6 +59,7 @@ impl ChatOutputParser {
     }
 }
 
+// qual:allow(iosp) reason: "JSON parsing with fallback logic"
 fn parse_partial_json(s: &str, strict: bool) -> Option<Value> {
     match serde_json::from_str::<Value>(s) {
         Ok(val) => return Some(val),
@@ -76,8 +78,8 @@ fn parse_partial_json(s: &str, strict: bool) -> Option<Value> {
             '{' if !is_inside_string => stack.push_back('}'),
             '[' if !is_inside_string => stack.push_back(']'),
             '}' | ']' if !is_inside_string => {
-                let c = stack.pop_back()?;
-                if c != char {
+                let expected = stack.pop_back()?;
+                if expected != char {
                     return None;
                 }
             }

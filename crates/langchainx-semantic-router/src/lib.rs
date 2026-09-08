@@ -1,3 +1,5 @@
+//! Embedding-based routing with configurable indexes and score aggregation.
+#![deny(missing_docs)]
 mod router;
 pub use router::*;
 

@@ -1,3 +1,4 @@
+//! OpenAI speech generation with filesystem or custom storage output.
 use std::sync::Arc;
 
 use async_openai::Client;
@@ -11,6 +12,7 @@ use serde_json::Value;
 use crate::{SpeechStorage, Tool, ToolError};
 
 #[derive(Clone)]
+/// Converts input text to speech through an OpenAI-compatible client.
 pub struct Text2SpeechOpenAI<C: Config> {
     config: C,
     model: SpeechModel,
@@ -21,6 +23,7 @@ pub struct Text2SpeechOpenAI<C: Config> {
 }
 
 impl<C: Config> Text2SpeechOpenAI<C> {
+    /// Creates a tool with TTS-1, the Alloy voice, MP3 output, and a default file path.
     pub fn new(config: C) -> Self {
         Self {
             config,
@@ -32,31 +35,37 @@ impl<C: Config> Text2SpeechOpenAI<C> {
         }
     }
 
+    /// Sets the speech model.
     pub fn with_model(mut self, model: SpeechModel) -> Self {
         self.model = model;
         self
     }
 
+    /// Sets the synthesized voice.
     pub fn with_voice(mut self, voice: Voice) -> Self {
         self.voice = voice;
         self
     }
 
+    /// Stores generated audio through a custom storage implementation.
     pub fn with_storage<SS: SpeechStorage + 'static>(mut self, storage: SS) -> Self {
         self.storage = Some(Arc::new(storage));
         self
     }
 
+    /// Sets the generated audio format.
     pub fn with_response_format(mut self, response_format: SpeechResponseFormat) -> Self {
         self.response_format = response_format;
         self
     }
 
+    /// Sets the file path or storage key for generated audio.
     pub fn with_path<S: Into<String>>(mut self, path: S) -> Self {
         self.path = path.into();
         self
     }
 
+    /// Replaces the OpenAI client configuration.
     pub fn with_config(mut self, config: C) -> Self {
         self.config = config;
         self
@@ -129,6 +138,8 @@ mod tests {
     use crate::SpeechStorage;
     use crate::{Text2SpeechOpenAI, Tool};
 
+    type SavedAudio = Arc<Mutex<Vec<(String, Vec<u8>)>>>;
+
     #[tokio::test]
     #[ignore]
     async fn openai_speech2text_tool() {
@@ -139,7 +150,7 @@ mod tests {
 
     #[derive(Clone, Default)]
     struct CapturingStorage {
-        saved: Arc<Mutex<Vec<(String, Vec<u8>)>>>,
+        saved: SavedAudio,
     }
 
     #[async_trait::async_trait]
@@ -151,6 +162,34 @@ mod tests {
                 .push((key.to_string(), data.to_vec()));
             Ok(key.to_string())
         }
+    }
+
+    #[test]
+    fn tool_name_and_description_are_non_empty() {
+        let tool = Text2SpeechOpenAI::default();
+        assert_eq!(tool.name(), "Text2SpeechOpenAI");
+        assert!(!tool.description().is_empty());
+    }
+
+    #[tokio::test]
+    async fn run_rejects_non_string_input() {
+        // Use a mock server — the request should be rejected before hitting the network.
+        let mut server = mockito::Server::new_async().await;
+        let _mock = server
+            .mock("POST", "/audio/speech")
+            .with_status(200)
+            .with_header("content-type", "audio/mpeg")
+            .with_body(b"bytes".as_ref())
+            .create_async()
+            .await;
+
+        let config = async_openai::config::OpenAIConfig::default()
+            .with_api_base(server.url())
+            .with_api_key("test-key");
+        let tool = Text2SpeechOpenAI::new(config).with_path("/tmp/out.mp3");
+
+        let result = tool.run(serde_json::Value::Number(42.into())).await;
+        assert!(result.is_err());
     }
 
     #[tokio::test]

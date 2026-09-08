@@ -1,3 +1,4 @@
+//! Two-stage chain that generates SQL, executes it, then summarizes the result.
 use std::pin::Pin;
 
 use futures::Stream;
@@ -17,21 +18,26 @@ use super::{
     STOP_WORD,
 };
 
+/// Builds query input for an [`SQLDatabaseChain`].
 pub struct SqlChainPromptBuilder {
     query: String,
 }
+#[allow(clippy::new_without_default)] // Builder pattern
 impl SqlChainPromptBuilder {
+    /// Creates a builder with an empty natural-language query.
     pub fn new() -> Self {
         Self {
             query: "".to_string(),
         }
     }
 
+    /// Sets the natural-language database question.
     pub fn query<S: Into<String>>(mut self, input: S) -> Self {
         self.query = input.into();
         self
     }
 
+    /// Produces prompt arguments using the `query` key.
     pub fn build(self) -> PromptArgs {
         prompt_args! {
           SQL_CHAIN_DEFAULT_INPUT_KEY_QUERY  => self.query,
@@ -39,49 +45,17 @@ impl SqlChainPromptBuilder {
     }
 }
 
+/// Generates SQL from a natural-language question, runs it, and asks the model for an answer.
 pub struct SQLDatabaseChain {
     pub(crate) llmchain: LLMChain,
     pub(crate) top_k: usize,
     pub(crate) database: SQLDatabase,
 }
 
-/// SQLChain let you interact with a db in human lenguage
-///
-/// The input variable name is `query`.
-/// Example
-/// ```rust,ignore
-/// # async {
-/// let options = ChainCallOptions::default();
-/// let llm = OpenAI::default();
-///
-/// let db = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-/// let engine = PostgreSQLEngine::new(&db).await.unwrap();
-/// let db = SQLDatabaseBuilder::new(engine).build().await.unwrap();
-/// let chain = SQLDatabaseChainBuilder::new()
-///     .llm(llm)
-///     .top_k(4)
-///     .database(db)
-///     .options(options)
-///     .build()
-///     .expect("Failed to build LLMChain");
-///
-/// let input_variables = prompt_args! {
-///     "query" => "Whats the phone number of luis"
-///   };
-///   //OR
-/// let input_variables = chain.prompt_builder()
-///     .query("Whats the phone number of luis")
-///     .build();
-/// match chain.invoke(input_variables).await {
-///    Ok(result) => {
-///     println!("Result: {:?}", result);
-/// }
-/// Err(e) => panic!("Error invoking LLMChain: {:?}", e),
-/// }
-///
-/// }
-/// ```
+/// The required input variable is `query`; `table_names_to_use` may optionally restrict the
+/// schema supplied to the model.
 impl SQLDatabaseChain {
+    /// Creates an input builder for a natural-language database query.
     pub fn prompt_builder(&self) -> SqlChainPromptBuilder {
         SqlChainPromptBuilder::new()
     }
@@ -92,12 +66,8 @@ impl SQLDatabaseChain {
     ) -> Result<(PromptArgs, Option<TokenUsage>), ChainError> {
         let mut token_usage: Option<TokenUsage> = None;
 
-        let query = input_variables
-            .get(SQL_CHAIN_DEFAULT_INPUT_KEY_QUERY)
-            .ok_or_else(|| {
-                ChainError::MissingInputVariable(SQL_CHAIN_DEFAULT_INPUT_KEY_QUERY.to_string())
-            })?
-            .to_string();
+        self.validate_input(input_variables)?;
+        let query = input_variables[SQL_CHAIN_DEFAULT_INPUT_KEY_QUERY].to_string();
 
         let mut tables: Vec<String> = Vec::new();
         if let Some(value) = input_variables.get(SQL_CHAIN_DEFAULT_INPUT_KEY_TABLE_NAMES)
@@ -149,6 +119,10 @@ impl SQLDatabaseChain {
 }
 
 impl Chain for SQLDatabaseChain {
+    fn required_keys(&self) -> Vec<String> {
+        vec![SQL_CHAIN_DEFAULT_INPUT_KEY_QUERY.to_string()]
+    }
+
     fn get_input_keys(&self) -> Vec<String> {
         self.llmchain.get_input_keys()
     }
@@ -228,7 +202,7 @@ mod tests {
         // table_names_to_use is optional and should NOT be set by the builder
         let args = SqlChainPromptBuilder::new().query("select 1").build();
         assert!(
-            args.get(SQL_CHAIN_DEFAULT_INPUT_KEY_TABLE_NAMES).is_none(),
+            !args.contains_key(SQL_CHAIN_DEFAULT_INPUT_KEY_TABLE_NAMES),
             "table_names_to_use should not be present in default builder output"
         );
     }

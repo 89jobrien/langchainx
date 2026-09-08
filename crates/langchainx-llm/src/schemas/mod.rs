@@ -1,3 +1,4 @@
+//! Shared message schemas plus OpenAI-compatible tool and response formats.
 // Re-export all core schema types so `crate::schemas::*` resolves within this crate.
 pub use langchainx_core::schemas::*;
 

@@ -1,14 +1,25 @@
+//! Model generation options applied when a chain is built.
 use crate::language_models::options::CallOptions;
 
+/// Optional generation parameters forwarded from a chain to its language model.
 pub struct ChainCallOptions {
+    /// Maximum number of tokens to generate.
     pub max_tokens: Option<u32>,
+    /// Sampling temperature.
     pub temperature: Option<f32>,
+    /// Sequences that stop generation when encountered.
     pub stop_words: Option<Vec<String>>,
+    /// Number of highest-probability tokens considered during sampling.
     pub top_k: Option<usize>,
+    /// Cumulative probability threshold used for nucleus sampling.
     pub top_p: Option<f32>,
+    /// Seed used for deterministic sampling when supported.
     pub seed: Option<usize>,
+    /// Minimum generated sequence length.
     pub min_length: Option<usize>,
+    /// Maximum generated sequence length.
     pub max_length: Option<usize>,
+    /// Penalty applied to repeated tokens.
     pub repetition_penalty: Option<f32>,
 }
 
@@ -19,6 +30,7 @@ impl Default for ChainCallOptions {
 }
 
 impl ChainCallOptions {
+    /// Creates options with every model parameter unset.
     pub fn new() -> Self {
         Self {
             max_tokens: None,
@@ -33,6 +45,7 @@ impl ChainCallOptions {
         }
     }
 
+    /// Converts the configured values into language-model call options.
     pub fn to_llm_options(options: ChainCallOptions) -> CallOptions {
         let mut llm_option = CallOptions::new();
         if let Some(max_tokens) = options.max_tokens {
@@ -65,46 +78,55 @@ impl ChainCallOptions {
         llm_option
     }
 
+    /// Sets the maximum number of generated tokens.
     pub fn with_max_tokens(mut self, max_tokens: u32) -> Self {
         self.max_tokens = Some(max_tokens);
         self
     }
 
+    /// Sets the sampling temperature.
     pub fn with_temperature(mut self, temperature: f32) -> Self {
         self.temperature = Some(temperature);
         self
     }
 
+    /// Sets the sequences that stop generation.
     pub fn with_stop_words(mut self, stop_words: Vec<String>) -> Self {
         self.stop_words = Some(stop_words);
         self
     }
 
+    /// Sets the top-k sampling limit.
     pub fn with_top_k(mut self, top_k: usize) -> Self {
         self.top_k = Some(top_k);
         self
     }
 
+    /// Sets the nucleus-sampling probability threshold.
     pub fn with_top_p(mut self, top_p: f32) -> Self {
         self.top_p = Some(top_p);
         self
     }
 
+    /// Sets the sampling seed.
     pub fn with_seed(mut self, seed: usize) -> Self {
         self.seed = Some(seed);
         self
     }
 
+    /// Sets the minimum generated sequence length.
     pub fn with_min_length(mut self, min_length: usize) -> Self {
         self.min_length = Some(min_length);
         self
     }
 
+    /// Sets the maximum generated sequence length.
     pub fn with_max_length(mut self, max_length: usize) -> Self {
         self.max_length = Some(max_length);
         self
     }
 
+    /// Sets the penalty applied to repeated tokens.
     pub fn with_repetition_penalty(mut self, repetition_penalty: f32) -> Self {
         self.repetition_penalty = Some(repetition_penalty);
         self

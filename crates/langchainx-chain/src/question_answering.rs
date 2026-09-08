@@ -1,3 +1,4 @@
+//! Prompt builders and chains used by conversational document question answering.
 use std::pin::Pin;
 
 use futures::Stream;
@@ -21,11 +22,14 @@ Chat History:
 Follow Up Input: {{question}}
 Standalone question:"#;
 
+/// Builds inputs for a chain that rewrites a follow-up question using chat history.
 pub struct CondenseQuestionPromptBuilder {
     chat_history: String,
     question: String,
 }
+#[allow(clippy::new_without_default)] // Builder pattern
 impl CondenseQuestionPromptBuilder {
+    /// Creates a builder with empty history and question text.
     pub fn new() -> Self {
         Self {
             chat_history: "".to_string(),
@@ -33,16 +37,19 @@ impl CondenseQuestionPromptBuilder {
         }
     }
 
+    /// Sets the follow-up question to rewrite.
     pub fn question<S: Into<String>>(mut self, question: S) -> Self {
         self.question = question.into();
         self
     }
 
+    /// Serializes the conversation used to contextualize the question.
     pub fn chat_history(mut self, chat_history: &[Message]) -> Self {
         self.chat_history = Message::messages_to_string(chat_history);
         self
     }
 
+    /// Produces prompt arguments keyed by `chat_history` and `question`.
     pub fn build(self) -> PromptArgs {
         prompt_args! {
             "chat_history" => self.chat_history,
@@ -51,11 +58,13 @@ impl CondenseQuestionPromptBuilder {
     }
 }
 
+/// Rewrites follow-up questions as standalone questions using an LLM.
 pub struct CondenseQuestionGeneratorChain {
     chain: LLMChain,
 }
 
 impl CondenseQuestionGeneratorChain {
+    /// Creates a chain with the default question-condensing prompt.
     pub fn new<L: IntoArcLLM>(llm: L) -> Self {
         let condense_question_prompt_template =
             template_jinja2!(DEFAULTCONDENSEQUESTIONTEMPLATE, "chat_history", "question");
@@ -64,11 +73,12 @@ impl CondenseQuestionGeneratorChain {
             .llm(llm)
             .prompt(condense_question_prompt_template)
             .build()
-            .unwrap(); //Its safe to unwrap here because we are sure that the prompt and the LLM are
-        //set.
+            // SAFETY: prompt and LLM are unconditionally set above; build is infallible here.
+            .expect("CondenseQuestionGeneratorChain: prompt and LLM are always set");
         Self { chain }
     }
 
+    /// Creates an input builder for the default condensing prompt.
     pub fn prompt_builder(&self) -> CondenseQuestionPromptBuilder {
         CondenseQuestionPromptBuilder::new()
     }
@@ -96,12 +106,15 @@ Question:{{question}}
 Helpful Answer:
 "#;
 
+/// Builds document and question inputs for the default stuff-QA prompt.
 pub struct StuffQAPromptBuilder<'a> {
     input_documents: Vec<&'a Document>,
     question: String,
 }
 
+#[allow(clippy::new_without_default)] // Builder pattern
 impl<'a> StuffQAPromptBuilder<'a> {
+    /// Creates a builder with no documents and an empty question.
     pub fn new() -> Self {
         Self {
             input_documents: vec![],
@@ -109,16 +122,19 @@ impl<'a> StuffQAPromptBuilder<'a> {
         }
     }
 
+    /// Sets the documents supplied as answer context.
     pub fn documents(mut self, documents: &'a [Document]) -> Self {
         self.input_documents = documents.iter().collect();
         self
     }
 
+    /// Sets the question to answer from the documents.
     pub fn question<S: Into<String>>(mut self, question: S) -> Self {
         self.question = question.into();
         self
     }
 
+    /// Produces prompt arguments keyed by `input_documents` and `question`.
     pub fn build(self) -> PromptArgs {
         prompt_args! {
             "input_documents" => self.input_documents,
@@ -134,14 +150,13 @@ pub(crate) fn load_stuff_qa<L: IntoArcLLM>(
     let default_qa_prompt_template =
         template_jinja2!(DEFAULT_STUFF_QA_TEMPLATE, "context", "question");
 
-    let llm_chain_builder = LLMChainBuilder::new()
+    let llm_chain = LLMChainBuilder::new()
         .prompt(default_qa_prompt_template)
         .options(options.unwrap_or_default())
         .llm(llm)
         .build()
-        .unwrap();
-
-    let llm_chain = llm_chain_builder;
+        // SAFETY: prompt and LLM are unconditionally set above; build is infallible here.
+        .expect("load_stuff_qa: prompt and LLM are always set");
 
     StuffDocument::new(llm_chain)
 }

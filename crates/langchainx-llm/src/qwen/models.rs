@@ -1,3 +1,4 @@
+//! Internal Qwen request and response payloads.
 use serde::{Deserialize, Serialize};
 
 use crate::schemas::{Message, MessageType};

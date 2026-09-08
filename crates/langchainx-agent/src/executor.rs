@@ -1,3 +1,4 @@
+//! Execution loop that turns an [`Agent`] into a chain.
 use std::{collections::HashMap, sync::Arc};
 
 use serde_json::json;
@@ -20,6 +21,7 @@ use langchainx_prompt::prompt::PromptArgs;
 use crate::agent::Agent;
 use crate::error::AgentError;
 
+/// Repeatedly plans and executes tool actions until the agent finishes or reaches its limit.
 pub struct AgentExecutor<A>
 where
     A: Agent,
@@ -27,6 +29,7 @@ where
     agent: A,
     max_iterations: Option<i32>,
     break_if_error: bool,
+    /// Optional conversation memory loaded before planning and updated on completion.
     pub memory: Option<Arc<Mutex<dyn BaseMemory>>>,
 }
 
@@ -34,6 +37,9 @@ impl<A> AgentExecutor<A>
 where
     A: Agent,
 {
+    /// Creates an executor with a ten-action threshold, no memory, and recoverable tool errors.
+    ///
+    /// The threshold is checked after each planned action batch executes.
     pub fn from_agent(agent: A) -> Self {
         Self {
             agent,
@@ -43,16 +49,19 @@ where
         }
     }
 
+    /// Sets the action-count threshold checked after each planned batch executes.
     pub fn with_max_iterations(mut self, max_iterations: i32) -> Self {
         self.max_iterations = Some(max_iterations);
         self
     }
 
+    /// Uses the supplied conversation memory for agent inputs and completed turns.
     pub fn with_memory(mut self, memory: Arc<Mutex<dyn BaseMemory>>) -> Self {
         self.memory = Some(memory);
         self
     }
 
+    /// Controls whether a tool error aborts execution instead of becoming an observation.
     pub fn with_break_if_error(mut self, break_if_error: bool) -> Self {
         self.break_if_error = break_if_error;
         self
@@ -73,6 +82,7 @@ where
     A: Agent + Send + Sync,
 {
     async fn call(&self, input_variables: PromptArgs) -> Result<GenerateResult, ChainError> {
+        self.validate_input(&input_variables)?;
         let mut input_variables = input_variables.clone();
         let name_to_tools = self.get_name_to_tools();
         let mut steps: Vec<(AgentAction, String)> = Vec::new();
@@ -127,7 +137,14 @@ where
                     if let Some(memory) = &self.memory {
                         let mut memory = memory.lock().await;
 
-                        memory.add_user_message(match &input_variables["input"] {
+                        let input = input_variables.get("input").ok_or_else(|| {
+                            ChainError::MissingInputVariable {
+                                key: "input".to_string(),
+                                expected: self.required_keys(),
+                                provided: input_variables.keys().cloned().collect(),
+                            }
+                        })?;
+                        memory.add_user_message(match input {
                             serde_json::Value::String(s) => s,
                             x => x,
                         });
@@ -167,6 +184,14 @@ where
     async fn invoke(&self, input_variables: PromptArgs) -> Result<String, ChainError> {
         let result = self.call(input_variables).await?;
         Ok(result.generation)
+    }
+
+    fn required_keys(&self) -> Vec<String> {
+        vec!["input".to_string()]
+    }
+
+    fn get_input_keys(&self) -> Vec<String> {
+        self.required_keys()
     }
 }
 
@@ -265,6 +290,21 @@ mod tests {
             .await
             .expect("executor failed");
         assert_eq!(result, "42");
+    }
+
+    #[tokio::test]
+    async fn executor_rejects_missing_input() {
+        let agent = FakeAgent::new(vec![AgentEvent::Finish(AgentFinish {
+            output: "should not run".into(),
+        })]);
+        let executor = AgentExecutor::from_agent(agent);
+
+        let result = executor.invoke(PromptArgs::new()).await;
+
+        assert!(matches!(
+            result,
+            Err(ChainError::MissingInputVariable { ref key, .. }) if key == "input"
+        ));
     }
 
     #[tokio::test]

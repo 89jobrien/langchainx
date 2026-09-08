@@ -1,11 +1,16 @@
+//! Character-count-based plain-text splitting.
 use async_trait::async_trait;
 
 use crate::{TextSplitter, TextSplitterError};
 
 #[derive(Debug, Clone)]
+/// Character-based chunking configuration.
 pub struct PlainTextSplitterOptions {
+    /// Maximum characters per chunk.
     pub chunk_size: usize,
+    /// Characters repeated between adjacent chunks.
     pub chunk_overlap: usize,
+    /// Whether to trim whitespace around emitted chunks.
     pub trim_chunks: bool,
 }
 
@@ -16,6 +21,7 @@ impl Default for PlainTextSplitterOptions {
 }
 
 impl PlainTextSplitterOptions {
+    /// Creates options with 512-character chunks, no overlap, and no trimming.
     pub fn new() -> Self {
         PlainTextSplitterOptions {
             chunk_size: 512,
@@ -24,34 +30,41 @@ impl PlainTextSplitterOptions {
         }
     }
 
+    /// Sets the maximum characters per chunk.
     pub fn with_chunk_size(mut self, chunk_size: usize) -> Self {
         self.chunk_size = chunk_size;
         self
     }
 
+    /// Sets the characters repeated between adjacent chunks.
     pub fn with_chunk_overlap(mut self, chunk_overlap: usize) -> Self {
         self.chunk_overlap = chunk_overlap;
         self
     }
 
+    /// Configures whitespace trimming for emitted chunks.
     pub fn with_trim_chunks(mut self, trim_chunks: bool) -> Self {
         self.trim_chunks = trim_chunks;
         self
     }
 
+    /// Returns the maximum characters per chunk.
     pub fn chunk_size(&self) -> usize {
         self.chunk_size
     }
 
+    /// Returns the characters repeated between adjacent chunks.
     pub fn chunk_overlap(&self) -> usize {
         self.chunk_overlap
     }
 
+    /// Returns whether emitted chunks are trimmed.
     pub fn trim_chunks(&self) -> bool {
         self.trim_chunks
     }
 }
 
+/// Splits plain text according to character-count limits.
 pub struct PlainTextSplitter {
     splitter_options: PlainTextSplitterOptions,
 }
@@ -63,6 +76,7 @@ impl Default for PlainTextSplitter {
 }
 
 impl PlainTextSplitter {
+    /// Creates a plain-text splitter with the supplied options.
     pub fn new(options: PlainTextSplitterOptions) -> Self {
         PlainTextSplitter {
             splitter_options: options,

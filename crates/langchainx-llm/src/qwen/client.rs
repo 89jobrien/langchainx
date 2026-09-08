@@ -1,195 +1,19 @@
+//! Qwen OpenAI-compatible chat-completions client.
 use crate::{
-    QwenError,
     language_models::{GenerateResult, LLMError, TokenUsage, llm::LLM, options::CallOptions},
     schemas::{Message, StreamData},
+    sse::SseDecoder,
 };
 use futures::{Stream, StreamExt};
 use reqwest::Client;
 use serde_json::Value;
-use std::{fmt, pin::Pin, str, str::from_utf8};
+use std::pin::Pin;
 
 use super::models::{ApiResponse, ErrorResponse, Payload, QwenMessage};
+use super::request::QwenModel;
+use super::response::parse_error_response;
 
-/// Parse error from JSON response and return appropriate QwenError
-fn parse_error_response(code: &str, message: &str) -> LLMError {
-    match code {
-        // 400 errors
-        "InvalidParameter" | "invalid_parameter_error" => {
-            LLMError::QwenError(QwenError::InvalidParameterError(message.to_string()))
-        }
-        "APIConnectionError" => {
-            LLMError::QwenError(QwenError::APIConnectionError(message.to_string()))
-        }
-
-        // 401 errors
-        "InvalidApiKey" => LLMError::QwenError(QwenError::InvalidApiKeyError(message.to_string())),
-
-        // 429 errors
-        "ModelServingError" => {
-            LLMError::QwenError(QwenError::ModelServingError(message.to_string()))
-        }
-        "PrepaidBillOverdue" => {
-            LLMError::QwenError(QwenError::PrepaidBillOverdueError(message.to_string()))
-        }
-        "PostpaidBillOverdue" => {
-            LLMError::QwenError(QwenError::PostpaidBillOverdueError(message.to_string()))
-        }
-        "CommodityNotPurchased" => {
-            LLMError::QwenError(QwenError::CommodityNotPurchasedError(message.to_string()))
-        }
-
-        // 500 errors
-        "InternalError" | "internal_error" => {
-            LLMError::QwenError(QwenError::InternalError(message.to_string()))
-        }
-        "InternalError.Algo" => {
-            LLMError::QwenError(QwenError::InternalAlgorithmError(message.to_string()))
-        }
-        "InternalError.Timeout" => {
-            LLMError::QwenError(QwenError::TimeoutError(message.to_string()))
-        }
-        "RewriteFailed" => LLMError::QwenError(QwenError::RewriteFailedError(message.to_string())),
-        "RetrivalFailed" => {
-            LLMError::QwenError(QwenError::RetrievalFailedError(message.to_string()))
-        }
-        "AppProcessFailed" => {
-            LLMError::QwenError(QwenError::AppProcessFailedError(message.to_string()))
-        }
-        "ModelServiceFailed" => {
-            LLMError::QwenError(QwenError::ModelServiceFailedError(message.to_string()))
-        }
-        "InvokePluginFailed" => {
-            LLMError::QwenError(QwenError::InvokePluginFailedError(message.to_string()))
-        }
-        "SystemError" | "system_error" => {
-            LLMError::QwenError(QwenError::SystemError(message.to_string()))
-        }
-
-        // 503 errors
-        "ModelUnavailable" => {
-            LLMError::QwenError(QwenError::ModelUnavailableError(message.to_string()))
-        }
-
-        // Other errors
-        "mismatched_model" => {
-            LLMError::QwenError(QwenError::MismatchedModelError(message.to_string()))
-        }
-        "duplicate_custom_id" => {
-            LLMError::QwenError(QwenError::DuplicateCustomIdError(message.to_string()))
-        }
-        "model_not_found" => {
-            LLMError::QwenError(QwenError::ModelNotFoundError(message.to_string()))
-        }
-
-        // Default error
-        _ => LLMError::QwenError(QwenError::SystemError(format!(
-            "Unknown error code: {}, message: {}",
-            code, message
-        ))),
-    }
-}
-
-/// Qwen model options
-#[allow(non_camel_case_types)]
-pub enum QwenModel {
-    /// Qwen-Max
-    QwenMax,
-    /// Qwen-Turbo
-    QwenTurbo,
-    /// Qwen-Plus
-    QwenPlus,
-    /// Qwen-Long
-    QwenLong,
-    /// Qwen-72B-Chat (Open Source Version)
-    Qwen1_72B_Chat,
-    /// Qwen-14B-Chat (Open Source Version)
-    Qwen1_14B_Chat,
-    /// Qwen-7B-Chat (Open Source Version)
-    Qwen1_7B_Chat,
-    /// Qwen-1.8B-Chat (Open Source Version)
-    Qwen1_1_8B_Chat,
-    /// Qwen1.5-110B-Chat (Open Source Version)
-    Qwen1_5_110B_Chat,
-    /// Qwen1.5-72B-Chat (Open Source Version)
-    Qwen1_5_72B_Chat,
-    /// Qwen1.5-32B-Chat (Open Source Version)
-    Qwen1_5_32B_Chat,
-    /// Qwen1.5-14B-Chat (Open Source Version)
-    Qwen1_5_14B_Chat,
-    /// Qwen1.5-7B-Chat (Open Source Version)
-    Qwen1_5_7B_Chat,
-    /// Qwen1.5-1.8B-Chat (Open Source Version)
-    Qwen1_5_1_8B_Chat,
-    /// Qwen1.5-0.5B-Chat (Open Source Version)
-    Qwen1_5_0_5B_Chat,
-    /// Qwen2-72b-Instruct (Open Source Version)
-    QWEN2_72B_INSTRUCT,
-    /// Qwen2-57b-a14b-Instruct (Open Source Version)
-    QWEN2_57B_A14B_INSTRUCT,
-    /// Qwen2-7b-Instruct (Open Source Version)
-    QWEN2_7B_INSTRUCT,
-    /// Qwen2-1.5b-Instruct (Open Source Version)
-    QWEN2_1_5B_INSTRUCT,
-    /// Qwen2-0.5b-Instruct (Open Source Version)
-    QWEN2_0_5B_INSTRUCT,
-    /// Qwen2.5-14B-Instruct-1M (Open Source Version)
-    Qwen2_5_14B_INSTRUCT_1M,
-    /// Qwen2.5-7B-Instruct-1M (Open Source Version)
-    Qwen2_5_7B_INSTRUCT_1M,
-    /// Qwen2.5-72B-Instruct (Open Source Version)
-    Qwen2_5_72B_INSTRUCT,
-    /// Qwen2.5-32B-Instruct (Open Source Version)
-    Qwen2_5_32B_INSTRUCT,
-    /// Qwen2.5-14B-Instruct (Open Source Version)
-    Qwen2_5_14B_INSTRUCT,
-    /// Qwen2.5-7B-Instruct (Open Source Version)
-    Qwen2_5_7B_INSTRUCT,
-    /// Qwen2.5-3B-Instruct (Open Source Version)
-    Qwen2_5_3B_INSTRUCT,
-    /// Qwen2.5-1.5B-Instruct (Open Source Version)
-    Qwen2_5_1_5B_INSTRUCT,
-    /// Qwen2.5-0.5B-Instruct (Open Source Version)
-    Qwen2_5_0_5B_INSTRUCT,
-}
-
-impl fmt::Display for QwenModel {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match self {
-            QwenModel::QwenMax => "qwen-max",
-            QwenModel::QwenTurbo => "qwen-turbo",
-            QwenModel::QwenPlus => "qwen-plus",
-            QwenModel::QwenLong => "qwen-long",
-            QwenModel::Qwen1_72B_Chat => "qwen-72b-chat",
-            QwenModel::Qwen1_14B_Chat => "qwen-14b-chat",
-            QwenModel::Qwen1_7B_Chat => "qwen-7b-chat",
-            QwenModel::Qwen1_1_8B_Chat => "qwen-1.8b-chat",
-            QwenModel::Qwen1_5_110B_Chat => "qwen1.5-110b-chat",
-            QwenModel::Qwen1_5_72B_Chat => "qwen-1.72b-chat",
-            QwenModel::Qwen1_5_32B_Chat => "qwen1.5-32b-chat",
-            QwenModel::Qwen1_5_14B_Chat => "qwen1.5-14b-chat",
-            QwenModel::Qwen1_5_7B_Chat => "qwen1.5-7b-chat",
-            QwenModel::Qwen1_5_1_8B_Chat => "qwen1.5-1.8b-chat",
-            QwenModel::Qwen1_5_0_5B_Chat => "qwen1.5-0.5b-chat",
-            QwenModel::QWEN2_72B_INSTRUCT => "qwen2-72b-instruct",
-            QwenModel::QWEN2_57B_A14B_INSTRUCT => "qwen2-57b-a14b-instruct",
-            QwenModel::QWEN2_7B_INSTRUCT => "qwen2-7b-instruct",
-            QwenModel::QWEN2_1_5B_INSTRUCT => "qwen2-1.5-b-instruct",
-            QwenModel::QWEN2_0_5B_INSTRUCT => "qwen2-0.5-b-instruct",
-            QwenModel::Qwen2_5_14B_INSTRUCT_1M => "qwen2.5-14b-instruct-1m",
-            QwenModel::Qwen2_5_7B_INSTRUCT_1M => "qwen2.5-7b-instruct-1m",
-            QwenModel::Qwen2_5_72B_INSTRUCT => "qwen2.5-72b-instruct",
-            QwenModel::Qwen2_5_32B_INSTRUCT => "qwen2.5-32b-instruct",
-            QwenModel::Qwen2_5_14B_INSTRUCT => "qwen2.5-14b-instruct",
-            QwenModel::Qwen2_5_7B_INSTRUCT => "qwen2.5-7b-instruct",
-            QwenModel::Qwen2_5_3B_INSTRUCT => "qwen2.5-3b-instruct",
-            QwenModel::Qwen2_5_1_5B_INSTRUCT => "qwen2.5-1.5b-instruct",
-            QwenModel::Qwen2_5_0_5B_INSTRUCT => "qwen2.5-0.5b-instruct",
-        };
-        write!(f, "{s}")
-    }
-}
-
-/// Qwen client
+/// A client for generating and streaming responses from Qwen.
 #[derive(Clone)]
 pub struct Qwen {
     model: String,
@@ -205,7 +29,7 @@ impl Default for Qwen {
 }
 
 impl Qwen {
-    /// Create a new Qwen client with default settings
+    /// Creates a client using `QWEN_API_KEY` and the Qwen Turbo model.
     pub fn new() -> Self {
         Self {
             model: QwenModel::QwenTurbo.to_string(), // Default to Turbo model
@@ -216,25 +40,25 @@ impl Qwen {
         }
     }
 
-    /// Set the model
+    /// Sets the Qwen model identifier.
     pub fn with_model<S: Into<String>>(mut self, model: S) -> Self {
         self.model = model.into();
         self
     }
 
-    /// Set call options
+    /// Replaces the model call options.
     pub fn with_options(mut self, options: CallOptions) -> Self {
         self.options = options;
         self
     }
 
-    /// Set API key
+    /// Sets the Qwen API key.
     pub fn with_api_key<S: Into<String>>(mut self, api_key: S) -> Self {
         self.api_key = api_key.into();
         self
     }
 
-    /// Set the base URL
+    /// Sets the chat-completions endpoint URL.
     pub fn with_base_url<S: Into<String>>(mut self, base_url: S) -> Self {
         self.base_url = base_url.into();
         self
@@ -274,23 +98,7 @@ impl Qwen {
 
                 Ok(GenerateResult { tokens, generation })
             }
-            400 => {
-                let error = res.json::<ErrorResponse>().await?;
-                Err(parse_error_response(error.code.as_str(), &error.message))
-            }
-            401 => {
-                let error = res.json::<ErrorResponse>().await?;
-                Err(parse_error_response(error.code.as_str(), &error.message))
-            }
-            429 => {
-                let error = res.json::<ErrorResponse>().await?;
-                Err(parse_error_response(error.code.as_str(), &error.message))
-            }
-            500 => {
-                let error = res.json::<ErrorResponse>().await?;
-                Err(parse_error_response(error.code.as_str(), &error.message))
-            }
-            503 => {
+            400 | 401 | 429 | 500 | 503 => {
                 let error = res.json::<ErrorResponse>().await?;
                 Err(parse_error_response(error.code.as_str(), &error.message))
             }
@@ -324,32 +132,6 @@ impl Qwen {
 
         payload
     }
-
-    /// Parse Server-Sent Events (SSE) chunks
-    fn parse_sse_chunk(bytes: &[u8]) -> Result<Vec<Value>, LLMError> {
-        let text = from_utf8(bytes).map_err(|e| LLMError::OtherError(e.to_string()))?;
-        let mut values = Vec::new();
-
-        for line in text.lines() {
-            if let Some(data) = line.strip_prefix("data: ") {
-                if data == "[DONE]" {
-                    continue;
-                }
-
-                match serde_json::from_str::<Value>(data) {
-                    Ok(value) => values.push(value),
-                    Err(e) => {
-                        return Err(LLMError::OtherError(format!(
-                            "Failed to parse SSE data: {}, data: {}",
-                            e, data
-                        )));
-                    }
-                }
-            }
-        }
-
-        Ok(values)
-    }
 }
 
 impl LLM for Qwen {
@@ -374,61 +156,29 @@ impl LLM for Qwen {
         let stream = client.execute(request).await?;
         let stream = stream.bytes_stream();
 
-        let processed_stream = stream
-            .then(move |result| {
-                async move {
-                    match result {
-                        Ok(bytes) => {
-                            // Parse SSE chunk format
-                            let _bytes_str = from_utf8(&bytes)
-                                .map_err(|e| LLMError::OtherError(e.to_string()))?;
-                            let chunks = Self::parse_sse_chunk(&bytes)?;
-
-                            for chunk in chunks {
-                                if let Some(choices) =
-                                    chunk.get("choices").and_then(|c| c.as_array())
-                                    && let Some(choice) = choices.first()
-                                    && let Some(delta) = choice.get("delta")
-                                    && let Some(content) =
-                                        delta.get("content").and_then(|c| c.as_str())
-                                    && !content.is_empty()
-                                {
-                                    let usage = chunk.get("usage").map(|usage| TokenUsage {
-                                        prompt_tokens: usage
-                                            .get("prompt_tokens")
-                                            .and_then(|t| t.as_u64())
-                                            .unwrap_or(0)
-                                            as u32,
-                                        completion_tokens: usage
-                                            .get("completion_tokens")
-                                            .and_then(|t| t.as_u64())
-                                            .unwrap_or(0)
-                                            as u32,
-                                        total_tokens: usage
-                                            .get("total_tokens")
-                                            .and_then(|t| t.as_u64())
-                                            .unwrap_or(0)
-                                            as u32,
-                                    });
-
-                                    return Ok(StreamData::new(chunk.clone(), usage, content));
-                                }
-                            }
-
-                            // If we didn't return within the loop, return an empty stream data
-                            Ok(StreamData::new(Value::Null, None, ""))
-                        }
-                        Err(e) => Err(LLMError::RequestError(e)),
+        let processed_stream = async_stream::try_stream! {
+            let mut decoder = SseDecoder::default();
+            futures::pin_mut!(stream);
+            while let Some(result) = stream.next().await {
+                let bytes = result.map_err(LLMError::RequestError)?;
+                for data in decoder.push(&bytes)? {
+                    let chunk: Value = serde_json::from_str(&data)?;
+                    if let Some(content) = chunk
+                        .get("choices")
+                        .and_then(Value::as_array)
+                        .and_then(|choices| choices.first())
+                        .and_then(|choice| choice.get("delta"))
+                        .and_then(|delta| delta.get("content"))
+                        .and_then(Value::as_str)
+                        .filter(|content| !content.is_empty())
+                    {
+                        let usage = chunk.get("usage").map(token_usage);
+                        yield StreamData::new(chunk.clone(), usage, content);
                     }
                 }
-            })
-            .filter_map(|result| async move {
-                match result {
-                    Ok(data) if !data.content.is_empty() => Some(Ok(data)),
-                    Ok(_) => None,
-                    Err(e) => Some(Err(e)),
-                }
-            });
+            }
+            decoder.finish()?;
+        };
 
         Ok(Box::pin(processed_stream))
     }
@@ -438,10 +188,90 @@ impl LLM for Qwen {
     }
 }
 
+fn token_usage(usage: &Value) -> TokenUsage {
+    TokenUsage {
+        prompt_tokens: usage
+            .get("prompt_tokens")
+            .and_then(Value::as_u64)
+            .unwrap_or(0) as u32,
+        completion_tokens: usage
+            .get("completion_tokens")
+            .and_then(Value::as_u64)
+            .unwrap_or(0) as u32,
+        total_tokens: usage
+            .get("total_tokens")
+            .and_then(Value::as_u64)
+            .unwrap_or(0) as u32,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use futures::StreamExt;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::TcpListener;
     use tokio::test;
+
+    #[tokio::test]
+    async fn generate_uses_configured_endpoint() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("POST", "/chat")
+            .match_header("authorization", "Bearer test-key")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                r#"{"id":"response-1","created":1,"model":"qwen-turbo","choices":[{"message":{"role":"assistant","content":"pong"},"finish_reason":"stop","index":0}],"usage":{"prompt_tokens":2,"completion_tokens":1,"total_tokens":3}}"#,
+            )
+            .create_async()
+            .await;
+        let client = Qwen::new()
+            .with_api_key("test-key")
+            .with_base_url(format!("{}/chat", server.url()));
+
+        let result = client
+            .generate(&[Message::new_human_message("ping")])
+            .await
+            .unwrap();
+
+        assert_eq!(result.generation, "pong");
+        assert_eq!(result.tokens.unwrap().total_tokens, 3);
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn stream_reassembles_fragmented_sse_frames() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut request = [0_u8; 4096];
+            let _ = socket.read(&mut request).await.unwrap();
+            let body = b"data: {\"choices\":[{\"delta\":{\"content\":\"caf\xc3\xa9\"}}]}\n\ndata: [DONE]\n\n";
+            let headers = format!(
+                "HTTP/1.1 200 OK\r\ncontent-type: text/event-stream\r\ncontent-length: {}\r\n\r\n",
+                body.len()
+            );
+            socket.write_all(headers.as_bytes()).await.unwrap();
+            let split = body.iter().position(|byte| *byte == 0xc3).unwrap() + 1;
+            socket.write_all(&body[..split]).await.unwrap();
+            socket.flush().await.unwrap();
+            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+            socket.write_all(&body[split..]).await.unwrap();
+        });
+        let client = Qwen::new()
+            .with_api_key("test-key")
+            .with_base_url(format!("http://{address}/chat"));
+
+        let stream = LLM::stream(&client, &[Message::new_human_message("ping")])
+            .await
+            .unwrap();
+        let chunks = stream.collect::<Vec<_>>().await;
+
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(chunks[0].as_ref().unwrap().content, "caf\u{e9}");
+    }
 
     #[test]
     #[ignore]

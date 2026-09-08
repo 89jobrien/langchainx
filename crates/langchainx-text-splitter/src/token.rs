@@ -1,9 +1,11 @@
+//! Token-aware text splitting with `tiktoken` encodings.
 use async_trait::async_trait;
 use text_splitter::ChunkConfig;
 
 use crate::{SplitterOptions, TextSplitter, TextSplitterError};
 
 #[derive(Debug, Clone)]
+/// Splits text according to token-count limits.
 pub struct TokenSplitter {
     splitter_options: SplitterOptions,
 }
@@ -15,6 +17,7 @@ impl Default for TokenSplitter {
 }
 
 impl TokenSplitter {
+    /// Creates a token splitter with the supplied options.
     pub fn new(options: SplitterOptions) -> Self {
         TokenSplitter {
             splitter_options: options,

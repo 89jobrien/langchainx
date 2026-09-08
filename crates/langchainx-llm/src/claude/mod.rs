@@ -1,3 +1,4 @@
+//! Anthropic Claude client and API errors.
 mod models;
 
 mod client;

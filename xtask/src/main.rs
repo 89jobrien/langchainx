@@ -10,7 +10,11 @@ use std::{env, path::Path};
 use xshell::Shell;
 
 mod bump;
+pub mod checkpoint;
 mod gates;
+#[allow(dead_code)] // Session helpers are exercised by tests but not yet wired into the xtask CLI.
+pub(crate) mod session;
+pub(crate) mod trace;
 
 fn main() -> Result<()> {
     let task = env::args().nth(1);
@@ -24,6 +28,7 @@ fn main() -> Result<()> {
     match task.as_deref() {
         Some("fmt-check") => gates::fmt_check(&sh),
         Some("clippy") => gates::clippy(&sh),
+        Some("audit") => gates::audit(&sh),
         Some("build") => gates::build(&sh),
         Some("test") => gates::test(&sh),
         Some("ci") => gates::ci(&sh),
@@ -37,9 +42,12 @@ fn main() -> Result<()> {
             eprintln!("usage: cargo xtask <task>");
             eprintln!();
             eprintln!("tasks:");
-            eprintln!("  ci           fmt-check + clippy + build + test  (mirrors CI exactly)");
+            eprintln!(
+                "  ci           fmt-check + clippy + audit + build + test  (mirrors CI exactly)"
+            );
             eprintln!("  fmt-check    cargo fmt --check");
             eprintln!("  clippy       cargo clippy --all-features -D warnings");
+            eprintln!("  audit        cargo audit (with known advisory ignores)");
             eprintln!("  build        cargo build --release --all-features");
             eprintln!("  test         cargo test --release --all-features");
             eprintln!("  pre-commit   fmt-check + clippy (fast local gate)");

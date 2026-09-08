@@ -1,21 +1,26 @@
+//! Bounded conversation memory that evicts the oldest messages.
 use std::sync::Arc;
 
 use tokio::sync::Mutex;
 
 use crate::schemas::{memory::BaseMemory, messages::Message};
 
+/// Stores up to a configured number of the most recent messages.
 pub struct WindowBufferMemory {
     window_size: usize,
     messages: Vec<Message>,
 }
 
+const DEFAULT_WINDOW_SIZE: usize = 10;
+
 impl Default for WindowBufferMemory {
     fn default() -> Self {
-        Self::new(10)
+        Self::new(DEFAULT_WINDOW_SIZE)
     }
 }
 
 impl WindowBufferMemory {
+    /// Creates empty memory with the specified message capacity.
     pub fn new(window_size: usize) -> Self {
         Self {
             messages: Vec::new(),

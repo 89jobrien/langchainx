@@ -1,9 +1,9 @@
 target/
-Cargo.lock
 .DS_Store
 .env
 .env.local
 !.env.example
+.envrc
 .nuenv
 !.nuenv.example
 .fastembed_cache
@@ -24,3 +24,13 @@ Cargo.lock
 # handoff-end
 .worktrees/
 .claude/skills
+.ctx/private/
+
+# Local agent configs
+.agents/
+
+# Fuzz build artifacts
+fuzz/target/
+fuzz/artifacts/
+fuzz/Cargo.lock
+.ctx/opavs/phase

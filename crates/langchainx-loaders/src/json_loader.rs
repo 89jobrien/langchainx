@@ -1,3 +1,4 @@
+//! Loaders for JSON values and newline-delimited JSON records.
 use crate::{Loader, LoaderError, process_doc_stream};
 use async_stream::stream;
 use async_trait::async_trait;
@@ -14,12 +15,14 @@ use std::pin::Pin;
 // ──────────────────────────────── JsonLoader ────────────────────────────────
 
 #[derive(Debug)]
+/// Loads a JSON value or array into documents.
 pub struct JsonLoader<R> {
     reader: R,
     content_key: Option<String>,
 }
 
 impl<R: Read> JsonLoader<R> {
+    /// Creates a loader from a JSON reader.
     pub fn new(input: R) -> Self {
         Self {
             reader: input,
@@ -27,6 +30,7 @@ impl<R: Read> JsonLoader<R> {
         }
     }
 
+    /// Uses an object field as page content and stores remaining fields as metadata.
     pub fn with_content_key(mut self, key: impl Into<String>) -> Self {
         self.content_key = Some(key.into());
         self
@@ -34,6 +38,7 @@ impl<R: Read> JsonLoader<R> {
 }
 
 impl JsonLoader<Cursor<Vec<u8>>> {
+    /// Creates a loader from JSON text.
     pub fn from_string(input: impl Into<String>) -> Self {
         let bytes = input.into().into_bytes();
         Self::new(Cursor::new(bytes))
@@ -41,6 +46,7 @@ impl JsonLoader<Cursor<Vec<u8>>> {
 }
 
 impl JsonLoader<BufReader<File>> {
+    /// Opens a JSON file and creates a loader for it.
     pub async fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, LoaderError> {
         let file = File::open(path)?;
         Ok(Self::new(BufReader::new(file)))
@@ -49,6 +55,7 @@ impl JsonLoader<BufReader<File>> {
 
 #[async_trait]
 impl<R: Read + Send + Sync + 'static> Loader for JsonLoader<R> {
+    // qual:allow(iosp) reason: "loader I/O boundary"
     async fn load(
         mut self,
     ) -> Result<
@@ -93,12 +100,14 @@ impl<R: Read + Send + Sync + 'static> Loader for JsonLoader<R> {
 // ──────────────────────────────── JsonlLoader ───────────────────────────────
 
 #[derive(Debug)]
+/// Loads one JSON value per non-empty input line.
 pub struct JsonlLoader<R> {
     reader: R,
     content_key: Option<String>,
 }
 
 impl<R: BufRead> JsonlLoader<R> {
+    /// Creates a loader from a buffered JSON Lines reader.
     pub fn new(input: R) -> Self {
         Self {
             reader: input,
@@ -106,6 +115,7 @@ impl<R: BufRead> JsonlLoader<R> {
         }
     }
 
+    /// Uses an object field as page content and stores remaining fields as metadata.
     pub fn with_content_key(mut self, key: impl Into<String>) -> Self {
         self.content_key = Some(key.into());
         self
@@ -113,6 +123,7 @@ impl<R: BufRead> JsonlLoader<R> {
 }
 
 impl JsonlLoader<BufReader<Cursor<Vec<u8>>>> {
+    /// Creates a loader from JSON Lines text.
     pub fn from_string(input: impl Into<String>) -> Self {
         let bytes = input.into().into_bytes();
         Self::new(BufReader::new(Cursor::new(bytes)))
@@ -120,6 +131,7 @@ impl JsonlLoader<BufReader<Cursor<Vec<u8>>>> {
 }
 
 impl JsonlLoader<BufReader<File>> {
+    /// Opens a JSON Lines file and creates a loader for it.
     pub async fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, LoaderError> {
         let file = File::open(path)?;
         Ok(Self::new(BufReader::new(file)))
@@ -176,6 +188,7 @@ impl<R: BufRead + Send + Sync + 'static> Loader for JsonlLoader<R> {
 
 // ──────────────────────────────── helpers ───────────────────────────────────
 
+#[allow(clippy::result_large_err)] // LoaderError contains large foreign variants; boxing requires API change
 fn doc_from_value(value: Value, content_key: Option<&str>) -> Result<Document, LoaderError> {
     match content_key {
         None => {
@@ -273,5 +286,72 @@ mod tests {
         assert!(results[0].is_ok());
         assert!(results[1].is_err());
         assert!(results[2].is_ok());
+    }
+
+    #[tokio::test]
+    async fn json_loader_malformed_returns_error() {
+        let loader = JsonLoader::from_string("{ not valid json }");
+        let result = loader.load().await;
+        assert!(result.is_err(), "expected Err for malformed JSON");
+    }
+
+    #[tokio::test]
+    async fn json_loader_empty_string_returns_error() {
+        let loader = JsonLoader::from_string("");
+        let result = loader.load().await;
+        assert!(result.is_err(), "expected Err for empty input");
+    }
+
+    #[tokio::test]
+    async fn json_loader_single_object_no_key_wraps_as_single_doc() {
+        let input = r#"{"hello":"world"}"#;
+        let loader = JsonLoader::from_string(input);
+        let docs: Vec<_> = loader
+            .load()
+            .await
+            .unwrap()
+            .map(|r| r.unwrap())
+            .collect()
+            .await;
+        assert_eq!(docs.len(), 1);
+        let v: serde_json::Value = serde_json::from_str(&docs[0].page_content).unwrap();
+        assert_eq!(v["hello"], "world");
+    }
+
+    #[tokio::test]
+    async fn json_loader_content_key_on_non_object_yields_error() {
+        // Array element is not an object — content_key should fail
+        let input = r#"["just a string"]"#;
+        let loader = JsonLoader::from_string(input).with_content_key("text");
+        let results: Vec<_> = loader.load().await.unwrap().collect().await;
+        assert_eq!(results.len(), 1);
+        assert!(results[0].is_err());
+    }
+
+    #[tokio::test]
+    async fn jsonl_empty_input_yields_no_docs() {
+        let loader = JsonlLoader::from_string("");
+        let docs: Vec<_> = loader
+            .load()
+            .await
+            .unwrap()
+            .map(|r| r.unwrap())
+            .collect()
+            .await;
+        assert_eq!(docs.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn jsonl_blank_lines_are_skipped() {
+        let input = "{\"x\":1}\n\n\n{\"x\":2}\n";
+        let loader = JsonlLoader::from_string(input);
+        let docs: Vec<_> = loader
+            .load()
+            .await
+            .unwrap()
+            .map(|r| r.unwrap())
+            .collect()
+            .await;
+        assert_eq!(docs.len(), 2);
     }
 }

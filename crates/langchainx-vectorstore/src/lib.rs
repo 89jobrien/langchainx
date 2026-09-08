@@ -1,5 +1,5 @@
-#![allow(clippy::module_inception)]
-
+//! Vector storage abstractions and feature-gated database backends.
+#![deny(missing_docs)]
 mod error;
 mod options;
 mod vectorstore;

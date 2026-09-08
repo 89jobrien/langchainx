@@ -1,3 +1,4 @@
+//! Builder for an OpenAI-compatible tool-calling agent.
 use std::sync::Arc;
 
 use langchainx_chain::{LLMChainBuilder, options::ChainCallOptions};
@@ -12,6 +13,7 @@ use crate::error::AgentError;
 use super::{OpenAiToolAgent, prompt::PREFIX};
 
 #[derive(Default)]
+/// Configures tools, prompt text, and model options for an [`OpenAiToolAgent`].
 pub struct OpenAiToolAgentBuilder {
     tools: Option<Vec<Arc<dyn DynTool>>>,
     prefix: Option<String>,
@@ -19,6 +21,7 @@ pub struct OpenAiToolAgentBuilder {
 }
 
 impl OpenAiToolAgentBuilder {
+    /// Creates an empty builder that uses the default prompt and call options.
     pub fn new() -> Self {
         Self {
             tools: None,
@@ -27,28 +30,33 @@ impl OpenAiToolAgentBuilder {
         }
     }
 
+    /// Sets the tools exposed as model function definitions.
     pub fn tools(mut self, tools: &[Arc<dyn DynTool>]) -> Self {
         self.tools = Some(tools.to_vec());
         self
     }
 
+    /// Replaces the system-message prefix.
     pub fn prefix<S: Into<String>>(mut self, prefix: S) -> Self {
         self.prefix = Some(prefix.into());
         self
     }
 
+    /// Sets the language-model call options.
     pub fn options(mut self, options: ChainCallOptions) -> Self {
         self.options = Some(options);
         self
     }
 
+    /// Builds an agent and registers each configured tool with `llm`.
     pub fn build<L: LLM + 'static>(self, llm: L) -> Result<OpenAiToolAgent, AgentError> {
         let tools = self.tools.unwrap_or_default();
         let prefix = self.prefix.unwrap_or_else(|| PREFIX.to_string());
         let mut llm = llm;
 
         let prompt = OpenAiToolAgent::create_prompt(&prefix)?;
-        let default_options = ChainCallOptions::default().with_max_tokens(1000);
+        const DEFAULT_AGENT_MAX_TOKENS: u32 = 1000;
+        let default_options = ChainCallOptions::default().with_max_tokens(DEFAULT_AGENT_MAX_TOKENS);
         let functions = tools
             .iter()
             .map(|tool| {

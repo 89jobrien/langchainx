@@ -1,3 +1,9 @@
+//! Vector operations used by semantic routing.
+/// Computes the element-wise mean of embedding vectors.
+///
+/// # Panics
+///
+/// Panics when `embeddings` is empty or a later vector is longer than the first.
 pub fn combine_embeddings(embeddings: &[Vec<f64>]) -> Vec<f64> {
     embeddings
         .iter()
@@ -18,6 +24,9 @@ pub fn combine_embeddings(embeddings: &[Vec<f64>]) -> Vec<f64> {
         .collect()
 }
 
+/// Computes cosine similarity, pairing elements only through the shorter vector.
+///
+/// Returns `NaN` when either vector has zero magnitude.
 pub fn cosine_similarity(vec1: &[f64], vec2: &[f64]) -> f64 {
     let dot_product: f64 = vec1.iter().zip(vec2.iter()).map(|(a, b)| a * b).sum();
     let magnitude_vec1: f64 = vec1.iter().map(|x| x.powi(2)).sum::<f64>().sqrt();
@@ -25,6 +34,11 @@ pub fn cosine_similarity(vec1: &[f64], vec2: &[f64]) -> f64 {
     dot_product / (magnitude_vec1 * magnitude_vec2)
 }
 
+/// Computes the element-wise sum of vectors.
+///
+/// # Panics
+///
+/// Panics when `vectors` is empty or a later vector is longer than the first.
 pub fn sum_vectors(vectors: &[Vec<f64>]) -> Vec<f64> {
     let mut sum_vec = vec![0.0; vectors[0].len()];
     for vec in vectors {

@@ -1,5 +1,5 @@
-#![allow(clippy::result_large_err)]
-
+//! Document loaders for text, structured data, web content, source code, and files.
+#![deny(missing_docs)]
 mod document_loader;
 pub use document_loader::*;
 
@@ -42,6 +42,9 @@ pub use dir_loader::*;
 mod markdown_loader;
 pub use markdown_loader::*;
 
+mod obsidian_loader;
+pub use obsidian_loader::*;
+
 mod markdown_serializer;
 pub use markdown_serializer::*;
 
@@ -59,3 +62,8 @@ pub use source_code_loader::*;
 pub mod rss_loader;
 #[cfg(feature = "rss")]
 pub use rss_loader::*;
+
+#[cfg(feature = "google-drive")]
+pub mod google_drive_loader;
+#[cfg(feature = "google-drive")]
+pub use google_drive_loader::*;

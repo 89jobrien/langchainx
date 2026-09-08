@@ -1,3 +1,4 @@
+//! Qdrant-backed vector storage and similarity search.
 use async_trait::async_trait;
 use qdrant_client::Payload;
 use qdrant_client::qdrant::{Filter, PointStruct, SearchPointsBuilder, UpsertPointsBuilder};
@@ -16,12 +17,19 @@ use langchainx_embedding::schemas::Document;
 use crate::{VecStoreOptions, VectorStore, VectorStoreError};
 use uuid::Uuid;
 
+/// Vector store backed by a Qdrant collection.
 pub struct Store {
+    /// Qdrant client used for collection operations.
     pub client: Qdrant,
+    /// Default embedder for documents and queries.
     pub embedder: Arc<dyn Embedder>,
+    /// Collection containing the vectors and payloads.
     pub collection_name: String,
+    /// Payload field containing document text.
     pub content_field: String,
+    /// Payload field containing document metadata.
     pub metadata_field: String,
+    /// Optional Qdrant-native filter applied to every search.
     pub search_filter: Option<Filter>,
 }
 
@@ -41,8 +49,15 @@ impl VectorStore for Store {
         let embedder = opt.embedder.as_ref().unwrap_or(&self.embedder);
         let texts: Vec<String> = docs.iter().map(|d| d.page_content.clone()).collect();
 
-        let ids = docs.iter().map(|_| Uuid::new_v4().to_string());
-        let vectors = embedder.embed_documents(&texts).await?.into_iter();
+        let ids: Vec<String> = docs.iter().map(|_| Uuid::new_v4().to_string()).collect();
+        let vectors = embedder.embed_documents(&texts).await?;
+        if vectors.len() != docs.len() {
+            return Err(VectorStoreError::OtherError(format!(
+                "Number of vectors ({}) and documents ({}) do not match",
+                vectors.len(),
+                docs.len()
+            )));
+        }
         let payloads = docs.iter().map(|d| {
             let mut base = json!({
                 &self.content_field: d.page_content,
@@ -60,9 +75,12 @@ impl VectorStore for Store {
 
         let mut points: Vec<PointStruct> = Vec::with_capacity(docs.len());
 
-        for (id, (vector, payload)) in ids.clone().zip(vectors.zip(payloads)) {
+        for ((id, vector), payload) in ids.iter().zip(vectors).zip(payloads) {
             let vector: Vec<f32> = vector.into_iter().map(|f| f as f32).collect();
-            let point = PointStruct::new(id, vector, Payload::try_from(payload).unwrap());
+            let payload = Payload::try_from(payload).map_err(|error| {
+                VectorStoreError::OtherError(format!("invalid Qdrant payload: {error}"))
+            })?;
+            let point = PointStruct::new(id.clone(), vector, payload);
             points.push(point);
         }
 
@@ -70,7 +88,7 @@ impl VectorStore for Store {
             .upsert_points(UpsertPointsBuilder::new(&self.collection_name, points).wait(true))
             .await?;
 
-        Ok(ids.collect())
+        Ok(ids)
     }
 
     /// Perform a similarity search on the store.
@@ -134,5 +152,47 @@ impl VectorStore for Store {
             .collect();
 
         Ok(documents)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use langchainx_embedding::embedding::EmbedderError;
+
+    #[derive(Debug)]
+    struct ShortEmbedder;
+
+    #[async_trait]
+    impl Embedder for ShortEmbedder {
+        async fn embed_documents(
+            &self,
+            _documents: &[String],
+        ) -> Result<Vec<Vec<f64>>, EmbedderError> {
+            Ok(vec![vec![0.0]])
+        }
+
+        async fn embed_query(&self, _text: &str) -> Result<Vec<f64>, EmbedderError> {
+            Ok(vec![0.0])
+        }
+    }
+
+    #[tokio::test]
+    async fn add_documents_rejects_embedding_count_mismatch() {
+        let store = Store {
+            client: Qdrant::from_url("http://127.0.0.1:1").build().unwrap(),
+            embedder: Arc::new(ShortEmbedder),
+            collection_name: "test".to_string(),
+            content_field: "content".to_string(),
+            metadata_field: "metadata".to_string(),
+            search_filter: None,
+        };
+        let docs = vec![Document::new("one"), Document::new("two")];
+
+        let result = store.add_documents(&docs, &QdrantOptions::default()).await;
+
+        assert!(
+            matches!(result, Err(VectorStoreError::OtherError(message)) if message.contains("match"))
+        );
     }
 }

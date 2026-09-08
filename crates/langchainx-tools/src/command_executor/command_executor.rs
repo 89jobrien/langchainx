@@ -1,3 +1,4 @@
+//! Structured execution of command-and-argument lists.
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
@@ -5,12 +6,14 @@ use serde_json::{Value, json};
 
 use crate::{Tool, ToolError};
 
+/// Executes commands sequentially for a declared target platform.
 pub struct CommandExecutor {
     platform: String,
     working_dir: Option<PathBuf>,
 }
 
 impl CommandExecutor {
+    /// Creates an executor labeled for the supplied platform.
     pub fn new<S: Into<String>>(platform: S) -> Self {
         Self {
             platform: platform.into(),
@@ -48,6 +51,7 @@ impl Tool for CommandExecutor {
         String::from("Command_Executor")
     }
 
+    // qual:allow(iosp) reason: "description assembly with conditional logic"
     fn description(&self) -> String {
         let dir_note = match &self.working_dir {
             Some(p) => format!(" Commands run in directory: {}", p.display()),
@@ -118,6 +122,7 @@ impl Tool for CommandExecutor {
         }
     }
 
+    // qual:allow(iosp) reason: "tool I/O boundary"
     async fn run(&self, input: Value) -> Result<String, ToolError> {
         let commands: Vec<CommandInput> =
             serde_json::from_value(input).map_err(|e| ToolError::InvalidInput(e.to_string()))?;

@@ -1,3 +1,4 @@
+//! In-memory semantic route index using cosine similarity.
 use std::collections::HashMap;
 
 use async_trait::async_trait;
@@ -6,10 +7,12 @@ use crate::{IndexError, Router, utils::cosine_similarity};
 
 use super::Index;
 
+/// Stores routes by name and searches each utterance embedding independently.
 pub struct MemoryIndex {
     routers: HashMap<String, Router>,
 }
 impl MemoryIndex {
+    /// Creates an empty in-memory index.
     pub fn new() -> Self {
         Self {
             routers: HashMap::new(),

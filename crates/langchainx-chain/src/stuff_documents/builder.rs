@@ -1,3 +1,4 @@
+//! Builder for a chain that combines documents into one model call.
 use std::sync::Arc;
 
 use crate::{
@@ -10,6 +11,7 @@ use crate::{
 
 use super::StuffDocument;
 
+/// Configures the model, prompt, and call options for a [`StuffDocument`] chain.
 pub struct StuffDocumentBuilder {
     llm: Option<Arc<dyn DynLLM>>,
     options: Option<ChainCallOptions>,
@@ -17,7 +19,9 @@ pub struct StuffDocumentBuilder {
     output_parser: Option<Box<dyn OutputParser>>,
     prompt: Option<Box<dyn FormatPrompter>>,
 }
+#[allow(clippy::new_without_default)] // Builder pattern
 impl StuffDocumentBuilder {
+    /// Creates an empty builder that uses the default question-answering prompt.
     pub fn new() -> Self {
         Self {
             llm: None,
@@ -28,27 +32,34 @@ impl StuffDocumentBuilder {
         }
     }
 
+    /// Sets the language model used to process the combined documents.
     pub fn llm<L: IntoArcLLM>(mut self, llm: L) -> Self {
         self.llm = Some(llm.into_arc_llm());
         self
     }
 
+    /// Sets model call options.
     pub fn options(mut self, options: ChainCallOptions) -> Self {
         self.options = Some(options);
         self
     }
 
+    /// Records a structured-output key.
+    ///
+    /// The current builder does not forward this value to its internal LLM chain.
     pub fn output_key<S: Into<String>>(mut self, output_key: S) -> Self {
         self.output_key = Some(output_key.into());
         self
     }
 
-    ///If you want to add a custom prompt,keep in mind which variables are obligatory.
+    /// Sets a custom prompt, which must accept `context` and `question`.
     pub fn prompt<P: Into<Box<dyn FormatPrompter>>>(mut self, prompt: P) -> Self {
         self.prompt = Some(prompt.into());
         self
     }
 
+    // qual:allow(iosp) reason: "builder validation + construction"
+    /// Builds the chain, requiring a language model.
     pub fn build(self) -> Result<StuffDocument, ChainError> {
         let llm = self
             .llm

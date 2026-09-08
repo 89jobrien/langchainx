@@ -1,3 +1,4 @@
+//! OpenAI-compatible chat-completions client.
 use std::{fmt, pin::Pin};
 
 pub use async_openai::config::{AzureConfig, Config, OpenAIConfig};
@@ -27,11 +28,17 @@ use crate::{
 };
 
 #[derive(Clone)]
+/// OpenAI model identifiers supported by the convenience enum.
 pub enum OpenAIModel {
+    /// GPT-3.5 Turbo.
     Gpt35,
+    /// GPT-4.
     Gpt4,
+    /// GPT-4 Turbo preview.
     Gpt4Turbo,
+    /// GPT-4o.
     Gpt4o,
+    /// GPT-4o mini.
     Gpt4oMini,
 }
 
@@ -55,6 +62,7 @@ impl From<OpenAIModel> for String {
 }
 
 #[derive(Clone)]
+/// A chat client parameterized by an OpenAI-compatible configuration.
 pub struct OpenAI<C: Config> {
     config: C,
     options: CallOptions,
@@ -62,6 +70,7 @@ pub struct OpenAI<C: Config> {
 }
 
 impl<C: Config> OpenAI<C> {
+    /// Creates a client with the supplied configuration and default model.
     pub fn new(config: C) -> Self {
         Self {
             config,
@@ -70,16 +79,19 @@ impl<C: Config> OpenAI<C> {
         }
     }
 
+    /// Sets the model identifier.
     pub fn with_model<S: Into<String>>(mut self, model: S) -> Self {
         self.model = model.into();
         self
     }
 
+    /// Replaces the OpenAI-compatible client configuration.
     pub fn with_config(mut self, config: C) -> Self {
         self.config = config;
         self
     }
 
+    /// Replaces the model call options.
     pub fn with_options(mut self, options: CallOptions) -> Self {
         self.options = options;
         self
@@ -125,6 +137,7 @@ impl<C: Config + Send + Sync + 'static> LLM for OpenAI<C> {
             .map(|res| res.generation)
     }
 
+    // qual:allow(iosp) reason: "streaming I/O boundary"
     async fn stream(
         &self,
         messages: &[Message],

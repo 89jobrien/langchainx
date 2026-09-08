@@ -1,3 +1,4 @@
+//! Chain that condenses questions, retrieves documents, and generates contextual answers.
 use futures::Stream;
 use futures_util::{StreamExt, pin_mut};
 use std::{collections::HashMap, pin::Pin, sync::Arc};
@@ -22,8 +23,10 @@ use crate::{
 const CONVERSATIONAL_RETRIEVAL_QA_DEFAULT_SOURCE_DOCUMENT_KEY: &str = "source_documents";
 const CONVERSATIONAL_RETRIEVAL_QA_DEFAULT_GENERATED_QUESTION_KEY: &str = "generated_question";
 
+/// Answers conversational questions using retrieved documents and optional question rewriting.
 pub struct ConversationalRetrieverChain {
     pub(crate) retriever: Box<dyn Retriever>,
+    /// Shared conversation history used to contextualize follow-up questions.
     pub memory: Arc<Mutex<dyn BaseMemory>>,
     pub(crate) combine_documents_chain: Box<dyn crate::chain::DynChain>,
     pub(crate) condense_question_chain: Box<dyn crate::chain::DynChain>,
@@ -66,20 +69,24 @@ impl ConversationalRetrieverChain {
 }
 
 impl Chain for ConversationalRetrieverChain {
+    fn required_keys(&self) -> Vec<String> {
+        vec![self.input_key.clone()]
+    }
+
     async fn call(&self, input_variables: PromptArgs) -> Result<GenerateResult, ChainError> {
         let output = self.execute(input_variables).await?;
         let result: GenerateResult = serde_json::from_value(output[DEFAULT_RESULT_KEY].clone())?;
         Ok(result)
     }
 
+    // qual:allow(iosp) reason: "chain execution I/O boundary"
     async fn execute(
         &self,
         input_variables: PromptArgs,
     ) -> Result<HashMap<String, Value>, ChainError> {
         let mut token_usage: Option<TokenUsage> = None;
-        let input_variable = &input_variables
-            .get(&self.input_key)
-            .ok_or(ChainError::MissingInputVariable(self.input_key.clone()))?;
+        self.validate_input(&input_variables)?;
+        let input_variable = &input_variables[&self.input_key];
 
         let human_message = Message::new_human_message(input_variable);
         let history = {
@@ -108,14 +115,11 @@ impl Chain for ConversationalRetrieverChain {
             )
             .await?;
 
-        match &output.tokens {
-            Some(tokens) => {
-                if let Some(mut token_usage) = token_usage {
-                    token_usage.add(tokens);
-                    output.tokens = Some(token_usage)
-                }
-            }
-            None => {}
+        if let Some(tokens) = &output.tokens
+            && let Some(mut token_usage) = token_usage
+        {
+            token_usage.add(tokens);
+            output.tokens = Some(token_usage)
         }
 
         {
@@ -151,9 +155,8 @@ impl Chain for ConversationalRetrieverChain {
         input_variables: PromptArgs,
     ) -> Result<Pin<Box<dyn Stream<Item = Result<StreamData, ChainError>> + Send>>, ChainError>
     {
-        let input_variable = &input_variables
-            .get(&self.input_key)
-            .ok_or(ChainError::MissingInputVariable(self.input_key.clone()))?;
+        self.validate_input(&input_variables)?;
+        let input_variable = &input_variables[&self.input_key];
 
         let human_message = Message::new_human_message(input_variable);
         let history = {

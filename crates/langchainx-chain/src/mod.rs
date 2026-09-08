@@ -1,3 +1,4 @@
+//! Chain implementations and their shared execution interface.
 pub mod chain_trait;
 pub use chain_trait::*;
 

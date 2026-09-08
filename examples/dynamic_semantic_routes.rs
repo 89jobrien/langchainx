@@ -43,7 +43,7 @@ async fn main() {
         None => panic!("No Similar Route"),
     };
 
-    println!("{:?}", &route_choice);
+    println!("{:?}", route_choice);
     if route_choice.route == "capital" {
         let tool_output = tool.run(route_choice.tool_input.unwrap()).await.unwrap();
         println!("{:?}", tool_output);

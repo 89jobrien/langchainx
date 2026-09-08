@@ -1,3 +1,4 @@
+//! Queue-backed language-model test double.
 use std::collections::VecDeque;
 use std::pin::Pin;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -9,12 +10,14 @@ use crate::language_models::llm::LLM;
 use crate::language_models::{GenerateResult, LLMError};
 use crate::schemas::{Message, StreamData};
 
-/// A deterministic LLM test double. Responses are popped from a queue in order.
-/// When the queue is exhausted, returns an empty string.
+/// A deterministic LLM test double that returns queued responses in order.
 ///
-/// ```rust
-/// use langchainx::test_utils::FakeLLM;
-/// use langchainx::language_models::llm::LLM;
+/// Clones share responses and call count. Exhausted queues return an empty generation, while
+/// streaming always returns an error.
+///
+/// ```rust,ignore
+/// use langchainx_chain::test_utils::FakeLLM;
+/// use langchainx_chain::language_models::llm::LLM;
 ///
 /// # #[tokio::main]
 /// # async fn main() {
@@ -27,10 +30,12 @@ use crate::schemas::{Message, StreamData};
 #[derive(Clone)]
 pub struct FakeLLM {
     responses: Arc<Mutex<VecDeque<String>>>,
+    /// Number of generation calls shared by all clones.
     pub call_count: Arc<AtomicUsize>,
 }
 
 impl FakeLLM {
+    /// Creates a test model with responses in their return order.
     pub fn new(responses: Vec<String>) -> Self {
         Self {
             responses: Arc::new(Mutex::new(VecDeque::from(responses))),

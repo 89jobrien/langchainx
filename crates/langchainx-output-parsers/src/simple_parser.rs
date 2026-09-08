@@ -1,14 +1,18 @@
+//! Pass-through output parsing with optional whitespace trimming.
 use async_trait::async_trait;
 
 use super::{OutputParser, OutputParserError};
 
+/// Returns model output unchanged or trimmed.
 pub struct SimpleParser {
     trim: bool,
 }
 impl SimpleParser {
+    /// Creates a parser that preserves surrounding whitespace.
     pub fn new() -> Self {
         Self { trim: false }
     }
+    /// Configures whether surrounding whitespace is removed.
     pub fn with_trim(mut self, trim: bool) -> Self {
         self.trim = trim;
         self

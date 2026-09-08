@@ -1,3 +1,4 @@
+//! Shared data structures and traits exchanged between langchainx components.
 pub mod agent;
 pub use agent::*;
 

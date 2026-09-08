@@ -1,3 +1,5 @@
+//! Conversation-memory implementations for langchainx chains and agents.
+#![deny(missing_docs)]
 pub use langchainx_core::language_models;
 pub use langchainx_core::schemas;
 

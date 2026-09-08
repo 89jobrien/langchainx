@@ -1,3 +1,4 @@
+//! DuckDuckGo HTML result retrieval and parsing.
 use std::{collections::HashMap, error::Error};
 
 use reqwest::Client;
@@ -8,6 +9,7 @@ use url::Url;
 
 use crate::{Tool, ToolError};
 
+/// Searches DuckDuckGo and serializes a bounded list of results as JSON.
 pub struct DuckDuckGoSearchResults {
     url: String,
     client: Client,
@@ -15,6 +17,7 @@ pub struct DuckDuckGoSearchResults {
 }
 
 impl DuckDuckGoSearchResults {
+    /// Creates a search tool that returns at most four results.
     pub fn new() -> Self {
         Self {
             client: Client::new(),
@@ -23,11 +26,13 @@ impl DuckDuckGoSearchResults {
         }
     }
 
+    /// Sets the maximum number of parsed results.
     pub fn with_max_results(mut self, max_results: usize) -> Self {
         self.max_results = max_results;
         self
     }
 
+    /// Searches DuckDuckGo and returns matching results as a JSON array.
     pub async fn search(&self, query: &str) -> Result<String, Box<dyn Error>> {
         let mut url = Url::parse(&self.url)?;
 
@@ -86,6 +91,7 @@ impl DuckDuckGoSearchResults {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+/// Title, link, and snippet parsed from a DuckDuckGo result.
 pub struct SearchResult {
     title: String,
     link: String,

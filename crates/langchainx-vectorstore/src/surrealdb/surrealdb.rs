@@ -1,3 +1,4 @@
+//! SurrealDB schema initialization, document storage, and cosine search.
 use std::{collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
@@ -17,6 +18,7 @@ use crate::{VecStoreOptions, VectorStore, VectorStoreError};
 //  collection?: 'collection_name'
 // }
 
+/// Vector store backed by a SurrealDB table.
 pub struct Store<C: Connection> {
     pub(crate) db: Surreal<C>,
     pub(crate) collection_name: String,
@@ -41,6 +43,7 @@ impl<C: Connection> Store<C> {
             .unwrap_or_else(|| "collection".to_string())
     }
 
+    /// Creates the configured schemafull table and vector fields when enabled.
     pub async fn initialize(&self) -> Result<(), VectorStoreError> {
         self.create_collection_table_if_not_exists().await?;
         Ok(())

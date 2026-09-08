@@ -1,7 +1,9 @@
+//! Anthropic Messages API implementation of the language-model interface.
 use crate::{
     AnthropicError,
     language_models::{GenerateResult, LLMError, TokenUsage, llm::LLM, options::CallOptions},
     schemas::{Message, MessageType, StreamData},
+    sse::SseDecoder,
 };
 use futures::{Stream, StreamExt};
 use reqwest::Client;
@@ -10,10 +12,17 @@ use std::{collections::HashMap, fmt, pin::Pin};
 
 use super::models::{ApiResponse, ClaudeMessage, Payload};
 
+const DEFAULT_MAX_TOKENS: u32 = 1024;
+
+/// Anthropic model identifiers supported by the convenience enum.
 pub enum ClaudeModel {
+    /// Claude 3 Opus, dated 2024-02-29.
     Claude3pus20240229,
+    /// Claude 3 Sonnet, dated 2024-02-29.
     Claude3sonnet20240229,
+    /// Claude 3 Haiku, dated 2024-03-07.
     Claude3haiku20240307,
+    /// Claude 3.5 Sonnet, dated 2024-06-20.
     Claude3_5sonnet20240620,
 }
 
@@ -30,6 +39,7 @@ impl fmt::Display for ClaudeModel {
 }
 
 #[derive(Clone)]
+/// A client for generating and streaming responses from Anthropic Claude.
 pub struct Claude {
     model: String,
     options: CallOptions,
@@ -44,6 +54,7 @@ impl Default for Claude {
 }
 
 impl Claude {
+    /// Creates a client using `CLAUDE_API_KEY` and the default model and API version.
     pub fn new() -> Self {
         Self {
             model: ClaudeModel::Claude3pus20240229.to_string(),
@@ -53,21 +64,25 @@ impl Claude {
         }
     }
 
+    /// Sets the Anthropic model identifier.
     pub fn with_model<S: Into<String>>(mut self, model: S) -> Self {
         self.model = model.into();
         self
     }
 
+    /// Replaces the model call options.
     pub fn with_options(mut self, options: CallOptions) -> Self {
         self.options = options;
         self
     }
 
+    /// Sets the Anthropic API key.
     pub fn with_api_key<S: Into<String>>(mut self, api_key: S) -> Self {
         self.api_key = api_key.into();
         self
     }
 
+    /// Sets the `anthropic-version` request header.
     pub fn with_anthropic_version<S: Into<String>>(mut self, version: S) -> Self {
         self.anthropic_version = version.into();
         self
@@ -109,11 +124,10 @@ impl Claude {
             .map(|c| c.text.clone())
             .unwrap_or_default();
 
-        let tokens = Some(TokenUsage {
-            prompt_tokens: res.usage.input_tokens,
-            completion_tokens: res.usage.output_tokens,
-            total_tokens: res.usage.input_tokens + res.usage.output_tokens,
-        });
+        let tokens = Some(TokenUsage::new(
+            res.usage.input_tokens,
+            res.usage.output_tokens,
+        ));
 
         Ok(GenerateResult { tokens, generation })
     }
@@ -129,7 +143,7 @@ impl Claude {
                 .into_iter()
                 .map(ClaudeMessage::from_message)
                 .collect::<Vec<_>>(),
-            max_tokens: self.options.max_tokens.unwrap_or(1024),
+            max_tokens: self.options.max_tokens.unwrap_or(DEFAULT_MAX_TOKENS),
             stream: None,
             stop_sequences: self.options.stop_words.clone(),
             temperature: self.options.temperature,
@@ -164,25 +178,34 @@ impl LLM for Claude {
         // Instead of sending the request directly, return a stream wrapper
         let stream = client.execute(request).await?;
         let stream = stream.bytes_stream();
-        // Process each chunk as it arrives
-        let processed_stream = stream.then(move |result| {
-            async move {
-                match result {
-                    Ok(bytes) => {
-                        let value: Value = parse_sse_to_json(&String::from_utf8_lossy(&bytes))?;
-                        if value["type"].as_str().unwrap_or("") == "content_block_delta" {
-                            let content = value["delta"]["text"].clone();
-                            // Return StreamData based on the parsed content
-                            // TODO get tokens from the response
-                            Ok(StreamData::new(value, None, content.as_str().unwrap_or("")))
-                        } else {
-                            Ok(StreamData::new(value, None, ""))
-                        }
+        let processed_stream = async_stream::try_stream! {
+            let mut decoder = SseDecoder::default();
+            futures::pin_mut!(stream);
+            while let Some(result) = stream.next().await {
+                let bytes = result.map_err(LLMError::RequestError)?;
+                for data in decoder.push(&bytes)? {
+                    let value: Value = parse_sse_to_json(&data)?;
+                    if value["type"].as_str().unwrap_or("") == "content_block_delta" {
+                        let content = value["delta"]["text"].clone();
+                        yield StreamData::new(value, None, content.as_str().unwrap_or(""));
+                    } else if value["type"].as_str().unwrap_or("") == "message_start" {
+                        let input_tokens = value["message"]["usage"]["input_tokens"]
+                            .as_u64()
+                            .unwrap_or(0) as u32;
+                        let tokens = TokenUsage::new(input_tokens, 0);
+                        yield StreamData::new(value, Some(tokens), "");
+                    } else if value["type"].as_str().unwrap_or("") == "message_delta" {
+                        let output_tokens =
+                            value["usage"]["output_tokens"].as_u64().unwrap_or(0) as u32;
+                        let tokens = TokenUsage::new(0, output_tokens);
+                        yield StreamData::new(value, Some(tokens), "");
+                    } else {
+                        yield StreamData::new(value, None, "");
                     }
-                    Err(e) => Err(LLMError::RequestError(e)),
                 }
             }
-        });
+            decoder.finish()?;
+        };
 
         Ok(Box::pin(processed_stream))
     }

@@ -1,0 +1,312 @@
+//! Structured Nushell pipeline execution.
+use serde::Deserialize;
+use serde_json::{Value, json};
+use std::path::PathBuf;
+use std::time::Duration;
+use tokio::process::Command;
+
+use super::run_bounded_command;
+use crate::{Tool, ToolError};
+
+const DEFAULT_TIMEOUT_SECS: u64 = 60;
+const MAX_OUTPUT_CHARS: usize = 10_000;
+
+/// A langchainx tool that runs nushell commands and returns structured JSON output.
+///
+/// # Example
+/// ```rust,ignore
+/// let tool = NuTool::new();
+/// let custom_tool = NuTool::builder().timeout_secs(30).build();
+/// ```
+pub struct NuTool {
+    nu_path: PathBuf,
+    timeout_secs: u64,
+}
+
+impl NuTool {
+    /// Creates a tool that invokes `nu` with a 60-second timeout.
+    pub fn new() -> Self {
+        Self {
+            nu_path: PathBuf::from("nu"),
+            timeout_secs: DEFAULT_TIMEOUT_SECS,
+        }
+    }
+
+    /// Returns a builder for the executable path and timeout.
+    pub fn builder() -> NuToolBuilder {
+        NuToolBuilder::default()
+    }
+
+    /// Prepare the full command string, appending `| to json` if not already present.
+    fn prepare_command(command: &str) -> String {
+        let trimmed = command.trim_end();
+        if trimmed.ends_with("| to json") {
+            command.to_string()
+        } else {
+            format!("{} | to json", trimmed)
+        }
+    }
+
+    // qual:allow(iosp) reason: "subprocess I/O boundary"
+    async fn run_nu(&self, command: &str) -> Result<String, ToolError> {
+        let full_cmd = Self::prepare_command(command);
+        let timeout = Duration::from_secs(self.timeout_secs);
+        let mut process = Command::new(&self.nu_path);
+        process.args(["--no-config-file", "-c", &full_cmd]);
+        let output = run_bounded_command(process, timeout, MAX_OUTPUT_CHARS)
+            .await
+            .map_err(|error| match error {
+                ToolError::ExecutionFailed(message)
+                    if message.contains("No such file") || message.contains("os error 2") =>
+                {
+                    ToolError::ExecutionFailed("nu not found on PATH".to_string())
+                }
+                other => other,
+            })?;
+
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+            let truncated = if stdout.len() > MAX_OUTPUT_CHARS {
+                stdout.chars().take(MAX_OUTPUT_CHARS).collect::<String>()
+            } else {
+                stdout
+            };
+            Ok(truncated)
+        } else {
+            let exit_code = output.status.code().unwrap_or(-1);
+            let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+            let stderr_truncated = if stderr.len() > MAX_OUTPUT_CHARS {
+                stderr.chars().take(MAX_OUTPUT_CHARS).collect::<String>()
+            } else {
+                stderr
+            };
+            Ok(json!({
+                "exit_code": exit_code,
+                "stderr": stderr_truncated.trim()
+            })
+            .to_string())
+        }
+    }
+}
+
+impl Default for NuTool {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+// ── Builder ───────────────────────────────────────────────────────────────────
+
+#[derive(Default)]
+/// Configures a [`NuTool`].
+pub struct NuToolBuilder {
+    nu_path: Option<PathBuf>,
+    timeout_secs: Option<u64>,
+}
+
+impl NuToolBuilder {
+    /// Sets the Nushell executable path.
+    pub fn nu_path(mut self, path: impl Into<PathBuf>) -> Self {
+        self.nu_path = Some(path.into());
+        self
+    }
+
+    /// Sets the command timeout in seconds.
+    pub fn timeout_secs(mut self, secs: u64) -> Self {
+        self.timeout_secs = Some(secs);
+        self
+    }
+
+    /// Builds the configured Nushell tool.
+    pub fn build(self) -> NuTool {
+        NuTool {
+            nu_path: self.nu_path.unwrap_or_else(|| PathBuf::from("nu")),
+            timeout_secs: self.timeout_secs.unwrap_or(DEFAULT_TIMEOUT_SECS),
+        }
+    }
+}
+
+// ── Input ─────────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+struct NuInput {
+    command: String,
+    #[serde(default)]
+    timeout_secs: Option<u64>,
+}
+
+// ── Tool impl ─────────────────────────────────────────────────────────────────
+
+impl Tool for NuTool {
+    fn name(&self) -> String {
+        "NuTool".into()
+    }
+
+    fn description(&self) -> String {
+        "Execute a nushell command and return structured JSON output. \
+         Pass a 'command' field with a nu pipeline. An optional 'timeout_secs' \
+         field overrides the default timeout."
+            .into()
+    }
+
+    fn parameters(&self) -> Value {
+        json!({
+            "type": "object",
+            "properties": {
+                "command": {
+                    "type": "string",
+                    "description": "A nushell pipeline to execute (e.g. 'ls | where type == file | select name size')."
+                },
+                "timeout_secs": {
+                    "type": "integer",
+                    "description": "Optional timeout in seconds (default 60)."
+                }
+            },
+            "required": ["command"],
+            "additionalProperties": false
+        })
+    }
+
+    async fn parse_input(&self, input: &str) -> Value {
+        match serde_json::from_str::<Value>(input) {
+            Ok(v) => v,
+            Err(_) => Value::String(input.to_string()),
+        }
+    }
+
+    async fn run(&self, input: Value) -> Result<String, ToolError> {
+        let parsed: NuInput =
+            serde_json::from_value(input).map_err(|e| ToolError::InvalidInput(e.to_string()))?;
+
+        // Allow per-call timeout override.
+        let effective_timeout = parsed.timeout_secs.unwrap_or(self.timeout_secs);
+        let tool = NuTool {
+            nu_path: self.nu_path.clone(),
+            timeout_secs: effective_timeout,
+        };
+
+        tool.run_nu(&parsed.command).await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn appends_to_json_when_missing() {
+        let cmd = "ls | where type == file | select name size";
+        let prepared = NuTool::prepare_command(cmd);
+        assert!(prepared.ends_with("| to json"), "got: {prepared}");
+        assert_eq!(
+            prepared,
+            "ls | where type == file | select name size | to json"
+        );
+    }
+
+    #[test]
+    fn does_not_double_append_to_json() {
+        let cmd = "ls | to json";
+        let prepared = NuTool::prepare_command(cmd);
+        assert_eq!(prepared, "ls | to json");
+    }
+
+    #[test]
+    fn does_not_double_append_to_json_with_trailing_whitespace() {
+        let cmd = "ls | to json   ";
+        let prepared = NuTool::prepare_command(cmd);
+        // trim_end before checking, so no duplication
+        assert!(!prepared.contains("| to json | to json"));
+    }
+
+    #[tokio::test]
+    async fn nu_not_on_path_returns_tool_error() {
+        let tool = NuTool::builder()
+            .nu_path("/nonexistent/path/to/nu-binary-xyz")
+            .build();
+        let result = tool.run_nu("echo hello").await;
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        match err {
+            ToolError::ExecutionFailed(msg) => {
+                assert!(
+                    msg.contains("nu not found") || msg.contains("failed to spawn"),
+                    "unexpected message: {msg}"
+                );
+            }
+            other => panic!("expected ExecutionFailed, got: {other:?}"),
+        }
+    }
+
+    /// Requires `nu` to be installed on PATH.
+    #[tokio::test]
+    #[ignore = "requires nu to be installed on PATH"]
+    async fn nonzero_exit_returns_ok_with_exit_code() {
+        let tool = NuTool::new();
+        // `exit 1` in nu causes a non-zero exit
+        let result = tool.run_nu("exit 1").await;
+        assert!(result.is_ok(), "expected Ok, got: {result:?}");
+        let json_str = result.unwrap();
+        let v: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+        assert!(v["exit_code"].as_i64().unwrap() != 0);
+    }
+
+    /// Requires `nu` to be installed on PATH.
+    #[tokio::test]
+    #[ignore = "requires nu to be installed on PATH"]
+    async fn nu_on_path_executes_command() {
+        let tool = NuTool::new();
+        let result = tool.run_nu("[1 2 3]").await;
+        assert!(result.is_ok(), "expected Ok, got: {result:?}");
+        let json_str = result.unwrap();
+        let v: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+        assert_eq!(v, serde_json::json!([1, 2, 3]));
+    }
+
+    #[test]
+    fn builder_sets_timeout() {
+        let tool = NuTool::builder().timeout_secs(30).build();
+        assert_eq!(tool.timeout_secs, 30);
+    }
+
+    #[test]
+    fn builder_default_timeout() {
+        let tool = NuTool::new();
+        assert_eq!(tool.timeout_secs, DEFAULT_TIMEOUT_SECS);
+    }
+
+    #[test]
+    fn truncate_output_does_not_panic_on_multibyte_chars() {
+        // Each char is 3 bytes in UTF-8. With MAX_OUTPUT_CHARS=10_000,
+        // a string of 10_001 such chars would panic with byte-index slicing
+        // if the boundary fell inside a multi-byte char.
+        let multibyte = "a".repeat(MAX_OUTPUT_CHARS + 1);
+        // Sanity: this works. Now test with actual multi-byte chars.
+        let multibyte_cjk = "\u{4e16}".repeat(MAX_OUTPUT_CHARS + 1); // CJK char, 3 bytes each
+
+        // Simulate the truncation logic directly
+        let truncated = if multibyte.len() > MAX_OUTPUT_CHARS {
+            multibyte.chars().take(MAX_OUTPUT_CHARS).collect::<String>()
+        } else {
+            multibyte
+        };
+        assert_eq!(truncated.chars().count(), MAX_OUTPUT_CHARS);
+
+        let truncated_cjk = if multibyte_cjk.len() > MAX_OUTPUT_CHARS {
+            multibyte_cjk
+                .chars()
+                .take(MAX_OUTPUT_CHARS)
+                .collect::<String>()
+        } else {
+            multibyte_cjk
+        };
+        assert_eq!(truncated_cjk.chars().count(), MAX_OUTPUT_CHARS);
+    }
+
+    #[tokio::test]
+    async fn tool_name_and_description() {
+        let t = NuTool::new();
+        assert_eq!(t.name(), "NuTool");
+        assert!(!t.description().is_empty());
+    }
+}

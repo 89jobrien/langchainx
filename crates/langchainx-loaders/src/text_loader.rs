@@ -1,3 +1,4 @@
+//! Loader that wraps plain text in a single document.
 use std::pin::Pin;
 
 use async_trait::async_trait;
@@ -9,11 +10,13 @@ use langchainx_text_splitter::TextSplitter;
 use crate::{Loader, LoaderError, process_doc_stream};
 
 #[derive(Debug, Clone)]
+/// Loads an in-memory string as one document.
 pub struct TextLoader {
     content: String,
 }
 
 impl TextLoader {
+    /// Creates a loader from plain text.
     pub fn new<T: Into<String>>(input: T) -> Self {
         Self {
             content: input.into(),

@@ -1,3 +1,4 @@
+//! Index abstractions, in-memory storage, and related errors.
 #[allow(clippy::module_inception)]
 mod index;
 pub use index::*;

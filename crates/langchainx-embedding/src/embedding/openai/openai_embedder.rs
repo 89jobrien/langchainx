@@ -1,5 +1,4 @@
-#![allow(dead_code)]
-
+//! OpenAI-compatible embedding client implementation.
 use crate::embedding::{EmbedderError, embedder_trait::Embedder};
 pub use async_openai::config::{AzureConfig, Config, OpenAIConfig};
 use async_openai::{
@@ -9,6 +8,7 @@ use async_openai::{
 use async_trait::async_trait;
 
 #[derive(Debug)]
+/// An embedder using an OpenAI-compatible client configuration.
 pub struct OpenAiEmbedder<C: Config> {
     config: C,
     model: String,
@@ -21,6 +21,7 @@ impl<C: Config + Send + Sync + 'static> From<OpenAiEmbedder<C>> for Box<dyn Embe
 }
 
 impl<C: Config> OpenAiEmbedder<C> {
+    /// Creates an embedder with the supplied client configuration and default model.
     pub fn new(config: C) -> Self {
         OpenAiEmbedder {
             config,
@@ -28,11 +29,13 @@ impl<C: Config> OpenAiEmbedder<C> {
         }
     }
 
+    /// Sets the embedding model identifier.
     pub fn with_model<S: Into<String>>(mut self, model: S) -> Self {
         self.model = model.into();
         self
     }
 
+    /// Replaces the OpenAI-compatible client configuration.
     pub fn with_config(mut self, config: C) -> Self {
         self.config = config;
         self

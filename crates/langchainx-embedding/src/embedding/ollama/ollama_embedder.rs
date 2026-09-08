@@ -1,3 +1,4 @@
+//! Ollama embedding client implementation.
 use std::sync::Arc;
 
 use crate::embedding::{EmbedderError, embedder_trait::Embedder};
@@ -11,6 +12,7 @@ use ollama_rs::{
 };
 
 #[derive(Debug)]
+/// An embedder backed by an Ollama server and model.
 pub struct OllamaEmbedder {
     pub(crate) client: Arc<OllamaClient>,
     pub(crate) model: String,
@@ -21,6 +23,7 @@ pub struct OllamaEmbedder {
 const DEFAULT_MODEL: &str = "nomic-embed-text";
 
 impl OllamaEmbedder {
+    /// Creates an embedder with an Ollama client, model, and optional generation settings.
     pub fn new<S: Into<String>>(
         client: Arc<OllamaClient>,
         model: S,
@@ -33,11 +36,13 @@ impl OllamaEmbedder {
         }
     }
 
+    /// Sets the Ollama model used to generate embeddings.
     pub fn with_model<S: Into<String>>(mut self, model: S) -> Self {
         self.model = model.into();
         self
     }
 
+    /// Stores generation options on the embedder.
     pub fn with_options(mut self, options: GenerationOptions) -> Self {
         self.options = Some(options);
         self

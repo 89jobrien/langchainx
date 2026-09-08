@@ -55,7 +55,7 @@ async fn main() {
 
     // Add documents to the database
     let doc1 = Document::new(
-        "langchainx is a port of the langchain python library to rust and was written in 2024.",
+        "langchainx is a port of the langchain python library to rust and was written in 2026.",
     );
     let doc2 = Document::new(
         "langchaingo is a port of the langchain python library to go language and was written in 2023."

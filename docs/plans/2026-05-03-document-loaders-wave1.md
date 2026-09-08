@@ -1,8 +1,12 @@
+---
+status: done
+---
+
 # Document Loaders Wave 1 — Breadth Tier
 
 **Date:** 2026-05-03
 **Issues:** #15, #16, #17, #18
-**Status:** approved
+**Status:** Implemented
 
 ## Goal
 

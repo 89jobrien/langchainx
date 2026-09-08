@@ -1,3 +1,4 @@
+//! Loader that converts supported document formats to plain text with Pandoc.
 use std::{fmt, path::Path, pin::Pin, process::Stdio};
 
 use async_trait::async_trait;
@@ -13,15 +14,25 @@ use tokio::{
 use crate::{Loader, LoaderError, process_doc_stream};
 
 #[derive(Debug)]
+/// Input formats recognized by Pandoc.
 pub enum InputFormat {
+    /// Microsoft Word Open XML.
     Docx,
+    /// EPUB electronic publication.
     Epub,
+    /// HTML.
     Html,
+    /// Jupyter Notebook (`ipynb`).
     JuypterNotebook,
+    /// Markdown.
     Markdown,
+    /// MediaWiki markup.
     MediaWiki,
+    /// Rich Text Format.
     RichTextFormat,
+    /// Typst markup.
     Typst,
+    /// Vimwiki markup.
     VimWiki,
 }
 
@@ -42,6 +53,7 @@ impl fmt::Display for InputFormat {
     }
 }
 
+/// Runs Pandoc with streamed input and emits its plain-text output as one document.
 pub struct PandocLoader<R> {
     pandoc_path: String,
     input_format: String,
@@ -58,6 +70,7 @@ impl<R> fmt::Debug for PandocLoader<R> {
 }
 
 impl<R: AsyncRead + Send + Sync + Unpin + 'static> PandocLoader<R> {
+    /// Creates a loader with an explicit Pandoc executable and input format.
     pub fn new<S: Into<String>>(pandoc_path: S, input_format: S, input: R) -> Self {
         PandocLoader {
             pandoc_path: pandoc_path.into(),
@@ -66,10 +79,12 @@ impl<R: AsyncRead + Send + Sync + Unpin + 'static> PandocLoader<R> {
         }
     }
 
+    /// Creates a loader from a reader using `pandoc` from `PATH`.
     pub fn new_from_reader<S: Into<String>>(input_format: S, input: R) -> Self {
         PandocLoader::new("pandoc".into(), input_format.into(), input)
     }
 
+    /// Overrides the Pandoc executable path.
     pub fn with_pandoc_path<S: Into<String>>(mut self, pandoc_path: S) -> Self {
         self.pandoc_path = pandoc_path.into();
         self
@@ -77,6 +92,7 @@ impl<R: AsyncRead + Send + Sync + Unpin + 'static> PandocLoader<R> {
 }
 
 impl PandocLoader<BufReader<File>> {
+    /// Opens a file and creates a loader using `pandoc` from `PATH`.
     pub async fn from_path<P: AsRef<Path>, S: Into<String>>(
         input_format: S,
         path: P,

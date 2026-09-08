@@ -1,0 +1,44 @@
+{
+  "documents": [
+    {
+      "id": "arch_workspace",
+      "title": "langchainx Workspace Architecture",
+      "source": "Cargo.toml + README.md",
+      "raw_content": "langchainx is a Rust port of LangChain organized as a Cargo workspace. The root langchainx crate re-exports everything for convenience. Sub-crates: langchainx-core (shared schemas, document types, error primitives), langchainx-llm (LLM backends: OpenAI, Claude, DeepSeek, Qwen, Ollama), langchainx-prompt (prompt templates and formatting macros), langchainx-chain (chain types: LLMChain, ConversationalChain, SequentialChain, SQL, Q&A), langchainx-agent (agent executors: ChatAgent, OpenAI Tools Agent), langchainx-memory (conversation memory: SimpleMemory, WindowBufferMemory), langchainx-embedding (embedding backends: OpenAI, Ollama, FastEmbed, MistralAI), langchainx-output-parsers (output parsers and structured extraction), langchainx-tools (tool trait and built-in tools), langchainx-loaders (document loaders: PDF, HTML, CSV, Pandoc, Git, source code), langchainx-vectorstore (vector store backends: Postgres, Qdrant, OpenSearch, SQLite, SurrealDB), langchainx-text-splitter (text splitting utilities), langchainx-macros (convenience macros: tool!, llm!, prompt!, chain!). Core traits: LLM trait (generate, invoke, stream), Chain trait (call, invoke, execute, stream), Tool trait (name, description, parameters, run), Embedder trait, VectorStore trait, Loader trait. All major components use async-trait.",
+      "chunks": [
+        {
+          "id": "140cdd1e-2f37-4989-bfce-bc2ace4416d1",
+          "doc_id": "arch_workspace",
+          "text": "langchainx is a Rust port of LangChain organized as a Cargo workspace. The root langchainx crate re-exports everything for convenience. Sub-crates: langchainx-core (shared schemas, document types, error primitives), langchainx-llm (LLM backends: OpenAI, Claude, DeepSeek, Qwen, Ollama), langchainx-prompt (prompt templates and formatting macros), langchainx-chain (chain types: LLMChain, ConversationalChain, SequentialChain, SQL, Q&A), langchainx-agent (agent executors: ChatAgent, OpenAI Tools Agent), langchainx-memory (conversation memory: SimpleMemory, WindowBufferMemory), langchainx-embedding (embedding backends: OpenAI, Ollama, FastEmbed, MistralAI), langchainx-output-parsers (output parsers and structured extraction), langchainx-tools (tool trait and built-in tools), langchainx-loaders (document loaders: PDF, HTML, CSV, Pandoc, Git, source code), langchainx-vectorstore (vector store backends: Postgres, Qdrant, OpenSearch, SQLite, SurrealDB), langchainx-text-splitter (text splitting u",
+          "offset": 0
+        },
+        {
+          "id": "6b678968-d00e-4f55-8952-893b8fdbd1e0",
+          "doc_id": "arch_workspace",
+          "text": "document loaders: PDF, HTML, CSV, Pandoc, Git, source code), langchainx-vectorstore (vector store backends: Postgres, Qdrant, OpenSearch, SQLite, SurrealDB), langchainx-text-splitter (text splitting utilities), langchainx-macros (convenience macros: tool!, llm!, prompt!, chain!). Core traits: LLM trait (generate, invoke, stream), Chain trait (call, invoke, execute, stream), Tool trait (name, description, parameters, run), Embedder trait, VectorStore trait, Loader trait. All major components use async-trait.",
+          "offset": 800
+        }
+      ]
+    },
+    {
+      "id": "macros_design",
+      "title": "langchainx-macros DSL Design",
+      "source": "docs/ideas/macros-dsl.md + crates/langchainx-macros/src/lib.rs",
+      "raw_content": "The langchainx-macros crate provides four declarative macros to reduce wiring boilerplate. tool! generates a unit struct plus full Tool trait impl from a name, description, and closure. It has two variants: simple (no parameters schema) and with-parameters (includes JSON schema). llm! constructs LLM backends with builder-method sugar using recursive peeling — each key=val pair maps to .with_key(val). Supports model, max_tokens, api_key, temperature, top_p, stop_words, options, config, base_url, json_mode. prompt! wraps template_fstring! + HumanMessagePromptTemplate::new() for the 80% case of single human message prompts. chain! wires a prompt and LLM into an LLMChain via LLMChainBuilder, with optional output_key. All macros use $crate:: paths for hygiene and compose: chain!(prompt!(...), llm!(...)). Hidden re-exports: async_trait, serde_json, Tool, ToolError, HumanMessagePromptTemplate, template_fstring, LLMChainBuilder. 12 unit tests cover all variants. SOLID analysis: macros enable DIP (generate trait-based code), OCP (llm! handles new backends automatically), ISP (each macro targets one concern), LSP (generated impls are substitutable with hand-written ones).",
+      "chunks": [
+        {
+          "id": "43bd3091-2ea2-4233-bdde-875a123dde9d",
+          "doc_id": "macros_design",
+          "text": "The langchainx-macros crate provides four declarative macros to reduce wiring boilerplate. tool! generates a unit struct plus full Tool trait impl from a name, description, and closure. It has two variants: simple (no parameters schema) and with-parameters (includes JSON schema). llm! constructs LLM backends with builder-method sugar using recursive peeling — each key=val pair maps to .with_key(val). Supports model, max_tokens, api_key, temperature, top_p, stop_words, options, config, base_url, json_mode. prompt! wraps template_fstring! + HumanMessagePromptTemplate::new() for the 80% case of single human message prompts. chain! wires a prompt and LLM into an LLMChain via LLMChainBuilder, with optional output_key. All macros use $crate:: paths for hygiene and compose: chain!(prompt!(...), llm!(...)). Hidden re-exports: async_trait, serde_json, Tool, ToolError, HumanMessagePromptTemplate, template_fstring, LLMChainBuilder. 12 unit tests cover all variants. SOLID analysis: macros enable D",
+          "offset": 0
+        },
+        {
+          "id": "933588bb-61b1-4b05-8e7f-59ceb34c1c79",
+          "doc_id": "macros_design",
+          "text": "lm!(...)). Hidden re-exports: async_trait, serde_json, Tool, ToolError, HumanMessagePromptTemplate, template_fstring, LLMChainBuilder. 12 unit tests cover all variants. SOLID analysis: macros enable DIP (generate trait-based code), OCP (llm! handles new backends automatically), ISP (each macro targets one concern), LSP (generated impls are substitutable with hand-written ones).",
+          "offset": 800
+        }
+      ]
+    }
+  ]
+}

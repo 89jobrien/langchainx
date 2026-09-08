@@ -79,13 +79,22 @@ struct SmolvmMachine {
 impl SmolvmMachine {
     /// Create and start a persistent machine from a pre-packed artifact.
     /// `extra_args` are forwarded to `machine create` (e.g. `-p HOST:GUEST`, `-e KEY=VAL`).
-    fn launch(name: &str, artifact_path: &Path, extra_args: &[&str], port: u16) -> Self {
+    fn launch(
+        name: &str,
+        artifact_path: &Path,
+        extra_args: &[&str],
+        workload: &[&str],
+        port: u16,
+    ) -> Self {
         // Create from artifact (fast boot, no pull).
         let mut create = std::process::Command::new("smolvm");
-        create.args(["machine", "create", name, "--net", "--from"]);
+        create.args(["machine", "create", "--name", name, "--net", "--from"]);
         create.arg(artifact_path);
         for arg in extra_args {
             create.arg(arg);
+        }
+        if !workload.is_empty() {
+            create.arg("--").args(workload);
         }
         let status = create
             .status()
@@ -112,7 +121,7 @@ impl Drop for SmolvmMachine {
             .args(["machine", "stop", "--name", &self.name])
             .status();
         let _ = std::process::Command::new("smolvm")
-            .args(["machine", "delete", "--force", &self.name])
+            .args(["machine", "delete", "--force", "--name", &self.name])
             .status();
     }
 }
@@ -176,9 +185,10 @@ mod pgvector_tests {
                 "-e",
                 "POSTGRES_DB=testdb",
             ],
+            &["/usr/local/bin/docker-entrypoint.sh", "postgres"],
             port,
         );
-        if !wait_for_tcp(&format!("*********:{port}"), "postgres", 90).await {
+        if !wait_for_tcp(&format!("127.0.0.1:{port}"), "postgres", 90).await {
             return None;
         }
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
@@ -286,7 +296,13 @@ mod qdrant_tests {
         let port = free_port();
         let port_map = format!("{port}:6334");
         let machine_name = format!("qdrant-test-{port}");
-        let machine = SmolvmMachine::launch(&machine_name, &artifact, &["-p", &port_map], port);
+        let machine = SmolvmMachine::launch(
+            &machine_name,
+            &artifact,
+            &["-p", &port_map],
+            &["/qdrant/entrypoint.sh"],
+            port,
+        );
         if !wait_for_tcp(&format!("127.0.0.1:{port}"), "qdrant", 90).await {
             return None;
         }

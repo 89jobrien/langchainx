@@ -1,20 +1,602 @@
 project: langchainx
-id: langcha
-updated: 2026-05-04
-items: []
+id: langchainx
+updated: 2026-09-05
+items:
+- id: sc-11
+  name: verify-shared-conformance-and-todo-closure
+  priority: P2
+  status: blocked
+  title: Verify shared conformance and TODO closure
+  description: Implementation checks pass, but full workspace verification is blocked by pre-existing smolvm e2e CLI failures and unrelated xtask/tools Clippy warnings
+  extra:
+  - date: 2026-09-05
+    type: blocker
+    note: Implementation checks pass, but full workspace verification is blocked by pre-existing smolvm e2e CLI failures and unrelated xtask/tools Clippy warnings
+- id: uncommitted-work
+  name: uncommitted-work
+  priority: P1
+  status: open
+  title: Uncommitted changes (283 files)
+  description: |-
+    Working tree has uncommitted changes:
+    .ctx/HANDOFF.langchainx.langchainx.yaml
+    .envrc
+    .gitignore
+    Cargo.toml
+    README.md
+    crates/langchainx-agent/src/agent.rs
+    crates/langchainx-agent/src/chat/builder.rs
+    crates/langchainx-agent/src/chat/chat_agent.rs
+    crates/langchainx-agent/src/chat/mod.rs
+    crates/langchainx-agent/src/chat/output_parser.rs
+    crates/langchainx-agent/src/chat/prompt.rs
+    crates/langchainx-agent/src/error.rs
+    crates/langchainx-agent/src/executor.rs
+    crates/langchainx-agent/src/lib.rs
+    crates/langchainx-agent/src/open_ai_tools/agent.rs
+    crates/langchainx-agent/src/open_ai_tools/builder.rs
+    crates/langchainx-agent/src/open_ai_tools/mod.rs
+    crates/langchainx-agent/src/open_ai_tools/prompt.rs
+    crates/langchainx-chain/src/chain.rs
+    crates/langchainx-chain/src/chain_trait.rs
+    crates/langchainx-chain/src/conversational/builder.rs
+    crates/langchainx-chain/src/conversational/mod.rs
+    crates/langchainx-chain/src/conversational/prompt.rs
+    crates/langchainx-chain/src/conversational_retrieval_qa/builder.rs
+    crates/langchainx-chain/src/conversational_retrieval_qa/conversational_retrieval_qa.rs
+    crates/langchainx-chain/src/conversational_retrieval_qa/mod.rs
+    crates/langchainx-chain/src/error.rs
+    crates/langchainx-chain/src/lib.rs
+    crates/langchainx-chain/src/llm_chain.rs
+    crates/langchainx-chain/src/mod.rs
+    crates/langchainx-chain/src/options.rs
+    crates/langchainx-chain/src/question_answering.rs
+    crates/langchainx-chain/src/sequential/builder.rs
+    crates/langchainx-chain/src/sequential/chain.rs
+    crates/langchainx-chain/src/sequential/mod.rs
+    crates/langchainx-chain/src/sql_datbase/builder.rs
+    crates/langchainx-chain/src/sql_datbase/chain.rs
+    crates/langchainx-chain/src/sql_datbase/mod.rs
+    crates/langchainx-chain/src/sql_datbase/prompt.rs
+    crates/langchainx-chain/src/stuff_documents/builder.rs
+    crates/langchainx-chain/src/stuff_documents/chain.rs
+    crates/langchainx-chain/src/stuff_documents/mod.rs
+    crates/langchainx-chain/src/test_utils/fake_llm.rs
+    crates/langchainx-chain/src/test_utils/mod.rs
+    crates/langchainx-chain/src/test_utils/temp_workspace.rs
+    crates/langchainx-core/src/error.rs
+    crates/langchainx-core/src/language_models/mod.rs
+    crates/langchainx-core/src/lib.rs
+    crates/langchainx-core/src/schemas/agent.rs
+    crates/langchainx-core/src/schemas/convert.rs
+    crates/langchainx-core/src/schemas/document.rs
+    crates/langchainx-core/src/schemas/memory.rs
+    crates/langchainx-core/src/schemas/messages.rs
+    crates/langchainx-core/src/schemas/mod.rs
+    crates/langchainx-core/src/schemas/prompt.rs
+    crates/langchainx-core/src/schemas/retrievers.rs
+    crates/langchainx-core/src/schemas/stream.rs
+    crates/langchainx-core/src/tools.rs
+    crates/langchainx-core/src/utils/mod.rs
+    crates/langchainx-embedding/src/embedding/embedder_trait.rs
+    crates/langchainx-embedding/src/embedding/error.rs
+    crates/langchainx-embedding/src/embedding/fastembed/fastembed.rs
+    crates/langchainx-embedding/src/embedding/fastembed/mod.rs
+    crates/langchainx-embedding/src/embedding/mistralai/mistralai_embedder.rs
+    crates/langchainx-embedding/src/embedding/mistralai/mod.rs
+    crates/langchainx-embedding/src/embedding/mod.rs
+    crates/langchainx-embedding/src/embedding/ollama/mod.rs
+    crates/langchainx-embedding/src/embedding/ollama/ollama_embedder.rs
+    crates/langchainx-embedding/src/embedding/openai/mod.rs
+    crates/langchainx-embedding/src/embedding/openai/openai_embedder.rs
+    crates/langchainx-embedding/src/lib.rs
+    crates/langchainx-llm/src/claude/client.rs
+    crates/langchainx-llm/src/claude/error.rs
+    crates/langchainx-llm/src/claude/mod.rs
+    crates/langchainx-llm/src/claude/models.rs
+    crates/langchainx-llm/src/deepseek/client.rs
+    crates/langchainx-llm/src/deepseek/error.rs
+    crates/langchainx-llm/src/deepseek/mod.rs
+    crates/langchainx-llm/src/deepseek/models.rs
+    crates/langchainx-llm/src/language_models/error.rs
+    crates/langchainx-llm/src/language_models/llm.rs
+    crates/langchainx-llm/src/language_models/mod.rs
+    crates/langchainx-llm/src/language_models/options.rs
+    crates/langchainx-llm/src/lib.rs
+    crates/langchainx-llm/src/mod.rs
+    crates/langchainx-llm/src/ollama/client.rs
+    crates/langchainx-llm/src/ollama/mod.rs
+    crates/langchainx-llm/src/ollama/openai.rs
+    crates/langchainx-llm/src/openai/mod.rs
+    crates/langchainx-llm/src/qwen/client.rs
+    crates/langchainx-llm/src/qwen/error.rs
+    crates/langchainx-llm/src/qwen/mod.rs
+    crates/langchainx-llm/src/qwen/models.rs
+    crates/langchainx-llm/src/qwen/request.rs
+    crates/langchainx-llm/src/qwen/response.rs
+    crates/langchainx-llm/src/schemas/mod.rs
+    crates/langchainx-llm/src/schemas/response_format_openai_like.rs
+    crates/langchainx-llm/src/schemas/tools_openai_like.rs
+    crates/langchainx-loaders/Cargo.toml
+    crates/langchainx-loaders/src/csv_loader.rs
+    crates/langchainx-loaders/src/dir_loader.rs
+    crates/langchainx-loaders/src/document_loader.rs
+    crates/langchainx-loaders/src/error.rs
+    crates/langchainx-loaders/src/git_commit_loader.rs
+    crates/langchainx-loaders/src/google_drive_loader/mod.rs
+    crates/langchainx-loaders/src/html_loader.rs
+    crates/langchainx-loaders/src/html_to_markdown_loader.rs
+    crates/langchainx-loaders/src/json_loader.rs
+    crates/langchainx-loaders/src/lib.rs
+    crates/langchainx-loaders/src/markdown_loader.rs
+    crates/langchainx-loaders/src/markdown_serializer.rs
+    crates/langchainx-loaders/src/obsidian_loader.rs
+    crates/langchainx-loaders/src/pandoc_loader.rs
+    crates/langchainx-loaders/src/pdf_loader/lo_loader.rs
+    crates/langchainx-loaders/src/pdf_loader/mod.rs
+    crates/langchainx-loaders/src/pdf_loader/pdf_extract_loader.rs
+    crates/langchainx-loaders/src/rss_loader.rs
+    crates/langchainx-loaders/src/sitemap_loader.rs
+    crates/langchainx-loaders/src/source_code_loader/language_parsers.rs
+    crates/langchainx-loaders/src/source_code_loader/mod.rs
+    crates/langchainx-loaders/src/source_code_loader/source_code_loader.rs
+    crates/langchainx-loaders/src/text_loader.rs
+    crates/langchainx-macros/src/lib.rs
+    crates/langchainx-memory/src/dummy_memory.rs
+    crates/langchainx-memory/src/lib.rs
+    crates/langchainx-memory/src/mod.rs
+    crates/langchainx-memory/src/simple_memory.rs
+    crates/langchainx-memory/src/window_buffer.rs
+    crates/langchainx-output-parsers/src/error.rs
+    crates/langchainx-output-parsers/src/lib.rs
+    crates/langchainx-output-parsers/src/markdown_parser.rs
+    crates/langchainx-output-parsers/src/mod.rs
+    crates/langchainx-output-parsers/src/output_parser.rs
+    crates/langchainx-output-parsers/src/simple_parser.rs
+    crates/langchainx-prompt/src/lib.rs
+    crates/langchainx-prompt/src/prompt/chat.rs
+    crates/langchainx-prompt/src/prompt/error.rs
+    crates/langchainx-prompt/src/prompt/mod.rs
+    crates/langchainx-prompt/src/prompt/prompt.rs
+    crates/langchainx-semantic-router/src/index/error.rs
+    crates/langchainx-semantic-router/src/index/index.rs
+    crates/langchainx-semantic-router/src/index/memory_index.rs
+    crates/langchainx-semantic-router/src/index/mod.rs
+    crates/langchainx-semantic-router/src/lib.rs
+    crates/langchainx-semantic-router/src/route_layer/builder.rs
+    crates/langchainx-semantic-router/src/route_layer/error.rs
+    crates/langchainx-semantic-router/src/route_layer/mod.rs
+    crates/langchainx-semantic-router/src/route_layer/route_layer.rs
+    crates/langchainx-semantic-router/src/router.rs
+    crates/langchainx-semantic-router/src/utils.rs
+    crates/langchainx-text-splitter/src/error.rs
+    crates/langchainx-text-splitter/src/lib.rs
+    crates/langchainx-text-splitter/src/markdown.rs
+    crates/langchainx-text-splitter/src/options.rs
+    crates/langchainx-text-splitter/src/plain_text.rs
+    crates/langchainx-text-splitter/src/splitter.rs
+    crates/langchainx-text-splitter/src/token.rs
+    crates/langchainx-tools/Cargo.toml
+    crates/langchainx-tools/src/agentlint/agentlint.rs
+    crates/langchainx-tools/src/agentlint/mod.rs
+    crates/langchainx-tools/src/cargo/cargo_test.rs
+    crates/langchainx-tools/src/cargo/clippy.rs
+    crates/langchainx-tools/src/cargo/mod.rs
+    crates/langchainx-tools/src/command_executor/command_executor.rs
+    crates/langchainx-tools/src/command_executor/mod.rs
+    crates/langchainx-tools/src/confluence/mod.rs
+    crates/langchainx-tools/src/container/docker.rs
+    crates/langchainx-tools/src/container/minibox.rs
+    crates/langchainx-tools/src/container/mod.rs
+    crates/langchainx-tools/src/container/tool.rs
+    crates/langchainx-tools/src/duckduckgo/duckduckgo_search.rs
+    crates/langchainx-tools/src/duckduckgo/mod.rs
+    crates/langchainx-tools/src/google/bq/mod.rs
+    crates/langchainx-tools/src/jira/mod.rs
+    crates/langchainx-tools/src/kani/kani.rs
+    crates/langchainx-tools/src/kani/mod.rs
+    crates/langchainx-tools/src/lib.rs
+    crates/langchainx-tools/src/minibox/input.rs
+    crates/langchainx-tools/src/minibox/mod.rs
+    crates/langchainx-tools/src/rustqual/mod.rs
+    crates/langchainx-tools/src/rustqual/rustqual.rs
+    crates/langchainx-tools/src/scraper/mod.rs
+    crates/langchainx-tools/src/scraper/scraper.rs
+    crates/langchainx-tools/src/serpapi/mod.rs
+    crates/langchainx-tools/src/serpapi/serpapi.rs
+    crates/langchainx-tools/src/shell/bash.rs
+    crates/langchainx-tools/src/shell/edit_file.rs
+    crates/langchainx-tools/src/shell/glob.rs
+    crates/langchainx-tools/src/shell/grep.rs
+    crates/langchainx-tools/src/shell/mod.rs
+    crates/langchainx-tools/src/shell/nu.rs
+    crates/langchainx-tools/src/shell/read_file.rs
+    crates/langchainx-tools/src/shell/write_file.rs
+    crates/langchainx-tools/src/sql/mod.rs
+    crates/langchainx-tools/src/sql/postgres/mod.rs
+    crates/langchainx-tools/src/sql/postgres/postgres.rs
+    crates/langchainx-tools/src/sql/sql.rs
+    crates/langchainx-tools/src/text2speech/mod.rs
+    crates/langchainx-tools/src/text2speech/openai/client.rs
+    crates/langchainx-tools/src/text2speech/openai/mod.rs
+    crates/langchainx-tools/src/text2speech/speech_storage.rs
+    crates/langchainx-tools/src/wolfram/mod.rs
+    crates/langchainx-tools/src/wolfram/wolfram.rs
+    crates/langchainx-tools/tests/minibox_integration.rs
+    crates/langchainx-vectorstore/src/error.rs
+    crates/langchainx-vectorstore/src/lib.rs
+    crates/langchainx-vectorstore/src/opensearch/builder.rs
+    crates/langchainx-vectorstore/src/opensearch/mod.rs
+    crates/langchainx-vectorstore/src/opensearch/opensearch.rs
+    crates/langchainx-vectorstore/src/options.rs
+    crates/langchainx-vectorstore/src/pgvector/builder.rs
+    crates/langchainx-vectorstore/src/pgvector/mod.rs
+    crates/langchainx-vectorstore/src/pgvector/pgvector.rs
+    crates/langchainx-vectorstore/src/qdrant/builder.rs
+    crates/langchainx-vectorstore/src/qdrant/mod.rs
+    crates/langchainx-vectorstore/src/qdrant/qdrant.rs
+    crates/langchainx-vectorstore/src/sqlite_vec/builder.rs
+    crates/langchainx-vectorstore/src/sqlite_vec/mod.rs
+    crates/langchainx-vectorstore/src/sqlite_vec/sqlite_vec.rs
+    crates/langchainx-vectorstore/src/sqlite_vss/builder.rs
+    crates/langchainx-vectorstore/src/sqlite_vss/mod.rs
+    crates/langchainx-vectorstore/src/sqlite_vss/sqlite_vss.rs
+    crates/langchainx-vectorstore/src/surrealdb/builder.rs
+    crates/langchainx-vectorstore/src/surrealdb/mod.rs
+    crates/langchainx-vectorstore/src/surrealdb/surrealdb.rs
+    crates/langchainx-vectorstore/src/vectorstore.rs
+    docs/plans/2026-05-03-document-loaders-impl-plan.md
+    docs/plans/2026-05-03-document-loaders-wave1.md
+    docs/plans/2026-05-03-document-loaders-wave2.md
+    docs/plans/2026-05-03-workspace-split-impl-plan.md
+    docs/plans/2026-05-03-workspace-split.md
+    docs/plans/2026-05-04-markdown-serializer-plan.md
+    docs/plans/2026-05-04-markdown-serializer.md
+    docs/plans/2026-06-02-validate-input-dx.md
+    docs/plans/2026-06-04-agent-governance.md
+    docs/plans/2026-06-05-remove-async-trait.md
+    fuzz/Cargo.toml
+    src/agent/mod.rs
+    src/chain/mod.rs
+    src/document_loaders/mod.rs
+    src/embedding/mod.rs
+    src/language_models/mod.rs
+    src/lib.rs
+    src/llm/mod.rs
+    src/memory/mod.rs
+    src/output_parsers/mod.rs
+    src/prompt/mod.rs
+    src/schemas/mod.rs
+    src/semantic_router/mod.rs
+    src/test_utils/mod.rs
+    src/text_splitter/mod.rs
+    src/tools/mod.rs
+    src/vectorstore/mod.rs
+    tests/common/mod.rs
+    tests/conformance_agent.rs
+    tests/conformance_chain.rs
+    tests/conformance_embedder.rs
+    tests/conformance_llm.rs
+    tests/conformance_loader.rs
+    tests/conformance_memory.rs
+    tests/conformance_output_parser.rs
+    tests/conformance_prompt.rs
+    tests/conformance_tool.rs
+    tests/e2e_offline.rs
+    tests/property_tests.rs
+    xtask/src/checkpoint.rs
+    xtask/src/gates/mod.rs
+    xtask/src/session.rs
+    .envrc.example
+    .sccignore
+    crates/langchainx-testsuite/
+    crates/langchainx-tools/src/toolkits/
+    crates/langchainx-tools/tests/mcp_stdio.rs
+    crates/langchainx-tools/tests/mcp_toolkit.rs
+    crates/langchainx-tools/tests/openapi_toolkit.rs
+    docs/designs/
+    examples/mcp_toolkit.rs
+    examples/openapi_toolkit.rs
+    fuzz/fuzz_targets/fuzz_html_loader.rs
+    fuzz/fuzz_targets/fuzz_markdown_parser.rs
+    fuzz/fuzz_targets/fuzz_mcp_protocol.rs
+    fuzz/fuzz_targets/fuzz_openapi_toolkit.rs
+    tests/conformance_conversion.rs
+  files:
+  - .ctx/HANDOFF.langchainx.langchainx.yaml
+  - .envrc
+  - .gitignore
+  - Cargo.toml
+  - README.md
+  - crates/langchainx-agent/src/agent.rs
+  - crates/langchainx-agent/src/chat/builder.rs
+  - crates/langchainx-agent/src/chat/chat_agent.rs
+  - crates/langchainx-agent/src/chat/mod.rs
+  - crates/langchainx-agent/src/chat/output_parser.rs
+  - crates/langchainx-agent/src/chat/prompt.rs
+  - crates/langchainx-agent/src/error.rs
+  - crates/langchainx-agent/src/executor.rs
+  - crates/langchainx-agent/src/lib.rs
+  - crates/langchainx-agent/src/open_ai_tools/agent.rs
+  - crates/langchainx-agent/src/open_ai_tools/builder.rs
+  - crates/langchainx-agent/src/open_ai_tools/mod.rs
+  - crates/langchainx-agent/src/open_ai_tools/prompt.rs
+  - crates/langchainx-chain/src/chain.rs
+  - crates/langchainx-chain/src/chain_trait.rs
+  - crates/langchainx-chain/src/conversational/builder.rs
+  - crates/langchainx-chain/src/conversational/mod.rs
+  - crates/langchainx-chain/src/conversational/prompt.rs
+  - crates/langchainx-chain/src/conversational_retrieval_qa/builder.rs
+  - crates/langchainx-chain/src/conversational_retrieval_qa/conversational_retrieval_qa.rs
+  - crates/langchainx-chain/src/conversational_retrieval_qa/mod.rs
+  - crates/langchainx-chain/src/error.rs
+  - crates/langchainx-chain/src/lib.rs
+  - crates/langchainx-chain/src/llm_chain.rs
+  - crates/langchainx-chain/src/mod.rs
+  - crates/langchainx-chain/src/options.rs
+  - crates/langchainx-chain/src/question_answering.rs
+  - crates/langchainx-chain/src/sequential/builder.rs
+  - crates/langchainx-chain/src/sequential/chain.rs
+  - crates/langchainx-chain/src/sequential/mod.rs
+  - crates/langchainx-chain/src/sql_datbase/builder.rs
+  - crates/langchainx-chain/src/sql_datbase/chain.rs
+  - crates/langchainx-chain/src/sql_datbase/mod.rs
+  - crates/langchainx-chain/src/sql_datbase/prompt.rs
+  - crates/langchainx-chain/src/stuff_documents/builder.rs
+  - crates/langchainx-chain/src/stuff_documents/chain.rs
+  - crates/langchainx-chain/src/stuff_documents/mod.rs
+  - crates/langchainx-chain/src/test_utils/fake_llm.rs
+  - crates/langchainx-chain/src/test_utils/mod.rs
+  - crates/langchainx-chain/src/test_utils/temp_workspace.rs
+  - crates/langchainx-core/src/error.rs
+  - crates/langchainx-core/src/language_models/mod.rs
+  - crates/langchainx-core/src/lib.rs
+  - crates/langchainx-core/src/schemas/agent.rs
+  - crates/langchainx-core/src/schemas/convert.rs
+  - crates/langchainx-core/src/schemas/document.rs
+  - crates/langchainx-core/src/schemas/memory.rs
+  - crates/langchainx-core/src/schemas/messages.rs
+  - crates/langchainx-core/src/schemas/mod.rs
+  - crates/langchainx-core/src/schemas/prompt.rs
+  - crates/langchainx-core/src/schemas/retrievers.rs
+  - crates/langchainx-core/src/schemas/stream.rs
+  - crates/langchainx-core/src/tools.rs
+  - crates/langchainx-core/src/utils/mod.rs
+  - crates/langchainx-embedding/src/embedding/embedder_trait.rs
+  - crates/langchainx-embedding/src/embedding/error.rs
+  - crates/langchainx-embedding/src/embedding/fastembed/fastembed.rs
+  - crates/langchainx-embedding/src/embedding/fastembed/mod.rs
+  - crates/langchainx-embedding/src/embedding/mistralai/mistralai_embedder.rs
+  - crates/langchainx-embedding/src/embedding/mistralai/mod.rs
+  - crates/langchainx-embedding/src/embedding/mod.rs
+  - crates/langchainx-embedding/src/embedding/ollama/mod.rs
+  - crates/langchainx-embedding/src/embedding/ollama/ollama_embedder.rs
+  - crates/langchainx-embedding/src/embedding/openai/mod.rs
+  - crates/langchainx-embedding/src/embedding/openai/openai_embedder.rs
+  - crates/langchainx-embedding/src/lib.rs
+  - crates/langchainx-llm/src/claude/client.rs
+  - crates/langchainx-llm/src/claude/error.rs
+  - crates/langchainx-llm/src/claude/mod.rs
+  - crates/langchainx-llm/src/claude/models.rs
+  - crates/langchainx-llm/src/deepseek/client.rs
+  - crates/langchainx-llm/src/deepseek/error.rs
+  - crates/langchainx-llm/src/deepseek/mod.rs
+  - crates/langchainx-llm/src/deepseek/models.rs
+  - crates/langchainx-llm/src/language_models/error.rs
+  - crates/langchainx-llm/src/language_models/llm.rs
+  - crates/langchainx-llm/src/language_models/mod.rs
+  - crates/langchainx-llm/src/language_models/options.rs
+  - crates/langchainx-llm/src/lib.rs
+  - crates/langchainx-llm/src/mod.rs
+  - crates/langchainx-llm/src/ollama/client.rs
+  - crates/langchainx-llm/src/ollama/mod.rs
+  - crates/langchainx-llm/src/ollama/openai.rs
+  - crates/langchainx-llm/src/openai/mod.rs
+  - crates/langchainx-llm/src/qwen/client.rs
+  - crates/langchainx-llm/src/qwen/error.rs
+  - crates/langchainx-llm/src/qwen/mod.rs
+  - crates/langchainx-llm/src/qwen/models.rs
+  - crates/langchainx-llm/src/qwen/request.rs
+  - crates/langchainx-llm/src/qwen/response.rs
+  - crates/langchainx-llm/src/schemas/mod.rs
+  - crates/langchainx-llm/src/schemas/response_format_openai_like.rs
+  - crates/langchainx-llm/src/schemas/tools_openai_like.rs
+  - crates/langchainx-loaders/Cargo.toml
+  - crates/langchainx-loaders/src/csv_loader.rs
+  - crates/langchainx-loaders/src/dir_loader.rs
+  - crates/langchainx-loaders/src/document_loader.rs
+  - crates/langchainx-loaders/src/error.rs
+  - crates/langchainx-loaders/src/git_commit_loader.rs
+  - crates/langchainx-loaders/src/google_drive_loader/mod.rs
+  - crates/langchainx-loaders/src/html_loader.rs
+  - crates/langchainx-loaders/src/html_to_markdown_loader.rs
+  - crates/langchainx-loaders/src/json_loader.rs
+  - crates/langchainx-loaders/src/lib.rs
+  - crates/langchainx-loaders/src/markdown_loader.rs
+  - crates/langchainx-loaders/src/markdown_serializer.rs
+  - crates/langchainx-loaders/src/obsidian_loader.rs
+  - crates/langchainx-loaders/src/pandoc_loader.rs
+  - crates/langchainx-loaders/src/pdf_loader/lo_loader.rs
+  - crates/langchainx-loaders/src/pdf_loader/mod.rs
+  - crates/langchainx-loaders/src/pdf_loader/pdf_extract_loader.rs
+  - crates/langchainx-loaders/src/rss_loader.rs
+  - crates/langchainx-loaders/src/sitemap_loader.rs
+  - crates/langchainx-loaders/src/source_code_loader/language_parsers.rs
+  - crates/langchainx-loaders/src/source_code_loader/mod.rs
+  - crates/langchainx-loaders/src/source_code_loader/source_code_loader.rs
+  - crates/langchainx-loaders/src/text_loader.rs
+  - crates/langchainx-macros/src/lib.rs
+  - crates/langchainx-memory/src/dummy_memory.rs
+  - crates/langchainx-memory/src/lib.rs
+  - crates/langchainx-memory/src/mod.rs
+  - crates/langchainx-memory/src/simple_memory.rs
+  - crates/langchainx-memory/src/window_buffer.rs
+  - crates/langchainx-output-parsers/src/error.rs
+  - crates/langchainx-output-parsers/src/lib.rs
+  - crates/langchainx-output-parsers/src/markdown_parser.rs
+  - crates/langchainx-output-parsers/src/mod.rs
+  - crates/langchainx-output-parsers/src/output_parser.rs
+  - crates/langchainx-output-parsers/src/simple_parser.rs
+  - crates/langchainx-prompt/src/lib.rs
+  - crates/langchainx-prompt/src/prompt/chat.rs
+  - crates/langchainx-prompt/src/prompt/error.rs
+  - crates/langchainx-prompt/src/prompt/mod.rs
+  - crates/langchainx-prompt/src/prompt/prompt.rs
+  - crates/langchainx-semantic-router/src/index/error.rs
+  - crates/langchainx-semantic-router/src/index/index.rs
+  - crates/langchainx-semantic-router/src/index/memory_index.rs
+  - crates/langchainx-semantic-router/src/index/mod.rs
+  - crates/langchainx-semantic-router/src/lib.rs
+  - crates/langchainx-semantic-router/src/route_layer/builder.rs
+  - crates/langchainx-semantic-router/src/route_layer/error.rs
+  - crates/langchainx-semantic-router/src/route_layer/mod.rs
+  - crates/langchainx-semantic-router/src/route_layer/route_layer.rs
+  - crates/langchainx-semantic-router/src/router.rs
+  - crates/langchainx-semantic-router/src/utils.rs
+  - crates/langchainx-text-splitter/src/error.rs
+  - crates/langchainx-text-splitter/src/lib.rs
+  - crates/langchainx-text-splitter/src/markdown.rs
+  - crates/langchainx-text-splitter/src/options.rs
+  - crates/langchainx-text-splitter/src/plain_text.rs
+  - crates/langchainx-text-splitter/src/splitter.rs
+  - crates/langchainx-text-splitter/src/token.rs
+  - crates/langchainx-tools/Cargo.toml
+  - crates/langchainx-tools/src/agentlint/agentlint.rs
+  - crates/langchainx-tools/src/agentlint/mod.rs
+  - crates/langchainx-tools/src/cargo/cargo_test.rs
+  - crates/langchainx-tools/src/cargo/clippy.rs
+  - crates/langchainx-tools/src/cargo/mod.rs
+  - crates/langchainx-tools/src/command_executor/command_executor.rs
+  - crates/langchainx-tools/src/command_executor/mod.rs
+  - crates/langchainx-tools/src/confluence/mod.rs
+  - crates/langchainx-tools/src/container/docker.rs
+  - crates/langchainx-tools/src/container/minibox.rs
+  - crates/langchainx-tools/src/container/mod.rs
+  - crates/langchainx-tools/src/container/tool.rs
+  - crates/langchainx-tools/src/duckduckgo/duckduckgo_search.rs
+  - crates/langchainx-tools/src/duckduckgo/mod.rs
+  - crates/langchainx-tools/src/google/bq/mod.rs
+  - crates/langchainx-tools/src/jira/mod.rs
+  - crates/langchainx-tools/src/kani/kani.rs
+  - crates/langchainx-tools/src/kani/mod.rs
+  - crates/langchainx-tools/src/lib.rs
+  - crates/langchainx-tools/src/minibox/input.rs
+  - crates/langchainx-tools/src/minibox/mod.rs
+  - crates/langchainx-tools/src/rustqual/mod.rs
+  - crates/langchainx-tools/src/rustqual/rustqual.rs
+  - crates/langchainx-tools/src/scraper/mod.rs
+  - crates/langchainx-tools/src/scraper/scraper.rs
+  - crates/langchainx-tools/src/serpapi/mod.rs
+  - crates/langchainx-tools/src/serpapi/serpapi.rs
+  - crates/langchainx-tools/src/shell/bash.rs
+  - crates/langchainx-tools/src/shell/edit_file.rs
+  - crates/langchainx-tools/src/shell/glob.rs
+  - crates/langchainx-tools/src/shell/grep.rs
+  - crates/langchainx-tools/src/shell/mod.rs
+  - crates/langchainx-tools/src/shell/nu.rs
+  - crates/langchainx-tools/src/shell/read_file.rs
+  - crates/langchainx-tools/src/shell/write_file.rs
+  - crates/langchainx-tools/src/sql/mod.rs
+  - crates/langchainx-tools/src/sql/postgres/mod.rs
+  - crates/langchainx-tools/src/sql/postgres/postgres.rs
+  - crates/langchainx-tools/src/sql/sql.rs
+  - crates/langchainx-tools/src/text2speech/mod.rs
+  - crates/langchainx-tools/src/text2speech/openai/client.rs
+  - crates/langchainx-tools/src/text2speech/openai/mod.rs
+  - crates/langchainx-tools/src/text2speech/speech_storage.rs
+  - crates/langchainx-tools/src/wolfram/mod.rs
+  - crates/langchainx-tools/src/wolfram/wolfram.rs
+  - crates/langchainx-tools/tests/minibox_integration.rs
+  - crates/langchainx-vectorstore/src/error.rs
+  - crates/langchainx-vectorstore/src/lib.rs
+  - crates/langchainx-vectorstore/src/opensearch/builder.rs
+  - crates/langchainx-vectorstore/src/opensearch/mod.rs
+  - crates/langchainx-vectorstore/src/opensearch/opensearch.rs
+  - crates/langchainx-vectorstore/src/options.rs
+  - crates/langchainx-vectorstore/src/pgvector/builder.rs
+  - crates/langchainx-vectorstore/src/pgvector/mod.rs
+  - crates/langchainx-vectorstore/src/pgvector/pgvector.rs
+  - crates/langchainx-vectorstore/src/qdrant/builder.rs
+  - crates/langchainx-vectorstore/src/qdrant/mod.rs
+  - crates/langchainx-vectorstore/src/qdrant/qdrant.rs
+  - crates/langchainx-vectorstore/src/sqlite_vec/builder.rs
+  - crates/langchainx-vectorstore/src/sqlite_vec/mod.rs
+  - crates/langchainx-vectorstore/src/sqlite_vec/sqlite_vec.rs
+  - crates/langchainx-vectorstore/src/sqlite_vss/builder.rs
+  - crates/langchainx-vectorstore/src/sqlite_vss/mod.rs
+  - crates/langchainx-vectorstore/src/sqlite_vss/sqlite_vss.rs
+  - crates/langchainx-vectorstore/src/surrealdb/builder.rs
+  - crates/langchainx-vectorstore/src/surrealdb/mod.rs
+  - crates/langchainx-vectorstore/src/surrealdb/surrealdb.rs
+  - crates/langchainx-vectorstore/src/vectorstore.rs
+  - docs/plans/2026-05-03-document-loaders-impl-plan.md
+  - docs/plans/2026-05-03-document-loaders-wave1.md
+  - docs/plans/2026-05-03-document-loaders-wave2.md
+  - docs/plans/2026-05-03-workspace-split-impl-plan.md
+  - docs/plans/2026-05-03-workspace-split.md
+  - docs/plans/2026-05-04-markdown-serializer-plan.md
+  - docs/plans/2026-05-04-markdown-serializer.md
+  - docs/plans/2026-06-02-validate-input-dx.md
+  - docs/plans/2026-06-04-agent-governance.md
+  - docs/plans/2026-06-05-remove-async-trait.md
+  - fuzz/Cargo.toml
+  - src/agent/mod.rs
+  - src/chain/mod.rs
+  - src/document_loaders/mod.rs
+  - src/embedding/mod.rs
+  - src/language_models/mod.rs
+  - src/lib.rs
+  - src/llm/mod.rs
+  - src/memory/mod.rs
+  - src/output_parsers/mod.rs
+  - src/prompt/mod.rs
+  - src/schemas/mod.rs
+  - src/semantic_router/mod.rs
+  - src/test_utils/mod.rs
+  - src/text_splitter/mod.rs
+  - src/tools/mod.rs
+  - src/vectorstore/mod.rs
+  - tests/common/mod.rs
+  - tests/conformance_agent.rs
+  - tests/conformance_chain.rs
+  - tests/conformance_embedder.rs
+  - tests/conformance_llm.rs
+  - tests/conformance_loader.rs
+  - tests/conformance_memory.rs
+  - tests/conformance_output_parser.rs
+  - tests/conformance_prompt.rs
+  - tests/conformance_tool.rs
+  - tests/e2e_offline.rs
+  - tests/property_tests.rs
+  - xtask/src/checkpoint.rs
+  - xtask/src/gates/mod.rs
+  - xtask/src/session.rs
+  - .envrc.example
+  - .sccignore
+  - crates/langchainx-testsuite/
+  - crates/langchainx-tools/src/toolkits/
+  - crates/langchainx-tools/tests/mcp_stdio.rs
+  - crates/langchainx-tools/tests/mcp_toolkit.rs
+  - crates/langchainx-tools/tests/openapi_toolkit.rs
+  - docs/designs/
+  - examples/mcp_toolkit.rs
+  - examples/openapi_toolkit.rs
+  - fuzz/fuzz_targets/fuzz_html_loader.rs
+  - fuzz/fuzz_targets/fuzz_markdown_parser.rs
+  - fuzz/fuzz_targets/fuzz_mcp_protocol.rs
+  - fuzz/fuzz_targets/fuzz_openapi_toolkit.rs
+  - tests/conformance_conversion.rs
 log:
-- date: 2026-05-04
-  summary: 'Parallel agent wave: extracted 7 new workspace crates (tools, loaders, vectorstore, agent, semantic-router, utils, errors) and converted src/chain, src/llm, src/prompt, src/output_parsers to thin re-exports; src/memory blocked on #48 (schemas unification); issues #42-46, #22-28, #33 closed; wave 2 (#47,#48 schemas+language_models into core) next'
+- date: '20260905.213116'
+  summary: done=54 running=0 pending=1 blocked=1
   commits:
-  - d9c0676
-- date: 2026-05-04
-  summary: session closed
-  commits:
-  - 11c28fc
-- date: 2026-05-03
-  summary: 'Completed gitflow setup: pre-commit/commit-msg/prepare-commit-msg/pre-push hooks committed; 5 architectural fixes (Arc<dyn LLM>, streaming_func removal, PromptArgs validation, typed ToolError, memory blanket impl) landed on develop; v0.2.0 tagged; GHA workflows for feature-finish/release-cut/release-finish/hotfix-finish/auto-version-bump in place'
-  commits:
-  - 2e3163f
-- date: 2026-05-03
-  summary: 'Brainstorm session: analyzed langchainx codebase, validated 7 architectural issues via web search, created Linear issues JOB-251 through JOB-257 covering LLMClone hack, async_trait overhead, streaming_func side-channel, untyped PromptArgs, Box<dyn Error> tools, memory boilerplate, and missing FakeLLM test double'
-  commits: []
+  - 56ce0a992eec783dc4c30e82bae436cf5e6cdd80
+  - 93f95125bc9aa7613bfc250fc7c454e6e7074143
+  - 3c0b98ba6825a1904ef50271e4cd2420ceb824b4
+  - 9df858ca5dbd9617a36e70bb3207bf4e85d3ed44
+  - fb5fe2ad6fa7c7b27bddb48ae7cebcfcfac583f6
+  - 0977feea8f0787277ce9888cb661dd6035d8ddf5
+  - a2859858028cb4b93e8f3034e6b7b2e9cecdffc0
+  - 24cf78a16dc1448ef68f069050582b51be73caf8
+  - 7aafde85f5e0693261c72cd8cc30c6b7dfee90da
+  - e9efa73f5bb4766499fde1e4a7f25f7ff408f2db

@@ -1,3 +1,4 @@
+//! Builder for configuring and initializing a semantic route layer.
 use std::sync::Arc;
 
 use futures_util::future::try_join_all;
@@ -12,13 +13,13 @@ use crate::{Index, MemoryIndex, RouteLayerBuilderError, Router};
 
 use super::{AggregationMethod, RouteLayer};
 
-/// A builder for creating a `RouteLayer`.
-///```rust,ignore
-/// let captial_route = Router::new(
-///     "captial",
+/// Configures a [`RouteLayer`] and embeds routes that lack precomputed vectors.
+/// ```rust,ignore
+/// let capital_route = Router::new(
+///     "capital",
 ///     &[
 ///         "Capital of France is Paris.",
-///         "What is the captial of France?",
+///         "What is the capital of France?",
 ///     ],
 /// );
 /// let weather_route = Router::new(
@@ -31,7 +32,7 @@ use super::{AggregationMethod, RouteLayer};
 /// );
 /// let router_layer = RouteLayerBuilder::default()
 ///     .embedder(OpenAiEmbedder::default())
-///     .add_route(captial_route)
+///     .add_route(capital_route)
 ///     .add_route(weather_route)
 ///     .aggregation_method(AggregationMethod::Sum)
 ///     .threshold(0.82)
@@ -58,6 +59,7 @@ impl Default for RouteLayerBuilder {
 }
 
 impl RouteLayerBuilder {
+    /// Creates an unconfigured builder with `top_k` 5 and sum aggregation.
     pub fn new() -> Self {
         Self {
             embedder: None,
@@ -70,6 +72,7 @@ impl RouteLayerBuilder {
         }
     }
 
+    /// Sets the number of utterance matches considered, coercing zero to one.
     pub fn top_k(mut self, top_k: usize) -> Self {
         let mut top_k = top_k;
         if top_k == 0 {
@@ -80,6 +83,7 @@ impl RouteLayerBuilder {
         self
     }
 
+    /// Sets the language model used to generate tool input for matched routes.
     pub fn llm<L: LLM + 'static>(mut self, llm: L) -> Self {
         let prompt = HumanMessagePromptTemplate::new(template_jinja2!(
             "You should Generate the input for the following tool.
@@ -91,61 +95,59 @@ Tool Input:
             "description",
             "query"
         ));
+        // SAFETY(#88): prompt and LLM are unconditionally set above; build is infallible here.
         let chain = LLMChainBuilder::new()
             .prompt(prompt)
             .llm(llm)
             .build()
-            .unwrap(); //safe to unwrap
+            .expect("RouteLayerBuilder::llm: prompt and LLM are always set");
         self.llm = Some(chain);
         self
     }
 
+    /// Sets the route index implementation.
     pub fn index<I: Index + 'static>(mut self, index: I) -> Self {
         self.index = Some(Box::new(index));
         self
     }
 
+    /// Sets the embedder used for route utterances and incoming queries.
     pub fn embedder<E: Embedder + 'static>(mut self, embedder: E) -> Self {
         self.embedder = Some(Arc::new(embedder));
         self
     }
 
-    /// The threshold is the minimum similarity score that a route must have to be considered.
-    /// This depends on the similarity metric used by the embedder.
-    /// For open ai text-embedding-ada-002, the best threshold is 0.82
+    /// Sets the minimum similarity score for a candidate utterance match.
     pub fn threshold(mut self, threshold: f64) -> Self {
         self.threshold = Some(threshold);
         self
     }
 
+    /// Adds a route to initialize during [`build`](Self::build).
     pub fn add_route(mut self, route: Router) -> Self {
         self.routes.push(route);
         self
     }
 
+    /// Sets how multiple utterance scores for one route are combined.
     pub fn aggregation_method(mut self, aggregation_method: AggregationMethod) -> Self {
         self.aggregation_method = aggregation_method;
         self
     }
 
+    /// Embeds routes as needed, inserts them into the index, and builds the layer.
     pub async fn build(mut self) -> Result<RouteLayer, RouteLayerBuilderError> {
-        if self.embedder.is_none() {
-            return Err(RouteLayerBuilderError::MissingEmbedder);
-        }
-
-        if self.llm.is_none() {
-            return Err(RouteLayerBuilderError::MissingLLM);
-        }
-
-        if self.index.is_none() {
-            return Err(RouteLayerBuilderError::MissingIndex);
-        }
-
+        const DEFAULT_THRESHOLD: f64 = 0.82;
+        let embedder = self
+            .embedder
+            .ok_or(RouteLayerBuilderError::MissingEmbedder)?;
+        let index = self.index.ok_or(RouteLayerBuilderError::MissingIndex)?;
+        let llm = self.llm.ok_or(RouteLayerBuilderError::MissingLLM)?;
         let mut router = RouteLayer {
-            embedder: self.embedder.unwrap(),
-            index: self.index.unwrap(),
-            llm: self.llm.unwrap(),
-            threshold: self.threshold.unwrap_or(0.82),
+            embedder,
+            index,
+            llm,
+            threshold: self.threshold.unwrap_or(DEFAULT_THRESHOLD),
             top_k: self.top_k,
             aggregation_method: self.aggregation_method,
         };

@@ -1,3 +1,4 @@
+//! CSV loader that creates one document per data row.
 use crate::{Loader, LoaderError, process_doc_stream};
 use async_stream::stream;
 use async_trait::async_trait;
@@ -13,18 +14,21 @@ use std::path::Path;
 use std::pin::Pin;
 
 #[derive(Debug, Clone)]
+/// Loads selected CSV columns into documents with one-based row metadata.
 pub struct CsvLoader<R> {
     reader: R,
     columns: Vec<String>,
 }
 
 impl<R: Read> CsvLoader<R> {
+    /// Creates a loader from a reader and the column names to include.
     pub fn new(reader: R, columns: Vec<String>) -> Self {
         Self { reader, columns }
     }
 }
 
 impl CsvLoader<Cursor<Vec<u8>>> {
+    /// Creates a loader from CSV text and the column names to include.
     pub fn from_string<S: Into<String>>(input: S, columns: Vec<String>) -> Self {
         let input = input.into();
         let reader = Cursor::new(input.into_bytes());
@@ -32,7 +36,9 @@ impl CsvLoader<Cursor<Vec<u8>>> {
     }
 }
 
+#[allow(clippy::result_large_err)] // LoaderError contains large foreign variants; boxing requires API change
 impl CsvLoader<BufReader<File>> {
+    /// Opens a CSV file and creates a loader for it.
     pub fn from_path<P: AsRef<Path>>(path: P, columns: Vec<String>) -> Result<Self, LoaderError> {
         let file = File::open(path)?;
         let reader = BufReader::new(file);
@@ -106,6 +112,65 @@ mod tests {
     use futures_util::StreamExt;
 
     use super::*;
+
+    #[tokio::test]
+    async fn from_path_missing_file_returns_error() {
+        let result = CsvLoader::from_path("/nonexistent/path/file.csv", vec![]);
+        assert!(result.is_err(), "expected Err for missing file");
+    }
+
+    #[tokio::test]
+    async fn column_filter_selects_subset() {
+        let input = "name,age,city\nAlice,30,London\nBob,25,Paris";
+        let loader = CsvLoader::new(input.as_bytes(), vec!["name".to_string()]);
+        let docs: Vec<_> = loader
+            .load()
+            .await
+            .unwrap()
+            .map(|r| r.unwrap())
+            .collect()
+            .await;
+        assert_eq!(docs.len(), 2);
+        // Only the "name" column should appear in content
+        assert!(docs[0].page_content.contains("name: Alice"));
+        assert!(!docs[0].page_content.contains("age:"));
+        assert!(!docs[0].page_content.contains("city:"));
+    }
+
+    #[tokio::test]
+    async fn empty_csv_body_yields_no_documents() {
+        // Header-only CSV — no data rows
+        let input = "name,age,city\n";
+        let loader = CsvLoader::new(input.as_bytes(), vec!["name".to_string()]);
+        let docs: Vec<_> = loader
+            .load()
+            .await
+            .unwrap()
+            .map(|r| r.unwrap())
+            .collect()
+            .await;
+        assert_eq!(docs.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn row_metadata_increments_per_row() {
+        let input = "x\na\nb\nc";
+        let loader = CsvLoader::new(input.as_bytes(), vec!["x".to_string()]);
+        let docs: Vec<_> = loader
+            .load()
+            .await
+            .unwrap()
+            .map(|r| r.unwrap())
+            .collect()
+            .await;
+        assert_eq!(docs.len(), 3);
+        for (i, doc) in docs.iter().enumerate() {
+            assert_eq!(
+                doc.metadata.get("row").unwrap(),
+                &serde_json::Value::from((i + 1) as i64)
+            );
+        }
+    }
 
     #[tokio::test]
     async fn test_csv_loader() {

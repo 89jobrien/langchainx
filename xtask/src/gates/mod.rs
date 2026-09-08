@@ -7,17 +7,20 @@
 //! |--------------|----------------------------------------------|
 //! | fmt_check    | cargo fmt --all -- --check                   |
 //! | clippy       | cargo clippy --all-features -- -D warnings   |
+//! | audit        | cargo deny check advisories                  |
 //! | build        | cargo build --release --all-features         |
 //! | test         | cargo test --release --all-features          |
-//! | ci           | fmt_check → clippy → build → test            |
+//! | ci           | fmt_check → clippy → audit → build → test    |
 //! | pre_commit   | fmt_check → clippy                           |
 
+mod audit;
 mod build;
 mod clippy;
 mod fmt;
 pub mod gate;
 mod test;
 
+pub use audit::audit;
 pub use build::build;
 pub use clippy::clippy;
 pub use fmt::fmt_check;
@@ -27,7 +30,7 @@ pub use test::test;
 use anyhow::Result;
 use xshell::Shell;
 
-/// Full CI pipeline: fmt_check → clippy → build → test.
+/// Full CI pipeline: fmt_check → clippy → audit → build → test.
 ///
 /// Identical to what `.github/workflows/ci.yml` runs. Use this locally before
 /// pushing to guarantee CI will pass.
@@ -37,6 +40,7 @@ pub fn ci(sh: &Shell) -> Result<()> {
         &[
             Gate::new("fmt-check", fmt_check),
             Gate::new("clippy", clippy),
+            Gate::new("audit", audit),
             Gate::new("build", build),
             Gate::new("test", test),
         ],

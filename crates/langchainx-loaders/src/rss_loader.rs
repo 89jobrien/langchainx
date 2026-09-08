@@ -1,3 +1,4 @@
+//! RSS loader that converts feed items into documents.
 use std::{
     collections::HashMap,
     io::{BufRead, Read},
@@ -12,11 +13,13 @@ use serde_json::Value;
 
 use crate::{Loader, LoaderError, process_doc_stream};
 
+/// Loads RSS item content and selected item fields.
 pub struct RssLoader<R> {
     input: R,
 }
 
 impl<R: Read + BufRead + Send + Sync + 'static> RssLoader<R> {
+    /// Creates a loader from a buffered RSS reader.
     pub fn new(input: R) -> Self {
         Self { input }
     }

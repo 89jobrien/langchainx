@@ -1,0 +1,81 @@
+# Wiki Operations Log
+- [2026-05-21 23:02] write: summary/Smoke Test
+- [2026-05-21 23:06] write: summary/Workspace Architecture
+- [2026-05-21 23:06] write: summary/Core Trait Layer
+- [2026-05-21 23:06] write: summary/LLM Backends
+- [2026-05-21 23:06] write: summary/Chain Implementations
+- [2026-05-21 23:06] write: summary/Embedding and VectorStore Backends
+- [2026-05-21 23:06] write: entity/LLM
+- [2026-05-21 23:06] write: entity/Chain
+- [2026-05-21 23:06] write: entity/Tool
+- [2026-05-21 23:06] write: entity/Embedder
+- [2026-05-21 23:06] write: entity/VectorStore
+- [2026-05-21 23:06] write: entity/BaseMemory
+- [2026-05-21 23:06] write: entity/Agent
+- [2026-05-21 23:07] write: entity/langchainx
+- [2026-05-21 23:07] write: entity/langchainx-core
+- [2026-05-21 23:07] write: entity/langchainx-llm
+- [2026-05-21 23:07] write: entity/langchainx-chain
+- [2026-05-21 23:07] write: entity/langchainx-prompt
+- [2026-05-21 23:07] write: entity/langchainx-memory
+- [2026-05-21 23:07] write: entity/langchainx-embedding
+- [2026-05-21 23:07] write: entity/langchainx-vectorstore
+- [2026-05-21 23:07] write: entity/langchainx-agent
+- [2026-05-21 23:07] write: entity/langchainx-tools
+- [2026-05-21 23:07] write: entity/langchainx-loaders
+- [2026-05-21 23:07] write: entity/langchainx-text-splitter
+- [2026-05-21 23:07] write: entity/langchainx-semantic-router
+- [2026-05-21 23:07] write: entity/langchainx-output-parsers
+- [2026-05-21 23:07] write: entity/Retriever
+- [2026-05-21 23:07] write: entity/Loader
+- [2026-05-21 23:07] write: entity/FormatPrompter
+- [2026-05-21 23:07] write: entity/OutputParser
+- [2026-05-21 23:07] write: entity/IntoArcLLM
+- [2026-05-21 23:07] write: entity/GenerateResult
+- [2026-05-21 23:07] write: entity/TokenUsage
+- [2026-05-21 23:07] write: entity/Message
+- [2026-05-21 23:07] write: entity/MessageType
+- [2026-05-21 23:07] write: entity/Document
+- [2026-05-21 23:07] write: entity/PromptArgs
+- [2026-05-21 23:07] write: entity/StreamData
+- [2026-05-21 23:07] write: entity/PromptValue
+- [2026-05-21 23:07] write: entity/PromptTemplate
+- [2026-05-21 23:07] write: entity/OpenAI backend
+- [2026-05-21 23:07] write: entity/Claude backend
+- [2026-05-21 23:07] write: entity/DeepSeek backend
+- [2026-05-21 23:07] write: entity/Qwen backend
+- [2026-05-21 23:07] write: entity/Ollama backend
+- [2026-05-21 23:07] write: entity/CallOptions
+- [2026-05-21 23:07] write: entity/LLMChain
+- [2026-05-21 23:07] write: entity/LLMChainBuilder
+- [2026-05-21 23:07] write: entity/ConversationalChain
+- [2026-05-21 23:07] write: entity/ConversationalRetrievalQA
+- [2026-05-21 23:07] write: entity/SequentialChain
+- [2026-05-21 23:07] write: entity/StuffDocuments
+- [2026-05-21 23:07] write: entity/SqlDatabase
+- [2026-05-21 23:07] write: entity/AgentExecutor
+- [2026-05-21 23:07] write: entity/SimpleMemory
+- [2026-05-21 23:07] write: entity/WindowBufferMemory
+- [2026-05-21 23:07] write: entity/DummyMemory
+- [2026-05-21 23:07] write: entity/OpenAI embedder
+- [2026-05-21 23:07] write: entity/Ollama embedder
+- [2026-05-21 23:07] write: entity/FastEmbed
+- [2026-05-21 23:07] write: entity/MistralAI embedder
+- [2026-05-21 23:07] write: entity/Postgres vectorstore
+- [2026-05-21 23:07] write: entity/Qdrant vectorstore
+- [2026-05-21 23:07] write: entity/OpenSearch vectorstore
+- [2026-05-21 23:07] write: entity/SQLite-VSS vectorstore
+- [2026-05-21 23:07] write: entity/SQLite-Vec vectorstore
+- [2026-05-21 23:07] write: entity/SurrealDB vectorstore
+- [2026-05-21 23:07] write: entity/VectorStore Retriever
+- [2026-05-21 23:07] write: entity/ChatAgent
+- [2026-05-21 23:07] write: entity/OpenAIToolsAgent
+- [2026-05-21 23:07] write: entity/AgentEvent
+- [2026-05-21 23:07] write: entity/AgentAction
+- [2026-05-21 23:07] write: entity/AgentFinish
+- [2026-05-21 23:07] write: entity/template_fstring macro
+- [2026-05-21 23:07] write: entity/template_jinja2 macro
+- [2026-05-21 23:07] write: entity/message_formatter macro
+- [2026-05-21 23:07] write: entity/prompt_args macro
+- [2026-05-21 23:07] write: entity/MessageFormatter
+- [2026-05-21 23:07] write: entity/HumanMessagePromptTemplate

@@ -1,3 +1,4 @@
+//! Builder for configuring and optionally creating a Qdrant collection.
 use langchainx_embedding::embedding::Embedder;
 use qdrant_client::Qdrant;
 use qdrant_client::qdrant::{CreateCollectionBuilder, Distance, Filter, VectorParamsBuilder};
@@ -6,6 +7,7 @@ use std::sync::Arc;
 
 use super::Store;
 
+/// Configures a Qdrant-backed vector store.
 pub struct StoreBuilder {
     client: Option<Qdrant>,
     embedder: Option<Arc<dyn Embedder>>,
@@ -23,7 +25,7 @@ impl Default for StoreBuilder {
 }
 
 impl StoreBuilder {
-    /// Create a new StoreBuilder object with default values.
+    /// Creates a builder with standard payload field names.
     pub fn new() -> Self {
         StoreBuilder {
             client: None,
@@ -36,21 +38,21 @@ impl StoreBuilder {
         }
     }
 
-    /// An instance of [`qdrant_client::Qdrant`] for the Store. REQUIRED.
+    /// Sets the required Qdrant client.
     pub fn client(mut self, client: Qdrant) -> Self {
         self.client = Some(client);
         self
     }
 
-    /// Embeddings provider for the Store. REQUIRED.
+    /// Sets the required document and query embedder.
     pub fn embedder<E: Embedder + 'static>(mut self, embedder: E) -> Self {
         self.embedder = Some(Arc::new(embedder));
         self
     }
 
-    /// Name of the collection in Qdrant. REQUIRED.
+    /// Sets the required Qdrant collection name.
     /// It is recommended to create a collection in advance, with the required configurations.
-    /// https://qdrant.tech/documentation/concepts/collections/#create-a-collection
+    /// <https://qdrant.tech/documentation/concepts/collections/#create-a-collection>
     ///
     /// If the collection doesn't exist, it will be created with the embedding provider's dimension
     /// and Cosine similarity metric.
@@ -59,36 +61,33 @@ impl StoreBuilder {
         self
     }
 
-    /// Name of the field in the Qdrant point's payload that will store the metadata of the
-    /// documents. Default: "metadata"
+    /// Sets the payload field used for document metadata.
     pub fn metadata_field(mut self, metadata_field: &str) -> Self {
         self.metadata_field = metadata_field.to_string();
         self
     }
 
-    /// Name of the field in the Qdrant point's payload that will store the content of the
-    /// documents. Default: "page_content"
+    /// Sets the payload field used for document content.
     pub fn content_field(mut self, content_field: &str) -> Self {
         self.content_field = content_field.to_string();
         self
     }
 
-    /// If set to true, the collection will be deleted and recreated using
-    /// the embedding provider's dimension and Cosine similarity metric.
+    /// Controls whether an existing collection is deleted and recreated.
     pub fn recreate_collection(mut self, recreate_collection: bool) -> Self {
         self.recreate_collection = recreate_collection;
         self
     }
 
-    /// Filter to be applied to the search results.
-    /// https://qdrant.tech/documentation/concepts/filtering/
+    /// Sets the Qdrant filter applied to similarity searches.
+    /// <https://qdrant.tech/documentation/concepts/filtering/>
     /// Instance of use `qdrant_client::qdrant::Filter`
     pub fn search_filter(mut self, search_filter: Filter) -> Self {
         self.search_filter = Some(search_filter);
         self
     }
 
-    /// Build the Store object.
+    /// Builds the store, creating or recreating its cosine-distance collection when needed.
     pub async fn build(mut self) -> Result<Store, Box<dyn Error>> {
         let client = self.client.take().ok_or("'client' is required")?;
         let embedder = self.embedder.take().ok_or("'embedder' is required")?;

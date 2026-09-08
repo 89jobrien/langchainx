@@ -1,3 +1,4 @@
+//! Loader for Markdown text with simple frontmatter extraction.
 use std::pin::Pin;
 
 use async_trait::async_trait;
@@ -8,13 +9,14 @@ use langchainx_text_splitter::TextSplitter;
 
 use crate::{Loader, LoaderError, markdown_serializer::parse_frontmatter, process_doc_stream};
 
-/// Loads markdown content, strips YAML frontmatter into metadata.
+/// Loads Markdown content and moves leading frontmatter fields into metadata.
 #[derive(Debug, Clone)]
 pub struct MarkdownLoader {
     content: String,
 }
 
 impl MarkdownLoader {
+    /// Creates a loader from Markdown text.
     pub fn new<T: Into<String>>(content: T) -> Self {
         Self {
             content: content.into(),

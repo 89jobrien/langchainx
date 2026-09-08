@@ -1,0 +1,1876 @@
+{
+  "nodes": {
+    "langchainx": {
+      "name": "langchainx",
+      "type": "module",
+      "slug": "langchainx",
+      "sources": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "langchainx is a Rust port of LangChain, facade crate"
+        }
+      ]
+    },
+    "langchainx-core": {
+      "name": "langchainx-core",
+      "type": "module",
+      "slug": "langchainx-core",
+      "sources": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "shared types, traits, errors"
+        }
+      ]
+    },
+    "langchainx-llm": {
+      "name": "langchainx-llm",
+      "type": "module",
+      "slug": "langchainx-llm",
+      "sources": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "LLM backends"
+        }
+      ]
+    },
+    "langchainx-chain": {
+      "name": "langchainx-chain",
+      "type": "module",
+      "slug": "langchainx-chain",
+      "sources": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "chain abstractions"
+        }
+      ]
+    },
+    "langchainx-prompt": {
+      "name": "langchainx-prompt",
+      "type": "module",
+      "slug": "langchainx-prompt",
+      "sources": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "prompt templates and macros"
+        }
+      ]
+    },
+    "langchainx-memory": {
+      "name": "langchainx-memory",
+      "type": "module",
+      "slug": "langchainx-memory",
+      "sources": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "memory implementations"
+        }
+      ]
+    },
+    "langchainx-embedding": {
+      "name": "langchainx-embedding",
+      "type": "module",
+      "slug": "langchainx-embedding",
+      "sources": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "embedding backends"
+        }
+      ]
+    },
+    "langchainx-vectorstore": {
+      "name": "langchainx-vectorstore",
+      "type": "module",
+      "slug": "langchainx-vectorstore",
+      "sources": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "vector store backends"
+        }
+      ]
+    },
+    "langchainx-agent": {
+      "name": "langchainx-agent",
+      "type": "module",
+      "slug": "langchainx-agent",
+      "sources": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "agent executor and agent types"
+        }
+      ]
+    },
+    "langchainx-tools": {
+      "name": "langchainx-tools",
+      "type": "module",
+      "slug": "langchainx-tools",
+      "sources": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "tool trait and implementations"
+        }
+      ]
+    },
+    "langchainx-loaders": {
+      "name": "langchainx-loaders",
+      "type": "module",
+      "slug": "langchainx-loaders",
+      "sources": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "document loaders"
+        }
+      ]
+    },
+    "langchainx-text-splitter": {
+      "name": "langchainx-text-splitter",
+      "type": "module",
+      "slug": "langchainx-text-splitter",
+      "sources": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "text splitting"
+        }
+      ]
+    },
+    "langchainx-semantic-router": {
+      "name": "langchainx-semantic-router",
+      "type": "module",
+      "slug": "langchainx-semantic-router",
+      "sources": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "semantic routing"
+        }
+      ]
+    },
+    "langchainx-output-parsers": {
+      "name": "langchainx-output-parsers",
+      "type": "module",
+      "slug": "langchainx-output-parsers",
+      "sources": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "output parsing"
+        }
+      ]
+    },
+    "llm": {
+      "name": "LLM",
+      "type": "trait",
+      "slug": "llm",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "async trait LLM: generate, invoke, stream"
+        }
+      ]
+    },
+    "chain": {
+      "name": "Chain",
+      "type": "trait",
+      "slug": "chain",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "async trait Chain: call, invoke, execute, stream"
+        }
+      ]
+    },
+    "tool": {
+      "name": "Tool",
+      "type": "trait",
+      "slug": "tool",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "async trait Tool: name, description, parameters, call, run"
+        }
+      ]
+    },
+    "embedder": {
+      "name": "Embedder",
+      "type": "trait",
+      "slug": "embedder",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "async trait Embedder: embed_documents, embed_query"
+        }
+      ]
+    },
+    "vectorstore": {
+      "name": "VectorStore",
+      "type": "trait",
+      "slug": "vectorstore",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "async trait VectorStore: add_documents, similarity_search"
+        }
+      ]
+    },
+    "retriever": {
+      "name": "Retriever",
+      "type": "trait",
+      "slug": "retriever",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "async trait Retriever: get_relevant_documents"
+        }
+      ]
+    },
+    "basememory": {
+      "name": "BaseMemory",
+      "type": "trait",
+      "slug": "basememory",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "trait BaseMemory: messages, add_message, clear"
+        }
+      ]
+    },
+    "loader": {
+      "name": "Loader",
+      "type": "trait",
+      "slug": "loader",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "async trait Loader: load -> Stream<Document>"
+        }
+      ]
+    },
+    "agent": {
+      "name": "Agent",
+      "type": "trait",
+      "slug": "agent",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "async trait Agent: plan, get_tools"
+        }
+      ]
+    },
+    "formatprompter": {
+      "name": "FormatPrompter",
+      "type": "trait",
+      "slug": "formatprompter",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "trait FormatPrompter: format_prompt -> PromptValue"
+        }
+      ]
+    },
+    "outputparser": {
+      "name": "OutputParser",
+      "type": "trait",
+      "slug": "outputparser",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "trait OutputParser: parse(&str) -> String"
+        }
+      ]
+    },
+    "intoarcllm": {
+      "name": "IntoArcLLM",
+      "type": "trait",
+      "slug": "intoarcllm",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "conversion helper for Arc<dyn LLM>"
+        }
+      ]
+    },
+    "generateresult": {
+      "name": "GenerateResult",
+      "type": "struct",
+      "slug": "generateresult",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "generation output with token usage"
+        }
+      ]
+    },
+    "tokenusage": {
+      "name": "TokenUsage",
+      "type": "struct",
+      "slug": "tokenusage",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "prompt_tokens, completion_tokens, total_tokens"
+        }
+      ]
+    },
+    "message": {
+      "name": "Message",
+      "type": "struct",
+      "slug": "message",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "content, message_type, tool_calls, images"
+        }
+      ]
+    },
+    "messagetype": {
+      "name": "MessageType",
+      "type": "struct",
+      "slug": "messagetype",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "SystemMessage, AIMessage, HumanMessage, ToolMessage"
+        }
+      ]
+    },
+    "document": {
+      "name": "Document",
+      "type": "struct",
+      "slug": "document",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "page_content, metadata HashMap, score"
+        }
+      ]
+    },
+    "promptargs": {
+      "name": "PromptArgs",
+      "type": "struct",
+      "slug": "promptargs",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "HashMap<String, Value> for prompt input variables"
+        }
+      ]
+    },
+    "streamdata": {
+      "name": "StreamData",
+      "type": "struct",
+      "slug": "streamdata",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "streaming response data"
+        }
+      ]
+    },
+    "promptvalue": {
+      "name": "PromptValue",
+      "type": "struct",
+      "slug": "promptvalue",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "formatted prompt value with to_chat_messages()"
+        }
+      ]
+    },
+    "prompttemplate": {
+      "name": "PromptTemplate",
+      "type": "struct",
+      "slug": "prompttemplate",
+      "sources": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "template string with variables, FString or Jinja2 format"
+        }
+      ]
+    },
+    "openai-backend": {
+      "name": "OpenAI backend",
+      "type": "backend",
+      "slug": "openai-backend",
+      "sources": [
+        {
+          "doc_id": "llm_backends",
+          "supporting_text": "uses async-openai crate for GPT models"
+        }
+      ]
+    },
+    "claude-backend": {
+      "name": "Claude backend",
+      "type": "backend",
+      "slug": "claude-backend",
+      "sources": [
+        {
+          "doc_id": "llm_backends",
+          "supporting_text": "custom HTTP client to Anthropic API"
+        }
+      ]
+    },
+    "deepseek-backend": {
+      "name": "DeepSeek backend",
+      "type": "backend",
+      "slug": "deepseek-backend",
+      "sources": [
+        {
+          "doc_id": "llm_backends",
+          "supporting_text": "OpenAI-compatible API with custom base URL"
+        }
+      ]
+    },
+    "qwen-backend": {
+      "name": "Qwen backend",
+      "type": "backend",
+      "slug": "qwen-backend",
+      "sources": [
+        {
+          "doc_id": "llm_backends",
+          "supporting_text": "OpenAI-compatible API with custom base URL"
+        }
+      ]
+    },
+    "ollama-backend": {
+      "name": "Ollama backend",
+      "type": "backend",
+      "slug": "ollama-backend",
+      "sources": [
+        {
+          "doc_id": "llm_backends",
+          "supporting_text": "local LLM inference via ollama-rs"
+        }
+      ]
+    },
+    "calloptions": {
+      "name": "CallOptions",
+      "type": "struct",
+      "slug": "calloptions",
+      "sources": [
+        {
+          "doc_id": "llm_backends",
+          "supporting_text": "temperature, max_tokens, stop_words options"
+        }
+      ]
+    },
+    "llmchain": {
+      "name": "LLMChain",
+      "type": "struct",
+      "slug": "llmchain",
+      "sources": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "basic prompt->LLM pipeline"
+        }
+      ]
+    },
+    "llmchainbuilder": {
+      "name": "LLMChainBuilder",
+      "type": "struct",
+      "slug": "llmchainbuilder",
+      "sources": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "builder for LLMChain with prompt, llm, output_key"
+        }
+      ]
+    },
+    "conversationalchain": {
+      "name": "ConversationalChain",
+      "type": "struct",
+      "slug": "conversationalchain",
+      "sources": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "LLM chain with memory"
+        }
+      ]
+    },
+    "conversationalretrievalqa": {
+      "name": "ConversationalRetrievalQA",
+      "type": "struct",
+      "slug": "conversationalretrievalqa",
+      "sources": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "memory + retriever for RAG"
+        }
+      ]
+    },
+    "sequentialchain": {
+      "name": "SequentialChain",
+      "type": "struct",
+      "slug": "sequentialchain",
+      "sources": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "chains in series"
+        }
+      ]
+    },
+    "stuffdocuments": {
+      "name": "StuffDocuments",
+      "type": "struct",
+      "slug": "stuffdocuments",
+      "sources": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "stuffs retrieved docs into prompt"
+        }
+      ]
+    },
+    "sqldatabase": {
+      "name": "SqlDatabase",
+      "type": "struct",
+      "slug": "sqldatabase",
+      "sources": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "SQL from natural language"
+        }
+      ]
+    },
+    "agentexecutor": {
+      "name": "AgentExecutor",
+      "type": "struct",
+      "slug": "agentexecutor",
+      "sources": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "runs Agent.plan() loop dispatching tools"
+        }
+      ]
+    },
+    "simplememory": {
+      "name": "SimpleMemory",
+      "type": "struct",
+      "slug": "simplememory",
+      "sources": [
+        {
+          "doc_id": "memory_impls",
+          "supporting_text": "stores all messages in Vec<Message>"
+        }
+      ]
+    },
+    "windowbuffermemory": {
+      "name": "WindowBufferMemory",
+      "type": "struct",
+      "slug": "windowbuffermemory",
+      "sources": [
+        {
+          "doc_id": "memory_impls",
+          "supporting_text": "sliding window of last N messages"
+        }
+      ]
+    },
+    "dummymemory": {
+      "name": "DummyMemory",
+      "type": "struct",
+      "slug": "dummymemory",
+      "sources": [
+        {
+          "doc_id": "memory_impls",
+          "supporting_text": "always returns empty messages"
+        }
+      ]
+    },
+    "openai-embedder": {
+      "name": "OpenAI embedder",
+      "type": "backend",
+      "slug": "openai-embedder",
+      "sources": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "OpenAI text-embedding models"
+        }
+      ]
+    },
+    "ollama-embedder": {
+      "name": "Ollama embedder",
+      "type": "backend",
+      "slug": "ollama-embedder",
+      "sources": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "local embeddings via ollama-rs"
+        }
+      ]
+    },
+    "fastembed": {
+      "name": "FastEmbed",
+      "type": "backend",
+      "slug": "fastembed",
+      "sources": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "local embeddings via fastembed crate"
+        }
+      ]
+    },
+    "mistralai-embedder": {
+      "name": "MistralAI embedder",
+      "type": "backend",
+      "slug": "mistralai-embedder",
+      "sources": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "Mistral AI embedding API"
+        }
+      ]
+    },
+    "postgres-vectorstore": {
+      "name": "Postgres vectorstore",
+      "type": "backend",
+      "slug": "postgres-vectorstore",
+      "sources": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "pgvector extension for Postgres"
+        }
+      ]
+    },
+    "qdrant-vectorstore": {
+      "name": "Qdrant vectorstore",
+      "type": "backend",
+      "slug": "qdrant-vectorstore",
+      "sources": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "Qdrant vector database"
+        }
+      ]
+    },
+    "opensearch-vectorstore": {
+      "name": "OpenSearch vectorstore",
+      "type": "backend",
+      "slug": "opensearch-vectorstore",
+      "sources": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "OpenSearch with AWS auth"
+        }
+      ]
+    },
+    "sqlite-vss-vectorstore": {
+      "name": "SQLite-VSS vectorstore",
+      "type": "backend",
+      "slug": "sqlite-vss-vectorstore",
+      "sources": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "SQLite with VSS extension"
+        }
+      ]
+    },
+    "sqlite-vec-vectorstore": {
+      "name": "SQLite-Vec vectorstore",
+      "type": "backend",
+      "slug": "sqlite-vec-vectorstore",
+      "sources": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "SQLite with vec extension"
+        }
+      ]
+    },
+    "surrealdb-vectorstore": {
+      "name": "SurrealDB vectorstore",
+      "type": "backend",
+      "slug": "surrealdb-vectorstore",
+      "sources": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "SurrealDB vector store"
+        }
+      ]
+    },
+    "vectorstore-retriever": {
+      "name": "VectorStore Retriever",
+      "type": "struct",
+      "slug": "vectorstore-retriever",
+      "sources": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "wraps VectorStore, implements Retriever trait"
+        }
+      ]
+    },
+    "chatagent": {
+      "name": "ChatAgent",
+      "type": "struct",
+      "slug": "chatagent",
+      "sources": [
+        {
+          "doc_id": "agent_types",
+          "supporting_text": "ReAct-style agent, text parsing"
+        }
+      ]
+    },
+    "openaitoolsagent": {
+      "name": "OpenAIToolsAgent",
+      "type": "struct",
+      "slug": "openaitoolsagent",
+      "sources": [
+        {
+          "doc_id": "agent_types",
+          "supporting_text": "function-calling API agent"
+        }
+      ]
+    },
+    "agentevent": {
+      "name": "AgentEvent",
+      "type": "struct",
+      "slug": "agentevent",
+      "sources": [
+        {
+          "doc_id": "agent_types",
+          "supporting_text": "Action or Finish enum"
+        }
+      ]
+    },
+    "agentaction": {
+      "name": "AgentAction",
+      "type": "struct",
+      "slug": "agentaction",
+      "sources": [
+        {
+          "doc_id": "agent_types",
+          "supporting_text": "tool name, tool_input, log"
+        }
+      ]
+    },
+    "agentfinish": {
+      "name": "AgentFinish",
+      "type": "struct",
+      "slug": "agentfinish",
+      "sources": [
+        {
+          "doc_id": "agent_types",
+          "supporting_text": "output string"
+        }
+      ]
+    },
+    "template-fstring-macro": {
+      "name": "template_fstring macro",
+      "type": "function",
+      "slug": "template-fstring-macro",
+      "sources": [
+        {
+          "doc_id": "prompt_macros",
+          "supporting_text": "creates FString-format PromptTemplate"
+        }
+      ]
+    },
+    "template-jinja2-macro": {
+      "name": "template_jinja2 macro",
+      "type": "function",
+      "slug": "template-jinja2-macro",
+      "sources": [
+        {
+          "doc_id": "prompt_macros",
+          "supporting_text": "creates Jinja2-format PromptTemplate"
+        }
+      ]
+    },
+    "message-formatter-macro": {
+      "name": "message_formatter macro",
+      "type": "function",
+      "slug": "message-formatter-macro",
+      "sources": [
+        {
+          "doc_id": "prompt_macros",
+          "supporting_text": "composes MessageOrTemplate into MessageFormatter"
+        }
+      ]
+    },
+    "prompt-args-macro": {
+      "name": "prompt_args macro",
+      "type": "function",
+      "slug": "prompt-args-macro",
+      "sources": [
+        {
+          "doc_id": "prompt_macros",
+          "supporting_text": "creates PromptArgs HashMap"
+        }
+      ]
+    },
+    "messageformatter": {
+      "name": "MessageFormatter",
+      "type": "struct",
+      "slug": "messageformatter",
+      "sources": [
+        {
+          "doc_id": "prompt_macros",
+          "supporting_text": "composes prompt chains, implements FormatPrompter"
+        }
+      ]
+    },
+    "humanmessageprompttemplate": {
+      "name": "HumanMessagePromptTemplate",
+      "type": "struct",
+      "slug": "humanmessageprompttemplate",
+      "sources": [
+        {
+          "doc_id": "prompt_macros",
+          "supporting_text": "wraps PromptTemplate with HumanMessage type"
+        }
+      ]
+    }
+  },
+  "edges": [
+    {
+      "source": "langchainx",
+      "target": "langchainx-core",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "facade depends on core"
+        }
+      ]
+    },
+    {
+      "source": "langchainx",
+      "target": "langchainx-llm",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "facade depends on llm"
+        }
+      ]
+    },
+    {
+      "source": "langchainx",
+      "target": "langchainx-chain",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "facade depends on chain"
+        }
+      ]
+    },
+    {
+      "source": "langchainx",
+      "target": "langchainx-prompt",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "facade depends on prompt"
+        }
+      ]
+    },
+    {
+      "source": "langchainx",
+      "target": "langchainx-memory",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "facade depends on memory"
+        }
+      ]
+    },
+    {
+      "source": "langchainx",
+      "target": "langchainx-embedding",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "facade depends on embedding"
+        }
+      ]
+    },
+    {
+      "source": "langchainx",
+      "target": "langchainx-vectorstore",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "facade depends on vectorstore"
+        }
+      ]
+    },
+    {
+      "source": "langchainx",
+      "target": "langchainx-agent",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "facade depends on agent"
+        }
+      ]
+    },
+    {
+      "source": "langchainx",
+      "target": "langchainx-tools",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "facade depends on tools"
+        }
+      ]
+    },
+    {
+      "source": "langchainx",
+      "target": "langchainx-loaders",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "facade depends on loaders"
+        }
+      ]
+    },
+    {
+      "source": "langchainx",
+      "target": "langchainx-text-splitter",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "facade depends on text-splitter"
+        }
+      ]
+    },
+    {
+      "source": "langchainx",
+      "target": "langchainx-semantic-router",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "facade depends on semantic-router"
+        }
+      ]
+    },
+    {
+      "source": "langchainx",
+      "target": "langchainx-output-parsers",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "facade depends on output-parsers"
+        }
+      ]
+    },
+    {
+      "source": "langchainx-llm",
+      "target": "langchainx-core",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "llm uses core types"
+        }
+      ]
+    },
+    {
+      "source": "langchainx-chain",
+      "target": "langchainx-core",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "chain uses core types"
+        }
+      ]
+    },
+    {
+      "source": "langchainx-chain",
+      "target": "langchainx-llm",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "chain uses LLM trait"
+        }
+      ]
+    },
+    {
+      "source": "langchainx-agent",
+      "target": "langchainx-chain",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "agent executor implements Chain"
+        }
+      ]
+    },
+    {
+      "source": "langchainx-agent",
+      "target": "langchainx-core",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "agent uses core Tool trait"
+        }
+      ]
+    },
+    {
+      "source": "langchainx-vectorstore",
+      "target": "langchainx-embedding",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "vectorstore uses embedding types"
+        }
+      ]
+    },
+    {
+      "source": "llm",
+      "target": "message",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "generate takes &[Message]"
+        }
+      ]
+    },
+    {
+      "source": "llm",
+      "target": "generateresult",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "generate returns GenerateResult"
+        }
+      ]
+    },
+    {
+      "source": "chain",
+      "target": "promptargs",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "call takes PromptArgs"
+        }
+      ]
+    },
+    {
+      "source": "chain",
+      "target": "generateresult",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "call returns GenerateResult"
+        }
+      ]
+    },
+    {
+      "source": "embedder",
+      "target": "langchainx-embedding",
+      "relation": "contains",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "Embedder defined in embedding crate"
+        }
+      ]
+    },
+    {
+      "source": "vectorstore",
+      "target": "document",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "add_documents and similarity_search use Document"
+        }
+      ]
+    },
+    {
+      "source": "vectorstore",
+      "target": "embedder",
+      "relation": "depends_on",
+      "confidence": 0.9,
+      "provenance": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "vectorstore uses embeddings for similarity search"
+        }
+      ]
+    },
+    {
+      "source": "retriever",
+      "target": "document",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "get_relevant_documents returns Vec<Document>"
+        }
+      ]
+    },
+    {
+      "source": "loader",
+      "target": "document",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "load returns Stream<Document>"
+        }
+      ]
+    },
+    {
+      "source": "agent",
+      "target": "tool",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "get_tools returns Vec<Arc<dyn Tool>>"
+        }
+      ]
+    },
+    {
+      "source": "basememory",
+      "target": "message",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "messages() returns Vec<Message>"
+        }
+      ]
+    },
+    {
+      "source": "formatprompter",
+      "target": "promptvalue",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "format_prompt returns PromptValue"
+        }
+      ]
+    },
+    {
+      "source": "formatprompter",
+      "target": "promptargs",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "format_prompt takes PromptArgs"
+        }
+      ]
+    },
+    {
+      "source": "generateresult",
+      "target": "tokenusage",
+      "relation": "contains",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "GenerateResult has optional TokenUsage"
+        }
+      ]
+    },
+    {
+      "source": "message",
+      "target": "messagetype",
+      "relation": "contains",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "Message has message_type field"
+        }
+      ]
+    },
+    {
+      "source": "prompttemplate",
+      "target": "formatprompter",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "core_traits",
+          "supporting_text": "PromptTemplate implements FormatPrompter"
+        }
+      ]
+    },
+    {
+      "source": "openai-backend",
+      "target": "llm",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "llm_backends",
+          "supporting_text": "OpenAI implements LLM trait"
+        }
+      ]
+    },
+    {
+      "source": "claude-backend",
+      "target": "llm",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "llm_backends",
+          "supporting_text": "Claude implements LLM trait"
+        }
+      ]
+    },
+    {
+      "source": "deepseek-backend",
+      "target": "llm",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "llm_backends",
+          "supporting_text": "DeepSeek implements LLM trait"
+        }
+      ]
+    },
+    {
+      "source": "qwen-backend",
+      "target": "llm",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "llm_backends",
+          "supporting_text": "Qwen implements LLM trait"
+        }
+      ]
+    },
+    {
+      "source": "ollama-backend",
+      "target": "llm",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "llm_backends",
+          "supporting_text": "Ollama implements LLM trait"
+        }
+      ]
+    },
+    {
+      "source": "deepseek-backend",
+      "target": "openai-backend",
+      "relation": "related_to",
+      "confidence": 0.8,
+      "provenance": [
+        {
+          "doc_id": "llm_backends",
+          "supporting_text": "reuses OpenAI client patterns with custom base URL"
+        }
+      ]
+    },
+    {
+      "source": "qwen-backend",
+      "target": "openai-backend",
+      "relation": "related_to",
+      "confidence": 0.8,
+      "provenance": [
+        {
+          "doc_id": "llm_backends",
+          "supporting_text": "reuses OpenAI client patterns with custom base URL"
+        }
+      ]
+    },
+    {
+      "source": "llmchain",
+      "target": "chain",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "impl Chain for LLMChain"
+        }
+      ]
+    },
+    {
+      "source": "llmchain",
+      "target": "llm",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "LLMChain holds Arc<dyn LLM>"
+        }
+      ]
+    },
+    {
+      "source": "llmchain",
+      "target": "formatprompter",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "LLMChain holds Box<dyn FormatPrompter>"
+        }
+      ]
+    },
+    {
+      "source": "llmchain",
+      "target": "outputparser",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "LLMChain holds Box<dyn OutputParser>"
+        }
+      ]
+    },
+    {
+      "source": "llmchainbuilder",
+      "target": "llmchain",
+      "relation": "related_to",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "builder pattern for LLMChain"
+        }
+      ]
+    },
+    {
+      "source": "conversationalchain",
+      "target": "chain",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "ConversationalChain implements Chain"
+        }
+      ]
+    },
+    {
+      "source": "conversationalchain",
+      "target": "basememory",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "uses Arc<dyn BaseMemory>"
+        }
+      ]
+    },
+    {
+      "source": "conversationalretrievalqa",
+      "target": "chain",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "implements Chain"
+        }
+      ]
+    },
+    {
+      "source": "conversationalretrievalqa",
+      "target": "retriever",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "uses retriever for document fetching"
+        }
+      ]
+    },
+    {
+      "source": "sequentialchain",
+      "target": "chain",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "SequentialChain implements Chain"
+        }
+      ]
+    },
+    {
+      "source": "stuffdocuments",
+      "target": "chain",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "StuffDocuments implements Chain"
+        }
+      ]
+    },
+    {
+      "source": "agentexecutor",
+      "target": "chain",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "impl Chain for AgentExecutor"
+        }
+      ]
+    },
+    {
+      "source": "agentexecutor",
+      "target": "agent",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "AgentExecutor wraps an Agent"
+        }
+      ]
+    },
+    {
+      "source": "agentexecutor",
+      "target": "tool",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "chain_impls",
+          "supporting_text": "dispatches tool calls from agent"
+        }
+      ]
+    },
+    {
+      "source": "simplememory",
+      "target": "basememory",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "memory_impls",
+          "supporting_text": "SimpleMemory implements BaseMemory"
+        }
+      ]
+    },
+    {
+      "source": "windowbuffermemory",
+      "target": "basememory",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "memory_impls",
+          "supporting_text": "WindowBufferMemory implements BaseMemory"
+        }
+      ]
+    },
+    {
+      "source": "dummymemory",
+      "target": "basememory",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "memory_impls",
+          "supporting_text": "DummyMemory implements BaseMemory"
+        }
+      ]
+    },
+    {
+      "source": "openai-embedder",
+      "target": "embedder",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "implements Embedder trait"
+        }
+      ]
+    },
+    {
+      "source": "ollama-embedder",
+      "target": "embedder",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "implements Embedder trait"
+        }
+      ]
+    },
+    {
+      "source": "fastembed",
+      "target": "embedder",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "implements Embedder trait"
+        }
+      ]
+    },
+    {
+      "source": "mistralai-embedder",
+      "target": "embedder",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "implements Embedder trait"
+        }
+      ]
+    },
+    {
+      "source": "postgres-vectorstore",
+      "target": "vectorstore",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "implements VectorStore trait"
+        }
+      ]
+    },
+    {
+      "source": "qdrant-vectorstore",
+      "target": "vectorstore",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "implements VectorStore trait"
+        }
+      ]
+    },
+    {
+      "source": "opensearch-vectorstore",
+      "target": "vectorstore",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "implements VectorStore trait"
+        }
+      ]
+    },
+    {
+      "source": "sqlite-vss-vectorstore",
+      "target": "vectorstore",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "implements VectorStore trait"
+        }
+      ]
+    },
+    {
+      "source": "sqlite-vec-vectorstore",
+      "target": "vectorstore",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "implements VectorStore trait"
+        }
+      ]
+    },
+    {
+      "source": "surrealdb-vectorstore",
+      "target": "vectorstore",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "implements VectorStore trait"
+        }
+      ]
+    },
+    {
+      "source": "vectorstore-retriever",
+      "target": "retriever",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "Retriever impl delegates to VectorStore"
+        }
+      ]
+    },
+    {
+      "source": "vectorstore-retriever",
+      "target": "vectorstore",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "embed_vectorstore",
+          "supporting_text": "wraps a Box<dyn VectorStore>"
+        }
+      ]
+    },
+    {
+      "source": "chatagent",
+      "target": "agent",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "agent_types",
+          "supporting_text": "ChatAgent implements Agent trait"
+        }
+      ]
+    },
+    {
+      "source": "openaitoolsagent",
+      "target": "agent",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "agent_types",
+          "supporting_text": "OpenAIToolsAgent implements Agent trait"
+        }
+      ]
+    },
+    {
+      "source": "agentevent",
+      "target": "agentaction",
+      "relation": "contains",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "agent_types",
+          "supporting_text": "AgentEvent::Action contains Vec<AgentAction>"
+        }
+      ]
+    },
+    {
+      "source": "agentevent",
+      "target": "agentfinish",
+      "relation": "contains",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "agent_types",
+          "supporting_text": "AgentEvent::Finish contains AgentFinish"
+        }
+      ]
+    },
+    {
+      "source": "messageformatter",
+      "target": "formatprompter",
+      "relation": "implements",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "prompt_macros",
+          "supporting_text": "MessageFormatter implements FormatPrompter"
+        }
+      ]
+    },
+    {
+      "source": "message-formatter-macro",
+      "target": "messageformatter",
+      "relation": "related_to",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "prompt_macros",
+          "supporting_text": "macro creates MessageFormatter"
+        }
+      ]
+    },
+    {
+      "source": "template-fstring-macro",
+      "target": "prompttemplate",
+      "relation": "related_to",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "prompt_macros",
+          "supporting_text": "macro creates PromptTemplate"
+        }
+      ]
+    },
+    {
+      "source": "humanmessageprompttemplate",
+      "target": "prompttemplate",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "prompt_macros",
+          "supporting_text": "wraps a PromptTemplate"
+        }
+      ]
+    },
+    {
+      "source": "langchainx-embedding",
+      "target": "langchainx-core",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "embedding uses core Document type"
+        }
+      ]
+    },
+    {
+      "source": "langchainx-vectorstore",
+      "target": "langchainx-core",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "vectorstore uses core Document and Retriever types"
+        }
+      ]
+    },
+    {
+      "source": "langchainx-loaders",
+      "target": "langchainx-core",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "loaders produce core Document type"
+        }
+      ]
+    },
+    {
+      "source": "langchainx-tools",
+      "target": "langchainx-core",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "tools crate uses core Tool trait and ToolError"
+        }
+      ]
+    },
+    {
+      "source": "langchainx-prompt",
+      "target": "langchainx-core",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "prompt uses core Message and PromptValue schemas"
+        }
+      ]
+    },
+    {
+      "source": "langchainx-memory",
+      "target": "langchainx-core",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "memory implements core BaseMemory trait using Message"
+        }
+      ]
+    },
+    {
+      "source": "langchainx-output-parsers",
+      "target": "langchainx-core",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "output-parsers uses core error types"
+        }
+      ]
+    },
+    {
+      "source": "langchainx-text-splitter",
+      "target": "langchainx-core",
+      "relation": "depends_on",
+      "confidence": 1.0,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "text-splitter operates on core Document type"
+        }
+      ]
+    },
+    {
+      "source": "langchainx-semantic-router",
+      "target": "langchainx-core",
+      "relation": "depends_on",
+      "confidence": 0.8,
+      "provenance": [
+        {
+          "doc_id": "arch_workspace",
+          "supporting_text": "semantic-router likely uses core types"
+        }
+      ]
+    }
+  ]
+}

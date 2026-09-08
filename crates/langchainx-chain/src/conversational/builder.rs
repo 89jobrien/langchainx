@@ -1,3 +1,4 @@
+//! Builder for a stateful conversational chain.
 use std::sync::Arc;
 
 use tokio::sync::Mutex;
@@ -16,6 +17,7 @@ use crate::{
 
 use super::{ConversationalChain, DEFAULT_INPUT_VARIABLE, prompt::DEFAULT_TEMPLATE};
 
+/// Configures the model, prompt, memory, parser, and keys for a [`ConversationalChain`].
 pub struct ConversationalChainBuilder {
     llm: Option<Arc<dyn DynLLM>>,
     options: Option<ChainCallOptions>,
@@ -26,7 +28,9 @@ pub struct ConversationalChainBuilder {
     prompt: Option<Box<dyn FormatPrompter>>,
 }
 
+#[allow(clippy::new_without_default)] // Builder pattern; Default would be misleading
 impl ConversationalChainBuilder {
+    /// Creates an empty builder that uses default memory, prompt, and keys.
     pub fn new() -> Self {
         Self {
             llm: None,
@@ -39,42 +43,50 @@ impl ConversationalChainBuilder {
         }
     }
 
+    /// Sets the language model used for each conversation turn.
     pub fn llm<L: IntoArcLLM>(mut self, llm: L) -> Self {
         self.llm = Some(llm.into_arc_llm());
         self
     }
 
+    /// Sets model call options.
     pub fn options(mut self, options: ChainCallOptions) -> Self {
         self.options = Some(options);
         self
     }
 
+    /// Sets the prompt-argument key containing the user's message.
     pub fn input_key<S: Into<String>>(mut self, input_key: S) -> Self {
         self.input_key = Some(input_key.into());
         self
     }
 
+    /// Sets the parser applied to model generations.
     pub fn output_parser<P: Into<Box<dyn OutputParser>>>(mut self, output_parser: P) -> Self {
         self.output_parser = Some(output_parser.into());
         self
     }
 
+    /// Sets the shared conversation memory.
     pub fn memory(mut self, memory: Arc<Mutex<dyn BaseMemory>>) -> Self {
         self.memory = Some(memory);
         self
     }
 
+    /// Sets the key used for generated text in structured output.
     pub fn output_key<S: Into<String>>(mut self, output_key: S) -> Self {
         self.output_key = Some(output_key.into());
         self
     }
 
-    ///If you want to add a custom prompt,keep in mind which variables are obligatory.
+    /// Sets a custom prompt, which must accept `history` and the configured input key.
     pub fn prompt<P: Into<Box<dyn FormatPrompter>>>(mut self, prompt: P) -> Self {
         self.prompt = Some(prompt.into());
         self
     }
 
+    // qual:allow(iosp) reason: "builder validation + construction"
+    /// Builds the chain, requiring a language model.
     pub fn build(self) -> Result<ConversationalChain, ChainError> {
         let llm = self
             .llm

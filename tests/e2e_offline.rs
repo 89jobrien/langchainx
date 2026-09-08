@@ -4,6 +4,8 @@
 /// These must always pass in CI.
 mod common;
 
+use std::sync::Arc;
+
 use langchainx::{
     chain::{
         Chain, LLMChainBuilder, SequentialChainBuilder,
@@ -14,6 +16,7 @@ use langchainx::{
     message_formatter,
     prompt::HumanMessagePromptTemplate,
     prompt_args, template_fstring,
+    tools::{DynTool, Tool, ToolError},
 };
 
 use common::FakeLLM;
@@ -51,7 +54,7 @@ async fn test_llm_chain_invoke() {
 
 #[tokio::test]
 async fn test_llm_chain_empty_response_queue() {
-    let fake = FakeLLM::new(vec![]);
+    let fake = FakeLLM::new(Vec::<String>::new());
 
     let prompt = message_formatter![fmt_template!(HumanMessagePromptTemplate::new(
         template_fstring!("{input}", "input")
@@ -181,7 +184,7 @@ async fn test_sequential_chain() {
 
 #[tokio::test]
 async fn test_llm_chain_input_keys() {
-    let fake = FakeLLM::new(vec![]);
+    let fake = FakeLLM::new(Vec::<String>::new());
 
     let prompt = message_formatter![fmt_template!(HumanMessagePromptTemplate::new(
         template_fstring!("{question}", "question")
@@ -199,4 +202,52 @@ async fn test_llm_chain_input_keys() {
         "input keys should contain 'question', got {:?}",
         keys
     );
+}
+
+// ---------------------------------------------------------------------------
+// Tool trait unification — a custom Tool impl satisfies both core and tools APIs
+// ---------------------------------------------------------------------------
+
+/// A trivial tool that echoes its input. Implements langchainx_core::tools::Tool
+/// via the re-exported `langchainx::tools::Tool` trait.
+struct EchoTool;
+
+impl Tool for EchoTool {
+    fn name(&self) -> String {
+        "echo".into()
+    }
+
+    fn description(&self) -> String {
+        "Echoes the input back".into()
+    }
+
+    async fn run(&self, input: serde_json::Value) -> Result<String, ToolError> {
+        Ok(input.as_str().unwrap_or("no input").to_string())
+    }
+}
+
+#[tokio::test]
+async fn test_tool_trait_unified_across_crates() {
+    // Prove that a Tool impl can be wrapped in Arc<dyn DynTool> and used via the
+    // same trait that langchainx-agent and langchainx-tools expect.
+    let tool: Arc<dyn DynTool> = Arc::new(EchoTool);
+
+    assert_eq!(tool.dyn_name(), "echo");
+
+    let result = tool.dyn_call("hello").await.unwrap();
+    assert_eq!(result, "hello");
+
+    // Verify ToolError variants are accessible from the same path
+    let err = ToolError::InvalidInput("test".into());
+    assert!(err.to_string().contains("invalid input"));
+}
+
+#[tokio::test]
+async fn test_tool_from_langchainx_tools_crate() {
+    // CommandExecutor is defined in langchainx-tools and implements
+    // langchainx_core::tools::Tool. Verify it can be used as Arc<dyn DynTool>
+    // through the root re-export — proving no trait mismatch.
+    let executor = langchainx::tools::CommandExecutor::new("bash");
+    let tool: Arc<dyn DynTool> = Arc::new(executor);
+    assert_eq!(tool.dyn_name(), "Command_Executor");
 }

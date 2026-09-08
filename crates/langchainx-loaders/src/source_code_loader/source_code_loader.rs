@@ -1,3 +1,4 @@
+//! Loader for source text or recursively discovered source files.
 use crate::{DirLoaderOptions, Loader, LoaderError, find_files_with_extension, process_doc_stream};
 use async_stream::stream;
 use async_trait::async_trait;
@@ -12,6 +13,7 @@ use std::pin::Pin;
 use super::{LanguageParser, LanguageParserOptions, get_language_by_filename};
 
 #[derive(Debug, Clone)]
+/// Parses source code into tree-sitter-derived documents.
 pub struct SourceCodeLoader {
     file_path: Option<String>,
     string_input: Option<String>,
@@ -20,6 +22,7 @@ pub struct SourceCodeLoader {
 }
 
 impl SourceCodeLoader {
+    /// Creates a loader for in-memory source text using default parser options.
     pub fn from_string<S: Into<String>>(input: S) -> Self {
         Self {
             string_input: Some(input.into()),
@@ -31,6 +34,7 @@ impl SourceCodeLoader {
 }
 
 #[cfg(test)]
+#[allow(clippy::items_after_test_module)]
 mod tests {
     use futures_util::StreamExt;
 
@@ -60,6 +64,7 @@ mod tests {
 }
 
 impl SourceCodeLoader {
+    /// Creates a loader for a source file or directory path.
     pub fn from_path<S: Into<String>>(path: S) -> Self {
         Self {
             file_path: Some(path.into()),
@@ -71,11 +76,13 @@ impl SourceCodeLoader {
 }
 
 impl SourceCodeLoader {
+    /// Replaces the source-language parser options.
     pub fn with_parser_option(mut self, parser_option: LanguageParserOptions) -> Self {
         self.parser_option = parser_option;
         self
     }
 
+    /// Replaces the options used to discover files under a directory.
     pub fn with_dir_loader_options(mut self, dir_loader_options: DirLoaderOptions) -> Self {
         self.dir_loader_options = dir_loader_options;
         self
@@ -84,6 +91,7 @@ impl SourceCodeLoader {
 
 #[async_trait]
 impl Loader for SourceCodeLoader {
+    // qual:allow(iosp) reason: "loader I/O boundary"
     async fn load(
         mut self,
     ) -> Result<

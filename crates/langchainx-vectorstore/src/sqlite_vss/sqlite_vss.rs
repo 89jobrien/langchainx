@@ -1,3 +1,4 @@
+//! Document persistence and nearest-neighbor search using SQLite VSS.
 use std::{collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
@@ -9,6 +10,7 @@ use langchainx_embedding::schemas::Document;
 
 use crate::{VecStoreOptions, VectorStore, VectorStoreError};
 
+/// Vector store backed by SQLite tables and a `vss0` virtual table.
 pub struct Store {
     pub(crate) pool: Pool<Sqlite>,
     pub(crate) table: String,
@@ -16,16 +18,20 @@ pub struct Store {
     pub(crate) embedder: Arc<dyn Embedder>,
 }
 
+/// Operation options accepted by the SQLite VSS backend.
 pub type SqliteVssOptions = VecStoreOptions<Value>;
 
 impl Store {
+    /// Creates the document table, VSS table, and synchronization trigger.
     pub async fn initialize(&self) -> Result<(), VectorStoreError> {
         self.create_table_if_not_exists().await?;
         Ok(())
     }
 
     async fn create_table_if_not_exists(&self) -> Result<(), VectorStoreError> {
-        let table = &self.table;
+        let table = quoted_identifier(&self.table)?;
+        let vss_table = quoted_identifier(&format!("vss_{}", self.table))?;
+        let trigger = quoted_identifier(&format!("embed_text_{}", self.table))?;
 
         sqlx::query(&format!(
             r#"
@@ -45,7 +51,7 @@ impl Store {
         let dimensions = self.vector_dimensions;
         sqlx::query(&format!(
             r#"
-                CREATE VIRTUAL TABLE IF NOT EXISTS vss_{table} USING vss0(
+                CREATE VIRTUAL TABLE IF NOT EXISTS {vss_table} USING vss0(
                   text_embedding({dimensions})
                 );
                 "#
@@ -56,10 +62,10 @@ impl Store {
         // NOTE: python langchain seems to only use "embed_text" as the trigger name
         sqlx::query(&format!(
             r#"
-                CREATE TRIGGER IF NOT EXISTS embed_text_{table}
+                CREATE TRIGGER IF NOT EXISTS {trigger}
                 AFTER INSERT ON {table}
                 BEGIN
-                    INSERT INTO vss_{table}(rowid, text_embedding)
+                    INSERT INTO {vss_table}(rowid, text_embedding)
                     VALUES (new.rowid, new.text_embedding)
                     ;
                 END;
@@ -92,7 +98,7 @@ impl VectorStore for Store {
             ));
         }
 
-        let table = &self.table;
+        let table = quoted_identifier(&self.table)?;
 
         let mut tx = self.pool.begin().await?;
 
@@ -128,7 +134,8 @@ impl VectorStore for Store {
         limit: usize,
         _opt: &Self::Options,
     ) -> Result<Vec<Document>, VectorStoreError> {
-        let table = &self.table;
+        let table = quoted_identifier(&self.table)?;
+        let vss_table = quoted_identifier(&format!("vss_{}", self.table))?;
 
         let query_vector = json!(self.embedder.embed_query(query).await?);
 
@@ -138,13 +145,14 @@ impl VectorStore for Store {
                     metadata,
                     distance
                 FROM {table} e
-                INNER JOIN vss_{table} v on v.rowid = e.rowid
+                INNER JOIN {vss_table} v on v.rowid = e.rowid
                 WHERE vss_search(
                   v.text_embedding,
-                  vss_search_params('{query_vector}', ?)
+                  vss_search_params(?, ?)
                 )
                 LIMIT ?"#
         ))
+        .bind(query_vector.to_string())
         .bind(limit as i32)
         .bind(limit as i32)
         .fetch_all(&self.pool)
@@ -174,4 +182,21 @@ impl VectorStore for Store {
 
         Ok(docs)
     }
+}
+
+pub(super) fn quoted_identifier(identifier: &str) -> Result<String, VectorStoreError> {
+    let mut chars = identifier.chars();
+    let Some(first) = chars.next() else {
+        return Err(VectorStoreError::OtherError(
+            "SQLite identifier cannot be empty".to_string(),
+        ));
+    };
+    if !(first == '_' || first.is_ascii_alphabetic())
+        || !chars.all(|character| character == '_' || character.is_ascii_alphanumeric())
+    {
+        return Err(VectorStoreError::OtherError(format!(
+            "Invalid SQLite identifier: {identifier}"
+        )));
+    }
+    Ok(format!("\"{identifier}\""))
 }

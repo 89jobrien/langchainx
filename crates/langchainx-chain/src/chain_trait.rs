@@ -1,3 +1,4 @@
+//! Shared execution interface implemented by all chains.
 use std::{collections::HashMap, future::Future, pin::Pin};
 
 use futures::Stream;
@@ -9,71 +10,18 @@ use super::ChainError;
 
 pub(crate) const DEFAULT_OUTPUT_KEY: &str = "output";
 pub(crate) const DEFAULT_RESULT_KEY: &str = "generate_result";
+/// A sendable stream of chain output chunks.
 pub type ChainStream = Pin<Box<dyn Stream<Item = Result<StreamData, ChainError>> + Send>>;
 
+/// An asynchronous computation from named prompt inputs to a model generation.
 pub trait Chain: Sync + Send {
-    /// Call the `Chain` and receive as output the result of the generation process along with
-    /// additional information like token consumption. The input is a set of variables passed
-    /// as a `PromptArgs` hashmap.
-    ///
-    /// # Example
-    ///
-    /// ```rust,ignore
-    /// # use crate::my_crate::{Chain, ConversationalChainBuilder, OpenAI, OpenAIModel, SimpleMemory, PromptArgs, prompt_args};
-    /// # async {
-    /// let llm = OpenAI::default().with_model(OpenAIModel::Gpt35);
-    /// let memory = SimpleMemory::new();
-    ///
-    /// let chain = ConversationalChainBuilder::new()
-    ///     .llm(llm)
-    ///     .memory(memory.into())
-    ///     .build().expect("Error building ConversationalChain");
-    ///
-    /// let input_variables = prompt_args! {
-    ///     "input" => "Im from Peru",
-    /// };
-    ///
-    /// match chain.call(input_variables).await {
-    ///     Ok(result) => {
-    ///         println!("Result: {:?}", result);
-    ///     },
-    ///     Err(e) => panic!("Error calling Chain: {:?}", e),
-    /// };
-    /// # };
-    /// ```
+    /// Runs the chain and returns generated text together with available token usage.
     fn call(
         &self,
         input_variables: PromptArgs,
     ) -> impl Future<Output = Result<GenerateResult, ChainError>> + Send;
 
-    /// Invoke the `Chain` and receive just the generation result as a String.
-    /// The input is a set of variables passed as a `PromptArgs` hashmap.
-    ///
-    /// # Example
-    ///
-    /// ```rust,ignore
-    /// # use crate::my_crate::{Chain, ConversationalChainBuilder, OpenAI, OpenAIModel, SimpleMemory, PromptArgs, prompt_args};
-    /// # async {
-    /// let llm = OpenAI::default().with_model(OpenAIModel::Gpt35);
-    /// let memory = SimpleMemory::new();
-    ///
-    /// let chain = ConversationalChainBuilder::new()
-    ///     .llm(llm)
-    ///     .memory(memory.into())
-    ///     .build().expect("Error building ConversationalChain");
-    ///
-    /// let input_variables = prompt_args! {
-    ///     "input" => "Im from Peru",
-    /// };
-    ///
-    /// match chain.invoke(input_variables).await {
-    ///     Ok(result) => {
-    ///         println!("Result: {:?}", result);
-    ///     },
-    ///     Err(e) => panic!("Error invoking Chain: {:?}", e),
-    /// };
-    /// # };
-    /// ```
+    /// Runs the chain and returns only its generated text.
     fn invoke(
         &self,
         input_variables: PromptArgs,
@@ -85,38 +33,10 @@ pub trait Chain: Sync + Send {
         }
     }
 
-    /// Execute the `Chain` and return the result of the generation process
-    /// along with additional information like token consumption formatted as a `HashMap`.
-    /// The input is a set of variables passed as a `PromptArgs` hashmap.
-    /// The key for the generated output is specified by the `get_output_keys`
-    /// method (default key is `output`).
+    /// Runs the chain and returns named outputs.
     ///
-    /// # Example
-    ///
-    /// ```rust,ignore
-    /// # use crate::my_crate::{Chain, ConversationalChainBuilder, OpenAI, OpenAIModel, SimpleMemory, PromptArgs, prompt_args};
-    /// # async {
-    /// let llm = OpenAI::default().with_model(OpenAIModel::Gpt35);
-    /// let memory = SimpleMemory::new();
-    ///
-    /// let chain = ConversationalChainBuilder::new()
-    ///     .llm(llm)
-    ///     .memory(memory.into())
-    ///     .output_key("name")
-    ///     .build().expect("Error building ConversationalChain");
-    ///
-    /// let input_variables = prompt_args! {
-    ///     "input" => "Im from Peru",
-    /// };
-    ///
-    /// match chain.execute(input_variables).await {
-    ///     Ok(result) => {
-    ///         println!("Result: {:?}", result);
-    ///     },
-    ///     Err(e) => panic!("Error executing Chain: {:?}", e),
-    /// };
-    /// # };
-    /// ```
+    /// The default implementation stores text under the first output key and the complete
+    /// generation, including token usage, under `generate_result`.
     fn execute(
         &self,
         input_variables: PromptArgs,
@@ -135,51 +55,13 @@ pub trait Chain: Sync + Send {
             Ok(output)
         }
     }
-    /// Stream the `Chain` and get an asynchronous stream of chain generations.
-    /// The input is a set of variables passed as a `PromptArgs` hashmap.
-    /// If the chain have memroy, the tream method will not be able to automaticaly
-    /// set the memroy, bocause it will not know if the how to extract the output message
-    /// out of the stram
-    /// # Example
+    /// Starts an asynchronous stream of generation chunks.
     ///
-    /// ```rust,ignore
-    /// # use futures::StreamExt;
-    /// # use crate::my_crate::{Chain, LLMChainBuilder, OpenAI, fmt_message, fmt_template,
-    /// #                      HumanMessagePromptTemplate, prompt_args, Message, template_fstring};
-    /// # async {
-    /// let open_ai = OpenAI::default();
+    /// Stateful chains decide whether and when streamed content is committed to memory.
     ///
-    ///let prompt = message_formatter![
-    ///fmt_message!(Message::new_system_message(
-    ///"You are world class technical documentation writer."
-    ///)),
-    ///fmt_template!(HumanMessagePromptTemplate::new(template_fstring!(
-    ///      "{input}", "input"
-    ///)))
-    ///];
+    /// # Panics
     ///
-    /// let chain = LLMChainBuilder::new()
-    ///     .prompt(prompt)
-    ///     .llm(open_ai.clone())
-    ///     .build()
-    ///     .unwrap();
-    ///
-    /// let mut stream = chain.stream(
-    /// prompt_args! {
-    /// "input" => "Who is the writer of 20,000 Leagues Under the Sea?"
-    /// }).await.unwrap();
-    ///
-    /// while let Some(result) = stream.next().await {
-    ///     match result {
-    ///         Ok(value) => {
-    ///                 println!("Content: {}", value.content);
-    ///         },
-    ///         Err(e) => panic!("Error invoking LLMChain: {:?}", e),
-    ///     }
-    /// };
-    /// # };
-    /// ```
-    ///
+    /// The default implementation panics; streaming chains must override this method.
     fn stream(
         &self,
         _input_variables: PromptArgs,
@@ -190,29 +72,37 @@ pub trait Chain: Sync + Send {
         }
     }
 
-    /// Returns the keys that must be present in input_variables for this chain.
-    /// Default implementation returns empty — override in chains that have required keys.
+    /// Returns the input keys that must be present before this chain can run.
+    ///
+    /// The default implementation accepts any input set.
     fn required_keys(&self) -> Vec<String> {
         vec![]
     }
 
-    /// Validates that all required keys are present in input_variables.
-    /// Returns `Err(ChainError::MissingInputVariable)` for the first missing key.
+    /// Validates that every [`required_keys`](Self::required_keys) entry is present.
+    ///
+    /// Returns [`ChainError::MissingInputVariable`] for the first missing key.
     fn validate_input(&self, input_variables: &PromptArgs) -> Result<(), ChainError> {
-        for key in self.required_keys() {
-            if !input_variables.contains_key(&key) {
-                return Err(ChainError::MissingInputVariable(key));
+        let required = self.required_keys();
+        for key in &required {
+            if !input_variables.contains_key(key) {
+                return Err(ChainError::MissingInputVariable {
+                    key: key.clone(),
+                    expected: required.clone(),
+                    provided: input_variables.keys().cloned().collect(),
+                });
             }
         }
         Ok(())
     }
 
-    // Get the input keys of the prompt
+    /// Returns the input keys consumed by this chain.
     fn get_input_keys(&self) -> Vec<String> {
         log::info!("Using default implementation");
         vec![]
     }
 
+    /// Returns the keys produced by [`execute`](Self::execute).
     fn get_output_keys(&self) -> Vec<String> {
         log::info!("Using default implementation");
         vec![
@@ -222,28 +112,38 @@ pub trait Chain: Sync + Send {
     }
 }
 
+/// A boxed, sendable future used at dynamic chain boundaries.
 pub type BoxChainFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
+/// Object-safe adapter for dynamically dispatched [`Chain`] implementations.
 pub trait DynChain: Sync + Send {
+    /// Calls the wrapped chain through a boxed future.
     fn dyn_call(
         &self,
         input_variables: PromptArgs,
     ) -> BoxChainFuture<'_, Result<GenerateResult, ChainError>>;
+    /// Invokes the wrapped chain through a boxed future.
     fn dyn_invoke(
         &self,
         input_variables: PromptArgs,
     ) -> BoxChainFuture<'_, Result<String, ChainError>>;
+    /// Executes the wrapped chain through a boxed future.
     fn dyn_execute(
         &self,
         input_variables: PromptArgs,
     ) -> BoxChainFuture<'_, Result<HashMap<String, Value>, ChainError>>;
+    /// Streams the wrapped chain through a boxed future.
     fn dyn_stream(
         &self,
         input_variables: PromptArgs,
     ) -> BoxChainFuture<'_, Result<ChainStream, ChainError>>;
+    /// Returns the wrapped chain's required input keys.
     fn dyn_required_keys(&self) -> Vec<String>;
+    /// Validates inputs using the wrapped chain.
     fn dyn_validate_input(&self, input_variables: &PromptArgs) -> Result<(), ChainError>;
+    /// Returns the wrapped chain's input keys.
     fn dyn_get_input_keys(&self) -> Vec<String>;
+    /// Returns the wrapped chain's output keys.
     fn dyn_get_output_keys(&self) -> Vec<String>;
 }
 

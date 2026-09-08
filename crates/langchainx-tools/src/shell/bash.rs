@@ -1,0 +1,162 @@
+//! Timeout-bounded POSIX shell command execution.
+use serde::Deserialize;
+use serde_json::{Value, json};
+use std::time::Duration;
+use tokio::process::Command;
+
+use super::run_bounded_command;
+use crate::{Tool, ToolError};
+
+const DEFAULT_TIMEOUT_SECS: u64 = 60;
+const MAX_OUTPUT_CHARS: usize = 10_000;
+
+/// Executes commands through `sh -c` and returns JSON-encoded process output.
+pub struct BashTool;
+
+#[derive(Debug, Deserialize)]
+struct BashInput {
+    command: String,
+    #[serde(default)]
+    timeout_secs: Option<u64>,
+}
+
+impl Tool for BashTool {
+    fn name(&self) -> String {
+        "Bash".into()
+    }
+
+    fn description(&self) -> String {
+        "Run a shell command. Input: { \"command\": \"<shell>\", \"timeout_secs\": <optional u64> }. \
+         Returns JSON with stdout, stderr, and exit_code."
+            .into()
+    }
+
+    fn parameters(&self) -> Value {
+        json!({
+            "type": "object",
+            "properties": {
+                "command": {
+                    "type": "string",
+                    "description": "The shell command to execute."
+                },
+                "timeout_secs": {
+                    "type": "integer",
+                    "description": "Optional timeout in seconds (default 60)."
+                }
+            },
+            "required": ["command"],
+            "additionalProperties": false
+        })
+    }
+
+    async fn parse_input(&self, input: &str) -> Value {
+        match serde_json::from_str::<Value>(input) {
+            Ok(v) => v,
+            Err(_) => Value::String(input.to_string()),
+        }
+    }
+
+    async fn run(&self, input: Value) -> Result<String, ToolError> {
+        let parsed: BashInput =
+            serde_json::from_value(input).map_err(|e| ToolError::InvalidInput(e.to_string()))?;
+
+        let timeout = Duration::from_secs(parsed.timeout_secs.unwrap_or(DEFAULT_TIMEOUT_SECS));
+
+        let result = run_with_timeout(&parsed.command, timeout).await?;
+        Ok(result)
+    }
+}
+
+// qual:allow(iosp) reason: "subprocess I/O boundary with timeout"
+async fn run_with_timeout(command: &str, timeout: Duration) -> Result<String, ToolError> {
+    let mut process = Command::new("sh");
+    process.arg("-c").arg(command);
+    let output = run_bounded_command(process, timeout, MAX_OUTPUT_CHARS).await?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+    let exit_code = output.status.code().unwrap_or(-1);
+
+    serde_json::to_string(&json!({
+        "stdout": stdout,
+        "stderr": stderr,
+        "exit_code": exit_code
+    }))
+    .map_err(|error| ToolError::ExecutionFailed(error.to_string()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn bash_echo_returns_stdout() {
+        let tool = BashTool;
+        let result = tool.run(json!({ "command": "echo hello" })).await.unwrap();
+        let v: Value = serde_json::from_str(&result).unwrap();
+        assert_eq!(v["stdout"].as_str().unwrap().trim(), "hello");
+        assert_eq!(v["exit_code"], 0);
+    }
+
+    #[tokio::test]
+    async fn bash_nonzero_exit_still_returns_ok() {
+        let tool = BashTool;
+        let result = tool.run(json!({ "command": "exit 42" })).await;
+        assert!(result.is_ok());
+        let v: Value = serde_json::from_str(&result.unwrap()).unwrap();
+        assert_eq!(v["exit_code"], 42);
+    }
+
+    #[tokio::test]
+    async fn bash_stderr_captured() {
+        let tool = BashTool;
+        let result = tool
+            .run(json!({ "command": "echo err >&2" }))
+            .await
+            .unwrap();
+        let v: Value = serde_json::from_str(&result).unwrap();
+        assert_eq!(v["stderr"].as_str().unwrap().trim(), "err");
+    }
+
+    #[test]
+    fn bash_name() {
+        assert_eq!(BashTool.name(), "Bash");
+    }
+
+    #[tokio::test]
+    async fn bash_invalid_input_errors() {
+        let tool = BashTool;
+        let result = tool.run(json!({ "not_a_command": "x" })).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn bash_timeout_enforced() {
+        let tool = BashTool;
+        let result = tool
+            .run(json!({ "command": "sleep 10", "timeout_secs": 1 }))
+            .await;
+        assert!(result.is_err(), "expected timeout error, got: {result:?}");
+        let err = result.unwrap_err();
+        assert!(
+            err.to_string().contains("timed out"),
+            "error should mention timeout: {err}"
+        );
+    }
+
+    #[tokio::test]
+    async fn bash_timeout_terminates_command_before_later_side_effects() {
+        let dir = tempfile::tempdir().unwrap();
+        let marker = dir.path().join("marker");
+        let command = format!("sleep 2; touch {}", marker.display());
+        let tool = BashTool;
+
+        let result = tool
+            .run(json!({ "command": command, "timeout_secs": 1 }))
+            .await;
+        assert!(result.is_err());
+        tokio::time::sleep(Duration::from_secs(2)).await;
+
+        assert!(!marker.exists(), "timed-out shell continued running");
+    }
+}

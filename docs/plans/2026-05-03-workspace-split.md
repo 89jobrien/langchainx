@@ -1,7 +1,11 @@
+---
+status: done
+---
+
 # Workspace Split: Cargo Workspace + `crates/` Migration
 
 **Date**: 2026-05-03
-**Status**: Waves 0–3 complete; Wave 4 in progress
+**Status**: Complete
 
 ## Goal
 

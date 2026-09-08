@@ -1,0 +1,465 @@
+{
+  "nodes": [
+    {
+      "id": "52411a14-9da6-4183-ab93-71d54cdddc02",
+      "name": "Chain trait",
+      "type": "trait",
+      "supporting_text": "call(PromptArgs) -> GenerateResult, invoke(PromptArgs) -> String",
+      "source_docs": [
+        "arch_workspace"
+      ]
+    },
+    {
+      "id": "152eccf4-a066-45ee-9e35-2cd1a6fede3e",
+      "name": "Embedder trait",
+      "type": "trait",
+      "supporting_text": "embedding trait for various backends",
+      "source_docs": [
+        "arch_workspace"
+      ]
+    },
+    {
+      "id": "61372d34-4461-4476-ba55-ad5d4d662811",
+      "name": "LLM trait",
+      "type": "trait",
+      "supporting_text": "generate(&[Message]) -> GenerateResult, invoke(&str) -> String, stream()",
+      "source_docs": [
+        "arch_workspace"
+      ]
+    },
+    {
+      "id": "3cb2478f-6d2e-45a2-a4ea-f0f3648b3623",
+      "name": "Tool trait",
+      "type": "trait",
+      "supporting_text": "name(), description(), parameters() (OpenAI function-call JSON schema), run(Value)",
+      "source_docs": [
+        "arch_workspace"
+      ]
+    },
+    {
+      "id": "e14e4544-16b3-40e2-a27e-78adbde8382b",
+      "name": "VectorStore trait",
+      "type": "trait",
+      "supporting_text": "vector store trait for add_documents and similarity_search",
+      "source_docs": [
+        "arch_workspace"
+      ]
+    },
+    {
+      "id": "9739a106-b1e7-4868-8baa-7e5b7e8b6bc0",
+      "name": "chain! macro",
+      "type": "macro",
+      "supporting_text": "wires prompt and LLM into LLMChain via LLMChainBuilder",
+      "source_docs": [
+        "macros_design"
+      ]
+    },
+    {
+      "id": "7a725317-16e8-408b-b414-0fdb3aef6dc7",
+      "name": "langchainx",
+      "type": "crate",
+      "supporting_text": "langchainx is a Rust port of LangChain organized as a Cargo workspace",
+      "source_docs": [
+        "arch_workspace"
+      ]
+    },
+    {
+      "id": "4d1b879a-7f2e-45bd-8c9d-9dab792d9103",
+      "name": "langchainx-agent",
+      "type": "crate",
+      "supporting_text": "agent executors: ChatAgent, OpenAI Tools Agent",
+      "source_docs": [
+        "arch_workspace"
+      ]
+    },
+    {
+      "id": "d3e97449-c55a-4fc6-b1c5-346d22932f7f",
+      "name": "langchainx-chain",
+      "type": "crate",
+      "supporting_text": "chain types: LLMChain, ConversationalChain, SequentialChain",
+      "source_docs": [
+        "arch_workspace"
+      ]
+    },
+    {
+      "id": "b068f7a7-00fd-45d1-9a31-61ec9ddbfc29",
+      "name": "langchainx-core",
+      "type": "crate",
+      "supporting_text": "shared schemas, document types, error primitives",
+      "source_docs": [
+        "arch_workspace"
+      ]
+    },
+    {
+      "id": "089976f3-9541-4872-8466-a0ac012d3ab8",
+      "name": "langchainx-embedding",
+      "type": "crate",
+      "supporting_text": "embedding backends: OpenAI, Ollama, FastEmbed, MistralAI",
+      "source_docs": [
+        "arch_workspace"
+      ]
+    },
+    {
+      "id": "a6abc7c2-2e54-427b-8a58-6f146f7d0007",
+      "name": "langchainx-llm",
+      "type": "crate",
+      "supporting_text": "LLM backends: OpenAI, Claude, DeepSeek, Qwen, Ollama",
+      "source_docs": [
+        "arch_workspace"
+      ]
+    },
+    {
+      "id": "2f2d7df8-1d3e-461e-a977-c9e934e2aae4",
+      "name": "langchainx-loaders",
+      "type": "crate",
+      "supporting_text": "document loaders: PDF, HTML, CSV, Pandoc, Git, source code",
+      "source_docs": [
+        "arch_workspace"
+      ]
+    },
+    {
+      "id": "45a3cf7c-4138-4e6b-98ee-a982b2a793aa",
+      "name": "langchainx-macros",
+      "type": "crate",
+      "supporting_text": "convenience macros: tool!, llm!, prompt!, chain!",
+      "source_docs": [
+        "arch_workspace"
+      ]
+    },
+    {
+      "id": "b174d106-6a70-43ae-b125-fecf81344c3f",
+      "name": "langchainx-memory",
+      "type": "crate",
+      "supporting_text": "conversation memory: SimpleMemory, WindowBufferMemory",
+      "source_docs": [
+        "arch_workspace"
+      ]
+    },
+    {
+      "id": "15ed78d7-96ac-4dda-81a9-0669f86bc52f",
+      "name": "langchainx-output-parsers",
+      "type": "crate",
+      "supporting_text": "output parsers and structured extraction",
+      "source_docs": [
+        "arch_workspace"
+      ]
+    },
+    {
+      "id": "c54d953e-7e2b-4ce7-9e93-af8b5382950b",
+      "name": "langchainx-prompt",
+      "type": "crate",
+      "supporting_text": "prompt templates and formatting macros",
+      "source_docs": [
+        "arch_workspace"
+      ]
+    },
+    {
+      "id": "defe2089-62f5-4fc0-b5ed-ab45acb40edc",
+      "name": "langchainx-text-splitter",
+      "type": "crate",
+      "supporting_text": "text splitting utilities",
+      "source_docs": [
+        "arch_workspace"
+      ]
+    },
+    {
+      "id": "423fa11c-f739-4df8-9742-43952ca355f4",
+      "name": "langchainx-tools",
+      "type": "crate",
+      "supporting_text": "tool trait and built-in tools",
+      "source_docs": [
+        "arch_workspace"
+      ]
+    },
+    {
+      "id": "145300a7-b510-410f-a410-b0e06c41f4d5",
+      "name": "langchainx-vectorstore",
+      "type": "crate",
+      "supporting_text": "vector store backends: Postgres, Qdrant, OpenSearch, SQLite, SurrealDB",
+      "source_docs": [
+        "arch_workspace"
+      ]
+    },
+    {
+      "id": "01515b04-ac52-44fb-8585-60adbc5b278d",
+      "name": "llm! macro",
+      "type": "macro",
+      "supporting_text": "constructs LLM backends with builder-method sugar using recursive peeling",
+      "source_docs": [
+        "macros_design"
+      ]
+    },
+    {
+      "id": "be3cff7c-bc90-44ce-86a3-523bfeb17d6b",
+      "name": "prompt! macro",
+      "type": "macro",
+      "supporting_text": "wraps template_fstring + HumanMessagePromptTemplate::new()",
+      "source_docs": [
+        "macros_design"
+      ]
+    },
+    {
+      "id": "7d2c5f1f-f167-41e0-95fb-21742bdd2b94",
+      "name": "recursive peeling",
+      "type": "pattern",
+      "supporting_text": "each key=val pair maps to .with_key(val) via separate @build arms",
+      "source_docs": [
+        "macros_design"
+      ]
+    },
+    {
+      "id": "5dfa9ec1-9b7c-4188-85b9-f8df8c1df7ec",
+      "name": "tool! macro",
+      "type": "macro",
+      "supporting_text": "generates unit struct + Tool trait impl from name, description, closure",
+      "source_docs": [
+        "macros_design"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "a43760f8-09db-45b3-985c-3ceda533b198",
+      "source": "7a725317-16e8-408b-b414-0fdb3aef6dc7",
+      "target": "b068f7a7-00fd-45d1-9a31-61ec9ddbfc29",
+      "type": "depends_on",
+      "confidence": 1.0,
+      "supporting_text": "root crate re-exports core",
+      "source_doc": "arch_workspace"
+    },
+    {
+      "id": "cabff6f7-853c-4f12-9c0f-88a21e5d49f7",
+      "source": "7a725317-16e8-408b-b414-0fdb3aef6dc7",
+      "target": "a6abc7c2-2e54-427b-8a58-6f146f7d0007",
+      "type": "depends_on",
+      "confidence": 1.0,
+      "supporting_text": "root crate re-exports llm",
+      "source_doc": "arch_workspace"
+    },
+    {
+      "id": "c1a49b96-e2a8-4bc4-85fc-baea901bd0d0",
+      "source": "7a725317-16e8-408b-b414-0fdb3aef6dc7",
+      "target": "c54d953e-7e2b-4ce7-9e93-af8b5382950b",
+      "type": "depends_on",
+      "confidence": 1.0,
+      "supporting_text": "root crate re-exports prompt",
+      "source_doc": "arch_workspace"
+    },
+    {
+      "id": "649238ca-3846-4b09-9654-55bd43e5cb0b",
+      "source": "7a725317-16e8-408b-b414-0fdb3aef6dc7",
+      "target": "d3e97449-c55a-4fc6-b1c5-346d22932f7f",
+      "type": "depends_on",
+      "confidence": 1.0,
+      "supporting_text": "root crate re-exports chain",
+      "source_doc": "arch_workspace"
+    },
+    {
+      "id": "d1b816c7-5478-463f-adcb-0c1ac90b35eb",
+      "source": "7a725317-16e8-408b-b414-0fdb3aef6dc7",
+      "target": "4d1b879a-7f2e-45bd-8c9d-9dab792d9103",
+      "type": "depends_on",
+      "confidence": 1.0,
+      "supporting_text": "root crate re-exports agent",
+      "source_doc": "arch_workspace"
+    },
+    {
+      "id": "4d4f082a-73a0-44bb-abf9-46e35bbd83fe",
+      "source": "7a725317-16e8-408b-b414-0fdb3aef6dc7",
+      "target": "45a3cf7c-4138-4e6b-98ee-a982b2a793aa",
+      "type": "depends_on",
+      "confidence": 1.0,
+      "supporting_text": "root crate re-exports macros",
+      "source_doc": "arch_workspace"
+    },
+    {
+      "id": "044e1bff-1aaf-4cd1-ac22-0da58e779334",
+      "source": "a6abc7c2-2e54-427b-8a58-6f146f7d0007",
+      "target": "b068f7a7-00fd-45d1-9a31-61ec9ddbfc29",
+      "type": "depends_on",
+      "confidence": 1.0,
+      "supporting_text": "llm depends on core schemas and Message type",
+      "source_doc": "arch_workspace"
+    },
+    {
+      "id": "52206086-9fe2-4d46-90db-1d48eeee60c3",
+      "source": "d3e97449-c55a-4fc6-b1c5-346d22932f7f",
+      "target": "b068f7a7-00fd-45d1-9a31-61ec9ddbfc29",
+      "type": "depends_on",
+      "confidence": 1.0,
+      "supporting_text": "chain depends on core types",
+      "source_doc": "arch_workspace"
+    },
+    {
+      "id": "6a5e4d5e-4c86-4c61-8b15-6020931028fb",
+      "source": "d3e97449-c55a-4fc6-b1c5-346d22932f7f",
+      "target": "a6abc7c2-2e54-427b-8a58-6f146f7d0007",
+      "type": "depends_on",
+      "confidence": 1.0,
+      "supporting_text": "chain uses LLM trait from llm crate",
+      "source_doc": "arch_workspace"
+    },
+    {
+      "id": "040e5fb1-baf9-4125-81ab-3e89d814e38c",
+      "source": "4d1b879a-7f2e-45bd-8c9d-9dab792d9103",
+      "target": "b068f7a7-00fd-45d1-9a31-61ec9ddbfc29",
+      "type": "depends_on",
+      "confidence": 1.0,
+      "supporting_text": "agent depends on core Tool trait",
+      "source_doc": "arch_workspace"
+    },
+    {
+      "id": "d0d39b16-18c9-430c-9115-4f618b15c7a8",
+      "source": "4d1b879a-7f2e-45bd-8c9d-9dab792d9103",
+      "target": "d3e97449-c55a-4fc6-b1c5-346d22932f7f",
+      "type": "depends_on",
+      "confidence": 1.0,
+      "supporting_text": "agent uses chains internally",
+      "source_doc": "arch_workspace"
+    },
+    {
+      "id": "4122ef58-0999-42d3-9dfb-8d0aa1eff1db",
+      "source": "45a3cf7c-4138-4e6b-98ee-a982b2a793aa",
+      "target": "b068f7a7-00fd-45d1-9a31-61ec9ddbfc29",
+      "type": "depends_on",
+      "confidence": 1.0,
+      "supporting_text": "macros re-exports Tool trait from core",
+      "source_doc": "arch_workspace"
+    },
+    {
+      "id": "9c550878-ac62-4225-bfe5-9b80afb55b04",
+      "source": "45a3cf7c-4138-4e6b-98ee-a982b2a793aa",
+      "target": "c54d953e-7e2b-4ce7-9e93-af8b5382950b",
+      "type": "depends_on",
+      "confidence": 1.0,
+      "supporting_text": "macros re-exports HumanMessagePromptTemplate from prompt",
+      "source_doc": "arch_workspace"
+    },
+    {
+      "id": "8f7a8db2-59b5-4937-b8f9-d0650f628324",
+      "source": "45a3cf7c-4138-4e6b-98ee-a982b2a793aa",
+      "target": "d3e97449-c55a-4fc6-b1c5-346d22932f7f",
+      "type": "depends_on",
+      "confidence": 1.0,
+      "supporting_text": "macros re-exports LLMChainBuilder from chain",
+      "source_doc": "arch_workspace"
+    },
+    {
+      "id": "95e2708f-8020-4a8d-b80c-5768f3bf3ed4",
+      "source": "a6abc7c2-2e54-427b-8a58-6f146f7d0007",
+      "target": "61372d34-4461-4476-ba55-ad5d4d662811",
+      "type": "defines",
+      "confidence": 1.0,
+      "supporting_text": "LLM trait defined in llm crate",
+      "source_doc": "arch_workspace"
+    },
+    {
+      "id": "31978516-4780-4e47-ad54-728ffcfdfd52",
+      "source": "d3e97449-c55a-4fc6-b1c5-346d22932f7f",
+      "target": "52411a14-9da6-4183-ab93-71d54cdddc02",
+      "type": "defines",
+      "confidence": 1.0,
+      "supporting_text": "Chain trait defined in chain crate",
+      "source_doc": "arch_workspace"
+    },
+    {
+      "id": "56cd78c4-4fda-4df7-8cfd-ace3e1e13387",
+      "source": "b068f7a7-00fd-45d1-9a31-61ec9ddbfc29",
+      "target": "3cb2478f-6d2e-45a2-a4ea-f0f3648b3623",
+      "type": "defines",
+      "confidence": 1.0,
+      "supporting_text": "Tool trait defined in core crate",
+      "source_doc": "arch_workspace"
+    },
+    {
+      "id": "02b336a6-ae74-4aeb-afaf-84cf46be1176",
+      "source": "089976f3-9541-4872-8466-a0ac012d3ab8",
+      "target": "152eccf4-a066-45ee-9e35-2cd1a6fede3e",
+      "type": "defines",
+      "confidence": 1.0,
+      "supporting_text": "Embedder trait defined in embedding crate",
+      "source_doc": "arch_workspace"
+    },
+    {
+      "id": "6eede94f-e37a-42dc-920b-a9de8cc76d98",
+      "source": "145300a7-b510-410f-a410-b0e06c41f4d5",
+      "target": "e14e4544-16b3-40e2-a27e-78adbde8382b",
+      "type": "defines",
+      "confidence": 1.0,
+      "supporting_text": "VectorStore trait defined in vectorstore crate",
+      "source_doc": "arch_workspace"
+    },
+    {
+      "id": "75e3915a-e408-4103-b289-90e7bc6f1451",
+      "source": "45a3cf7c-4138-4e6b-98ee-a982b2a793aa",
+      "target": "5dfa9ec1-9b7c-4188-85b9-f8df8c1df7ec",
+      "type": "defines",
+      "confidence": 1.0,
+      "supporting_text": "tool! macro defined in langchainx-macros",
+      "source_doc": "macros_design"
+    },
+    {
+      "id": "4cf20507-ce8b-4215-b374-7476cbfc8193",
+      "source": "45a3cf7c-4138-4e6b-98ee-a982b2a793aa",
+      "target": "01515b04-ac52-44fb-8585-60adbc5b278d",
+      "type": "defines",
+      "confidence": 1.0,
+      "supporting_text": "llm! macro defined in langchainx-macros",
+      "source_doc": "macros_design"
+    },
+    {
+      "id": "4c12a47f-b664-444a-86dc-7c77427651c5",
+      "source": "45a3cf7c-4138-4e6b-98ee-a982b2a793aa",
+      "target": "be3cff7c-bc90-44ce-86a3-523bfeb17d6b",
+      "type": "defines",
+      "confidence": 1.0,
+      "supporting_text": "prompt! macro defined in langchainx-macros",
+      "source_doc": "macros_design"
+    },
+    {
+      "id": "0a827ce1-8b3f-4e49-a4b0-819c77338343",
+      "source": "45a3cf7c-4138-4e6b-98ee-a982b2a793aa",
+      "target": "9739a106-b1e7-4868-8baa-7e5b7e8b6bc0",
+      "type": "defines",
+      "confidence": 1.0,
+      "supporting_text": "chain! macro defined in langchainx-macros",
+      "source_doc": "macros_design"
+    },
+    {
+      "id": "1d48a93c-0026-4ff0-b8f4-e1e8a21aa445",
+      "source": "01515b04-ac52-44fb-8585-60adbc5b278d",
+      "target": "7d2c5f1f-f167-41e0-95fb-21742bdd2b94",
+      "type": "uses",
+      "confidence": 1.0,
+      "supporting_text": "llm! uses recursive peeling pattern for builder dispatch",
+      "source_doc": "macros_design"
+    },
+    {
+      "id": "17259cad-78a3-4282-a3d1-b3e953bf7e16",
+      "source": "5dfa9ec1-9b7c-4188-85b9-f8df8c1df7ec",
+      "target": "3cb2478f-6d2e-45a2-a4ea-f0f3648b3623",
+      "type": "generates_impl_of",
+      "confidence": 1.0,
+      "supporting_text": "tool! generates Tool trait impl",
+      "source_doc": "macros_design"
+    },
+    {
+      "id": "46e4df77-2852-4c12-82db-c9758260d6e7",
+      "source": "9739a106-b1e7-4868-8baa-7e5b7e8b6bc0",
+      "target": "52411a14-9da6-4183-ab93-71d54cdddc02",
+      "type": "generates_impl_of",
+      "confidence": 0.9,
+      "supporting_text": "chain! produces an LLMChain which implements Chain",
+      "source_doc": "macros_design"
+    },
+    {
+      "id": "bb10711b-0923-4102-b57f-5efefc2e3469",
+      "source": "be3cff7c-bc90-44ce-86a3-523bfeb17d6b",
+      "target": "c54d953e-7e2b-4ce7-9e93-af8b5382950b",
+      "type": "wraps",
+      "confidence": 1.0,
+      "supporting_text": "prompt! wraps template_fstring + HumanMessagePromptTemplate from prompt crate",
+      "source_doc": "macros_design"
+    }
+  ]
+}

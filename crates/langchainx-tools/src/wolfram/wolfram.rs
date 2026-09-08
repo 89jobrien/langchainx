@@ -1,3 +1,4 @@
+//! Wolfram Alpha API queries and plaintext pod extraction.
 use serde_json::Value;
 
 use crate::{Tool, ToolError};
@@ -74,7 +75,7 @@ impl From<Subpod> for String {
     }
 }
 
-/// When being used within agents GPT4 is recommended
+/// Queries Wolfram Alpha and returns non-empty plaintext result pods.
 pub struct Wolfram {
     app_id: String,
     exclude_pods: Vec<String>,
@@ -82,6 +83,7 @@ pub struct Wolfram {
 }
 
 impl Wolfram {
+    /// Creates a Wolfram Alpha tool with an application ID.
     pub fn new(app_id: String) -> Self {
         Self {
             app_id,
@@ -90,11 +92,13 @@ impl Wolfram {
         }
     }
 
+    /// Excludes result pods with the supplied identifiers.
     pub fn with_excludes<S: AsRef<str>>(mut self, exclude_pods: &[S]) -> Self {
         self.exclude_pods = exclude_pods.iter().map(|s| s.as_ref().to_owned()).collect();
         self
     }
 
+    /// Replaces the Wolfram Alpha application ID.
     pub fn with_app_id<S: AsRef<str>>(mut self, app_id: S) -> Self {
         self.app_id = app_id.as_ref().to_owned();
         self
@@ -185,5 +189,86 @@ mod tests {
 
         assert!(result.is_ok());
         println!("{}", result.unwrap());
+    }
+
+    #[test]
+    fn tool_name_and_description_are_non_empty() {
+        let tool = Wolfram::new("id".to_string());
+        assert_eq!(tool.name(), "Wolfram");
+        assert!(!tool.description().is_empty());
+    }
+
+    #[test]
+    fn builder_methods_set_fields() {
+        // Verify the builder chain compiles and doesn't panic.
+        let _tool = Wolfram::new("initial".to_string())
+            .with_app_id("updated")
+            .with_excludes(&["Plot", "Input"]);
+    }
+
+    #[tokio::test]
+    async fn run_rejects_non_string_input() {
+        let tool = Wolfram::new("dummy-id".to_string());
+        let result = tool.run(serde_json::Value::Bool(true)).await;
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn subpod_empty_plaintext_converts_to_empty_string() {
+        let subpod = Subpod {
+            title: "t".to_string(),
+            plaintext: String::new(),
+        };
+        let s = String::from(subpod);
+        assert_eq!(s, "");
+    }
+
+    #[test]
+    fn subpod_with_content_formats_json() {
+        let subpod = Subpod {
+            title: "Result".to_string(),
+            plaintext: "x = 1".to_string(),
+        };
+        let s = String::from(subpod);
+        assert!(s.contains("Result"));
+        assert!(s.contains("x = 1"));
+    }
+
+    #[test]
+    fn pod_with_all_empty_subpods_converts_to_empty_string() {
+        let pod = Pod {
+            title: "Empty".to_string(),
+            subpods: vec![Subpod {
+                title: String::new(),
+                plaintext: String::new(),
+            }],
+        };
+        let s = String::from(pod);
+        assert_eq!(s, "");
+    }
+
+    #[test]
+    fn pod_with_valid_subpod_formats_correctly() {
+        let pod = Pod {
+            title: "Solutions".to_string(),
+            subpods: vec![Subpod {
+                title: "x".to_string(),
+                plaintext: "x = 1".to_string(),
+            }],
+        };
+        let s = String::from(pod);
+        assert!(s.contains("Solutions"));
+        assert!(s.contains("x = 1"));
+    }
+
+    #[test]
+    fn subpod_newline_is_replaced_by_separator() {
+        let subpod = Subpod {
+            title: "t".to_string(),
+            plaintext: "line1\nline2".to_string(),
+        };
+        let s = String::from(subpod);
+        assert!(s.contains("line1 // line2"));
+        assert!(!s.contains('\n'));
     }
 }

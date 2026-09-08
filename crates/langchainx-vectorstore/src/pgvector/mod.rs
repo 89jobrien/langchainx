@@ -1,8 +1,9 @@
+//! PostgreSQL pgvector store, filters, index configuration, and builder.
 mod builder;
-mod pgvector;
+mod store;
 
 pub use builder::*;
-pub use pgvector::*;
+pub use store::*;
 
 // pgLockIDEmbeddingTable is used for advisor lock to fix issue arising from concurrent
 // creation of the embedding table.The same value represents the same lock.

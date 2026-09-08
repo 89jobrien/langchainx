@@ -1,5 +1,6 @@
 [workspace]
 resolver = "2"
+exclude = ["fuzz"]
 members = [
     "crates/langchainx-core",
     "crates/langchainx-llm",
@@ -14,6 +15,8 @@ members = [
     "crates/langchainx-loaders",
     "crates/langchainx-vectorstore",
     "crates/langchainx-agent",
+    "crates/langchainx-macros",
+    "crates/langchainx-testsuite",
     "examples/vector_store_surrealdb",
     "xtask",
 ]
@@ -50,7 +53,8 @@ langchainx-tools         = { path = "crates/langchainx-tools" }
 langchainx-loaders       = { path = "crates/langchainx-loaders" }
 langchainx-vectorstore   = { path = "crates/langchainx-vectorstore" }
 langchainx-agent         = { path = "crates/langchainx-agent" }
-scraper = "0.21"
+langchainx-macros        = { path = "crates/langchainx-macros" }
+scraper = "0.27"
 serde = { version = "1.0", features = ["derive"] }
 async-trait = "0.1.80"
 tokio = { version = "1", features = ["full"] }
@@ -72,7 +76,7 @@ sqlx = { version = "0.8.0", default-features = false, features = [
     "uuid",
 ], optional = true }
 uuid = { version = "1.8.0", features = ["v4"], optional = true }
-pgvector = { version = "0.4.0", features = [
+pgvector = { version = "=0.4.1", features = [
     "postgres",
     "sqlx",
 ], optional = true }
@@ -80,14 +84,14 @@ text-splitter = { version = "0.17", features = ["tiktoken-rs", "markdown"] }
 surrealdb = { version = "2.0.2", optional = true, default-features = false }
 csv = "1.3.0"
 urlencoding = "2.1.3"
-lopdf = { version = "0.34.0", features = ["nom_parser"], optional = true }
-pdf-extract = { version = "0.7.8", optional = true  }
+lopdf = { version = "0.42.0", optional = true }
+pdf-extract = { version = "0.12.0", optional = true  }
 thiserror = "2.0.0"
 futures-util = "0.3.30"
 async-stream = "0.3.5"
 tokio-stream = "0.1.15"
 secrecy = { version = "0.10.3", features = ["serde"] }
-readability = "0.3.0"
+readability = { version = "0.3.0", default-features = false }
 htmd = { version = "0.1", optional = true }
 url = "2.5.0"
 fastembed = { version = "4", optional = true }
@@ -123,16 +127,19 @@ ollama-rs = { version = "0.2.0", optional = true, features = [
 ] }
 mistralai-client = { version = "0.14.0", optional = true }
 rss = { version = "2", optional = true }
-quick-xml = { version = "0.36", optional = true }
+quick-xml = { version = "0.41", optional = true }
 tempfile = { version = "3", optional = true }
 
 
 [features]
 default = []
-test-utils = ["dep:tempfile"]
+test-utils = ["dep:tempfile", "langchainx-chain/test-utils"]
 fastembed = ["dep:fastembed", "langchainx-embedding/fastembed"]
 git = ["gix", "flume", "langchainx-loaders/git"]
 html-to-markdown = ["dep:htmd", "langchainx-loaders/html-to-markdown"]
+openapi-toolkit = ["langchainx-tools/openapi-toolkit"]
+mcp-toolkit = ["langchainx-tools/mcp-toolkit"]
+plugin-toolkits = ["openapi-toolkit", "mcp-toolkit"]
 mistralai = ["mistralai-client", "langchainx-embedding/mistralai"]
 lopdf = ["dep:lopdf", "langchainx-loaders/lopdf"]
 pdf-extract = ["dep:lopdf", "dep:pdf-extract", "langchainx-loaders/pdf-extract"]
@@ -177,8 +184,18 @@ required-features = ["ollama"]
 name = "dispatch_allocations"
 harness = false
 
+[[example]]
+name = "openapi_toolkit"
+required-features = ["openapi-toolkit"]
+
+[[example]]
+name = "mcp_toolkit"
+required-features = ["mcp-toolkit"]
+
 [dev-dependencies]
 base64 = "0.22.1"
+langchainx-testsuite = { path = "crates/langchainx-testsuite" }
+proptest = "1"
 serial_test = "3.4.0"
 tokio-test = "0.4.4"
 tempfile = "3"

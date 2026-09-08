@@ -1,3 +1,4 @@
+//! Provider-specific language-model clients and re-exports.
 pub mod openai;
 pub use openai::*;
 

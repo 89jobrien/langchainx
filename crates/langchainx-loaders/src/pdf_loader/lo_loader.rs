@@ -1,3 +1,4 @@
+//! Page-oriented PDF text extraction backed by `lopdf`.
 use std::{collections::HashMap, io::Read, path::Path, pin::Pin};
 
 use async_stream::stream;
@@ -10,16 +11,20 @@ use serde_json::Value;
 use crate::{Loader, LoaderError, process_doc_stream};
 
 #[derive(Debug, Clone)]
+/// Loads each PDF page as a document with `page_number` metadata.
 pub struct LoPdfLoader {
     document: lopdf::Document,
 }
 
+#[allow(clippy::result_large_err)] // LoaderError contains large foreign variants; boxing requires API change
 impl LoPdfLoader {
+    /// Parses a PDF from a reader.
     pub fn new<R: Read>(reader: R) -> Result<Self, LoaderError> {
         let document = lopdf::Document::load_from(reader)?;
         Ok(Self { document })
     }
 
+    /// Opens and parses a PDF file.
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, LoaderError> {
         let document = lopdf::Document::load(path)?;
         Ok(Self { document })

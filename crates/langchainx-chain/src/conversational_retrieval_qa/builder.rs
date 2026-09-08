@@ -1,3 +1,4 @@
+//! Builder for conversational retrieval-augmented question answering.
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -13,35 +14,10 @@ use super::ConversationalRetrieverChain;
 
 const CONVERSATIONAL_RETRIEVAL_QA_DEFAULT_INPUT_KEY: &str = "question";
 
-///Conversation Retriever Chain Builder
-/// # Usage
-/// ## Convensional way
-/// ```rust,ignore
-/// let chain = ConversationalRetrieverChainBuilder::new()
-///     .llm(llm)
-///     .rephrase_question(true)
-///     .retriever(RetrieverMock {})
-///     .memory(SimpleMemory::new().into())
-///     .build()
-///     .expect("Error building ConversationalChain");
+/// Configures retrieval, question rewriting, document combination, and memory.
 ///
-/// ```
-/// ## Custom way
-/// ```rust,ignore
-///
-/// let llm = Arc::new(OpenAI::default().with_model(OpenAIModel::Gpt35.to_string()));
-/// let combine_documents_chain = StuffDocument::load_stuff_qa(llm.clone());
-//  let condense_question_chain = CondenseQuestionGeneratorChain::new(llm.clone());
-/// let chain = ConversationalRetrieverChainBuilder::new()
-///     .rephrase_question(true)
-///     .combine_documents_chain(Box::new(combine_documents_chain))
-///     .condense_question_chain(Box::new(condense_question_chain))
-///     .retriever(RetrieverMock {})
-///     .memory(SimpleMemory::new().into())
-///     .build()
-///     .expect("Error building ConversationalChain");
-/// ```
-///
+/// Supplying an LLM creates both internal chains during [`build`](Self::build). To use custom
+/// chains, omit the LLM and configure both chain fields explicitly.
 pub struct ConversationalRetrieverChainBuilder {
     llm: Option<Arc<dyn DynLLM>>,
     retriever: Option<Box<dyn Retriever>>,
@@ -54,7 +30,9 @@ pub struct ConversationalRetrieverChainBuilder {
     input_key: String,
     output_key: String,
 }
+#[allow(clippy::new_without_default)] // Builder pattern
 impl ConversationalRetrieverChainBuilder {
+    /// Creates a builder with question rewriting and source-document output enabled.
     pub fn new() -> Self {
         ConversationalRetrieverChainBuilder {
             llm: None,
@@ -70,33 +48,37 @@ impl ConversationalRetrieverChainBuilder {
         }
     }
 
+    /// Sets the retriever used to find documents for each question.
     pub fn retriever<R: Into<Box<dyn Retriever>>>(mut self, retriever: R) -> Self {
         self.retriever = Some(retriever.into());
         self
     }
 
-    ///If you want to add a custom prompt,keep in mind which variables are obligatory.
+    /// Sets the `context` and `question` prompt used by the generated document chain.
     pub fn prompt<P: Into<Box<dyn FormatPrompter>>>(mut self, prompt: P) -> Self {
         self.prompt = Some(prompt.into());
         self
     }
 
+    /// Sets the input key containing the user's question.
     pub fn input_key<S: Into<String>>(mut self, input_key: S) -> Self {
         self.input_key = input_key.into();
         self
     }
 
+    /// Sets the shared conversation memory.
     pub fn memory(mut self, memory: Arc<Mutex<dyn BaseMemory>>) -> Self {
         self.memory = Some(memory);
         self
     }
 
+    /// Sets the model used to create the default condensing and document chains.
     pub fn llm<L: IntoArcLLM>(mut self, llm: L) -> Self {
         self.llm = Some(llm.into_arc_llm());
         self
     }
 
-    ///Chain designed to take the documents and the question and generate an output
+    /// Sets the chain that generates an answer from documents and a question.
     pub fn combine_documents_chain<C: Into<Box<dyn crate::chain::DynChain>>>(
         mut self,
         combine_documents_chain: C,
@@ -105,7 +87,7 @@ impl ConversationalRetrieverChainBuilder {
         self
     }
 
-    ///Chain designed to reformulate the question based on the cat history
+    /// Sets the chain that rewrites a question using chat history.
     pub fn condense_question_chain<C: Into<Box<dyn crate::chain::DynChain>>>(
         mut self,
         condense_question_chain: C,
@@ -114,16 +96,20 @@ impl ConversationalRetrieverChainBuilder {
         self
     }
 
+    /// Controls whether follow-up questions are rewritten when history is available.
     pub fn rephrase_question(mut self, rephrase_question: bool) -> Self {
         self.rephrase_question = rephrase_question;
         self
     }
 
+    /// Controls whether [`Chain::execute`] includes retrieved documents in its output map.
     pub fn return_source_documents(mut self, return_source_documents: bool) -> Self {
         self.return_source_documents = return_source_documents;
         self
     }
 
+    // qual:allow(iosp) reason: "builder validation + construction"
+    /// Builds the chain, requiring a retriever and both internal chains or an LLM.
     pub fn build(mut self) -> Result<ConversationalRetrieverChain, ChainError> {
         if let Some(llm) = self.llm {
             let combine_documents_chain = {

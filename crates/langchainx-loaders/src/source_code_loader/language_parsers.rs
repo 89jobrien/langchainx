@@ -1,3 +1,4 @@
+//! Language detection and tree-sitter parsing for source-code documents.
 use crate::LoaderError;
 use langchainx_core::schemas::Document;
 use std::collections::HashMap;
@@ -7,22 +8,37 @@ use strum_macros::Display;
 use tree_sitter::{Parser, Tree};
 
 #[derive(Display, Debug, Clone)]
+/// Source languages supported by the tree-sitter loader.
 pub enum Language {
+    /// C.
     C,
+    /// C#.
     CSharp,
+    /// C++.
     Cpp,
+    /// Go.
     Go,
+    /// Java.
     Java,
+    /// JavaScript.
     Javascript,
+    /// Kotlin.
     Kotlin,
+    /// Python.
     Python,
+    /// Rust.
     Rust,
+    /// Scala.
     Scala,
+    /// TypeScript and TSX.
     Typescript,
 }
 
+/// Classification stored in each parsed document's `content_type` metadata.
 pub enum LanguageContentTypes {
+    /// A non-function top-level node or an unsplit source file.
     SimplifiedCode,
+    /// A top-level Rust function or implementation block.
     FunctionsImpls,
 }
 
@@ -37,8 +53,11 @@ impl fmt::Display for LanguageContentTypes {
 }
 
 #[derive(Debug, Clone)]
+/// Configuration for source-code parsing.
 pub struct LanguageParserOptions {
+    /// Minimum parsed row count before splitting top-level syntax nodes.
     pub parser_threshold: u64,
+    /// Grammar used to parse source text.
     pub language: Language,
 }
 
@@ -51,6 +70,7 @@ impl Default for LanguageParserOptions {
     }
 }
 
+/// Parses source code with a language-specific tree-sitter grammar.
 pub struct LanguageParser {
     parser: Parser,
     parser_options: LanguageParserOptions,
@@ -75,6 +95,8 @@ impl Clone for LanguageParser {
     }
 }
 
+#[allow(clippy::result_large_err)] // LoaderError contains large foreign variants; boxing requires API change
+/// Infers a supported source language from a file extension.
 pub fn get_language_by_filename(name: &str) -> Result<Language, LoaderError> {
     let extension = name.rsplit('.').next().ok_or_else(|| {
         LoaderError::OtherError(format!("Unable to determine source language for {name}"))
@@ -119,6 +141,7 @@ fn get_language_parser(language: &Language) -> Parser {
 }
 
 impl LanguageParser {
+    /// Creates a parser for a source language.
     pub fn from_language(language: Language) -> Self {
         Self {
             parser: get_language_parser(&language),
@@ -129,6 +152,7 @@ impl LanguageParser {
         }
     }
 
+    /// Replaces the parser options.
     pub fn with_parser_option(mut self, parser_option: LanguageParserOptions) -> Self {
         self.parser_options = parser_option;
         self
@@ -136,12 +160,16 @@ impl LanguageParser {
 }
 
 impl LanguageParser {
+    /// Sets the row threshold above which syntax nodes are emitted separately.
     pub fn set_parser_threshold(&mut self, threshold: u64) {
         self.parser_options.parser_threshold = threshold;
     }
 
+    /// Parses source text into one document or top-level syntax-node documents.
     pub fn parse_code(&mut self, code: &String) -> Vec<Document> {
-        let tree = self.parser.parse(code, None).unwrap();
+        let Some(tree) = self.parser.parse(code, None) else {
+            return vec![];
+        };
         if self.parser_options.parser_threshold > tree.root_node().end_position().row as u64 {
             return vec![Document::new(code).with_metadata(HashMap::from([
                 (
@@ -157,6 +185,7 @@ impl LanguageParser {
         self.extract_functions_classes(tree, code)
     }
 
+    /// Converts the root tree's direct children into classified documents.
     pub fn extract_functions_classes(&self, tree: Tree, code: &String) -> Vec<Document> {
         let mut chunks = Vec::new();
 
