@@ -46,7 +46,7 @@ impl ConversationalRetrieverChain {
             true => {
                 let result = self
                     .condense_question_chain
-                    .call(
+                    .dyn_call(
                         CondenseQuestionPromptBuilder::new()
                             .question(input)
                             .chat_history(history)
@@ -100,7 +100,7 @@ impl Chain for ConversationalRetrieverChain {
 
         let mut output = self
             .combine_documents_chain
-            .call(
+            .dyn_call(
                 StuffQAPromptBuilder::new()
                     .documents(&documents)
                     .question(question.clone())
@@ -171,7 +171,7 @@ impl Chain for ConversationalRetrieverChain {
 
         let stream = self
             .combine_documents_chain
-            .stream(
+            .dyn_stream(
                 StuffQAPromptBuilder::new()
                     .documents(&documents)
                     .question(question.clone())

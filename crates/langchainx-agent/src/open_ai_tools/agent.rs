@@ -74,7 +74,7 @@ impl Agent for OpenAiToolAgent {
         let mut inputs = inputs.clone();
         let scratchpad = self.construct_scratchpad(intermediate_steps)?;
         inputs.insert("agent_scratchpad".to_string(), json!(scratchpad));
-        let output = self.chain.call(inputs).await?.generation;
+        let output = self.chain.dyn_call(inputs).await?.generation;
         match serde_json::from_str::<Vec<FunctionCallResponse>>(&output) {
             Ok(tools) => {
                 let mut actions: Vec<AgentAction> = Vec::new();

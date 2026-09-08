@@ -52,7 +52,11 @@ impl OpenAiToolAgentBuilder {
         let functions = tools
             .iter()
             .map(|tool| {
-                FunctionDefinition::new(&tool.name(), &tool.description(), tool.parameters())
+                FunctionDefinition::new(
+                    &tool.dyn_name(),
+                    &tool.dyn_description(),
+                    tool.dyn_parameters(),
+                )
             })
             .collect::<Vec<FunctionDefinition>>();
         llm.add_options(CallOptions::new().with_functions(functions));

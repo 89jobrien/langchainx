@@ -225,68 +225,70 @@ pub trait Chain: Sync + Send {
 pub type BoxChainFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
 pub trait DynChain: Sync + Send {
-    fn call(
+    fn dyn_call(
         &self,
         input_variables: PromptArgs,
     ) -> BoxChainFuture<'_, Result<GenerateResult, ChainError>>;
-    fn invoke(&self, input_variables: PromptArgs)
-    -> BoxChainFuture<'_, Result<String, ChainError>>;
-    fn execute(
+    fn dyn_invoke(
+        &self,
+        input_variables: PromptArgs,
+    ) -> BoxChainFuture<'_, Result<String, ChainError>>;
+    fn dyn_execute(
         &self,
         input_variables: PromptArgs,
     ) -> BoxChainFuture<'_, Result<HashMap<String, Value>, ChainError>>;
-    fn stream(
+    fn dyn_stream(
         &self,
         input_variables: PromptArgs,
     ) -> BoxChainFuture<'_, Result<ChainStream, ChainError>>;
-    fn required_keys(&self) -> Vec<String>;
-    fn validate_input(&self, input_variables: &PromptArgs) -> Result<(), ChainError>;
-    fn get_input_keys(&self) -> Vec<String>;
-    fn get_output_keys(&self) -> Vec<String>;
+    fn dyn_required_keys(&self) -> Vec<String>;
+    fn dyn_validate_input(&self, input_variables: &PromptArgs) -> Result<(), ChainError>;
+    fn dyn_get_input_keys(&self) -> Vec<String>;
+    fn dyn_get_output_keys(&self) -> Vec<String>;
 }
 
 impl<C: Chain> DynChain for C {
-    fn call(
+    fn dyn_call(
         &self,
         input_variables: PromptArgs,
     ) -> BoxChainFuture<'_, Result<GenerateResult, ChainError>> {
         Box::pin(Chain::call(self, input_variables))
     }
 
-    fn invoke(
+    fn dyn_invoke(
         &self,
         input_variables: PromptArgs,
     ) -> BoxChainFuture<'_, Result<String, ChainError>> {
         Box::pin(Chain::invoke(self, input_variables))
     }
 
-    fn execute(
+    fn dyn_execute(
         &self,
         input_variables: PromptArgs,
     ) -> BoxChainFuture<'_, Result<HashMap<String, Value>, ChainError>> {
         Box::pin(Chain::execute(self, input_variables))
     }
 
-    fn stream(
+    fn dyn_stream(
         &self,
         input_variables: PromptArgs,
     ) -> BoxChainFuture<'_, Result<ChainStream, ChainError>> {
         Box::pin(Chain::stream(self, input_variables))
     }
 
-    fn required_keys(&self) -> Vec<String> {
+    fn dyn_required_keys(&self) -> Vec<String> {
         Chain::required_keys(self)
     }
 
-    fn validate_input(&self, input_variables: &PromptArgs) -> Result<(), ChainError> {
+    fn dyn_validate_input(&self, input_variables: &PromptArgs) -> Result<(), ChainError> {
         Chain::validate_input(self, input_variables)
     }
 
-    fn get_input_keys(&self) -> Vec<String> {
+    fn dyn_get_input_keys(&self) -> Vec<String> {
         Chain::get_input_keys(self)
     }
 
-    fn get_output_keys(&self) -> Vec<String> {
+    fn dyn_get_output_keys(&self) -> Vec<String> {
         Chain::get_output_keys(self)
     }
 }

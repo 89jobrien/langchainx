@@ -173,6 +173,10 @@ tree-sitter = [
 name = "e2e_local_llm"
 required-features = ["ollama"]
 
+[[bench]]
+name = "dispatch_allocations"
+harness = false
+
 [dev-dependencies]
 base64 = "0.22.1"
 serial_test = "3.4.0"

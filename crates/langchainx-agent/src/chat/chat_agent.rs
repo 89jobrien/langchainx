@@ -42,12 +42,12 @@ impl ConversationalAgent {
     ) -> Result<MessageFormatterStruct, AgentError> {
         let tool_string = tools
             .iter()
-            .map(|tool| format!("> {}: {}", tool.name(), tool.description()))
+            .map(|tool| format!("> {}: {}", tool.dyn_name(), tool.dyn_description()))
             .collect::<Vec<_>>()
             .join("\n");
         let tool_names = tools
             .iter()
-            .map(|tool| tool.name())
+            .map(|tool| tool.dyn_name())
             .collect::<Vec<_>>()
             .join(", ");
 
@@ -100,7 +100,7 @@ impl Agent for ConversationalAgent {
         let scratchpad = self.construct_scratchpad(intermediate_steps)?;
         let mut inputs = inputs.clone();
         inputs.insert("agent_scratchpad".to_string(), json!(scratchpad));
-        let output = self.chain.call(inputs.clone()).await?.generation;
+        let output = self.chain.dyn_call(inputs.clone()).await?.generation;
         let parsed_output = self.output_parser.parse(&output)?;
         Ok(parsed_output)
     }

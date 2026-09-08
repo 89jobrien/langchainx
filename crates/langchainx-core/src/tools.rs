@@ -59,36 +59,36 @@ pub trait Tool: Send + Sync {
 pub type BoxToolFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
 pub trait DynTool: Send + Sync {
-    fn name(&self) -> String;
-    fn description(&self) -> String;
-    fn parameters(&self) -> Value;
-    fn call<'a>(&'a self, input: &'a str) -> BoxToolFuture<'a, Result<String, ToolError>>;
-    fn run(&self, input: Value) -> BoxToolFuture<'_, Result<String, ToolError>>;
-    fn parse_input<'a>(&'a self, input: &'a str) -> BoxToolFuture<'a, Value>;
+    fn dyn_name(&self) -> String;
+    fn dyn_description(&self) -> String;
+    fn dyn_parameters(&self) -> Value;
+    fn dyn_call<'a>(&'a self, input: &'a str) -> BoxToolFuture<'a, Result<String, ToolError>>;
+    fn dyn_run(&self, input: Value) -> BoxToolFuture<'_, Result<String, ToolError>>;
+    fn dyn_parse_input<'a>(&'a self, input: &'a str) -> BoxToolFuture<'a, Value>;
 }
 
 impl<T: Tool> DynTool for T {
-    fn name(&self) -> String {
+    fn dyn_name(&self) -> String {
         Tool::name(self)
     }
 
-    fn description(&self) -> String {
+    fn dyn_description(&self) -> String {
         Tool::description(self)
     }
 
-    fn parameters(&self) -> Value {
+    fn dyn_parameters(&self) -> Value {
         Tool::parameters(self)
     }
 
-    fn call<'a>(&'a self, input: &'a str) -> BoxToolFuture<'a, Result<String, ToolError>> {
+    fn dyn_call<'a>(&'a self, input: &'a str) -> BoxToolFuture<'a, Result<String, ToolError>> {
         Box::pin(Tool::call(self, input))
     }
 
-    fn run(&self, input: Value) -> BoxToolFuture<'_, Result<String, ToolError>> {
+    fn dyn_run(&self, input: Value) -> BoxToolFuture<'_, Result<String, ToolError>> {
         Box::pin(Tool::run(self, input))
     }
 
-    fn parse_input<'a>(&'a self, input: &'a str) -> BoxToolFuture<'a, Value> {
+    fn dyn_parse_input<'a>(&'a self, input: &'a str) -> BoxToolFuture<'a, Value> {
         Box::pin(Tool::parse_input(self, input))
     }
 }

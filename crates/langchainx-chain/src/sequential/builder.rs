@@ -22,13 +22,13 @@ impl SequentialChainBuilder {
         let outputs: HashSet<String> = self
             .chains
             .iter()
-            .flat_map(|c| c.get_output_keys())
+            .flat_map(|c| c.dyn_get_output_keys())
             .collect();
 
         let input_keys: HashSet<String> = self
             .chains
             .iter()
-            .flat_map(|c| c.get_input_keys())
+            .flat_map(|c| c.dyn_get_input_keys())
             .collect();
 
         SequentialChain {

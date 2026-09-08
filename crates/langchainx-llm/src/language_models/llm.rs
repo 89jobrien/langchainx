@@ -43,43 +43,43 @@ pub trait LLM: Sync + Send {
 pub type BoxLLMFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
 pub trait DynLLM: Sync + Send {
-    fn generate<'a>(
+    fn dyn_generate<'a>(
         &'a self,
         messages: &'a [Message],
     ) -> BoxLLMFuture<'a, Result<GenerateResult, LLMError>>;
-    fn invoke<'a>(&'a self, prompt: &'a str) -> BoxLLMFuture<'a, Result<String, LLMError>>;
-    fn stream<'a>(
+    fn dyn_invoke<'a>(&'a self, prompt: &'a str) -> BoxLLMFuture<'a, Result<String, LLMError>>;
+    fn dyn_stream<'a>(
         &'a self,
         messages: &'a [Message],
     ) -> BoxLLMFuture<'a, Result<LLMStream, LLMError>>;
-    fn add_options(&mut self, options: CallOptions);
-    fn messages_to_string(&self, messages: &[Message]) -> String;
+    fn dyn_add_options(&mut self, options: CallOptions);
+    fn dyn_messages_to_string(&self, messages: &[Message]) -> String;
 }
 
 impl<L: LLM> DynLLM for L {
-    fn generate<'a>(
+    fn dyn_generate<'a>(
         &'a self,
         messages: &'a [Message],
     ) -> BoxLLMFuture<'a, Result<GenerateResult, LLMError>> {
         Box::pin(LLM::generate(self, messages))
     }
 
-    fn invoke<'a>(&'a self, prompt: &'a str) -> BoxLLMFuture<'a, Result<String, LLMError>> {
+    fn dyn_invoke<'a>(&'a self, prompt: &'a str) -> BoxLLMFuture<'a, Result<String, LLMError>> {
         Box::pin(LLM::invoke(self, prompt))
     }
 
-    fn stream<'a>(
+    fn dyn_stream<'a>(
         &'a self,
         messages: &'a [Message],
     ) -> BoxLLMFuture<'a, Result<LLMStream, LLMError>> {
         Box::pin(LLM::stream(self, messages))
     }
 
-    fn add_options(&mut self, options: CallOptions) {
+    fn dyn_add_options(&mut self, options: CallOptions) {
         LLM::add_options(self, options);
     }
 
-    fn messages_to_string(&self, messages: &[Message]) -> String {
+    fn dyn_messages_to_string(&self, messages: &[Message]) -> String {
         LLM::messages_to_string(self, messages)
     }
 }

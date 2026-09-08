@@ -1,11 +1,15 @@
 use std::sync::Arc;
 
+use futures::StreamExt;
 use langchainx::{
-    chain::{Chain, ChainError},
-    language_models::{GenerateResult, LLMError, llm::LLM},
+    chain::{Chain, ChainError, DynChain},
+    language_models::{
+        GenerateResult, LLMError,
+        llm::{DynLLM, LLM},
+    },
     prompt::PromptArgs,
-    schemas::Message,
-    tools::{Tool, ToolError},
+    schemas::{Message, StreamData},
+    tools::{DynTool, Tool, ToolError},
 };
 use serde_json::Value;
 
@@ -31,7 +35,9 @@ impl LLM for NativeLlm {
         >,
         LLMError,
     > {
-        Ok(Box::pin(futures::stream::empty()))
+        Ok(Box::pin(futures::stream::once(async {
+            Ok(StreamData::new(Value::Null, None, "llm stream"))
+        })))
     }
 }
 
@@ -43,6 +49,15 @@ impl Chain for NativeChain {
             generation: "native chain".to_string(),
             ..Default::default()
         })
+    }
+
+    async fn stream(
+        &self,
+        _input: PromptArgs,
+    ) -> Result<langchainx::chain::ChainStream, ChainError> {
+        Ok(Box::pin(futures::stream::once(async {
+            Ok(StreamData::new(Value::Null, None, "chain stream"))
+        })))
     }
 }
 
@@ -80,14 +95,61 @@ async fn hot_path_traits_accept_native_async_implementations() {
 
 #[tokio::test]
 async fn dynamic_boundaries_box_only_object_safe_calls() {
-    let llm: Arc<dyn langchainx::language_models::llm::DynLLM> = Arc::new(NativeLlm);
-    let chain: Box<dyn langchainx::chain::DynChain> = Box::new(NativeChain);
-    let tool: Arc<dyn langchainx::tools::DynTool> = Arc::new(NativeTool);
+    let mut llm: Box<dyn DynLLM> = Box::new(NativeLlm);
+    let chain: Box<dyn DynChain> = Box::new(NativeChain);
+    let tool: Arc<dyn DynTool> = Arc::new(NativeTool);
 
-    assert_eq!(llm.invoke("hello").await.unwrap(), "native llm");
+    llm.dyn_add_options(Default::default());
     assert_eq!(
-        chain.invoke(PromptArgs::new()).await.unwrap(),
+        llm.dyn_messages_to_string(&[Message::new_human_message("hello")]),
+        "HumanMessage: hello"
+    );
+    assert_eq!(
+        llm.dyn_generate(&[]).await.unwrap().generation,
+        "native llm"
+    );
+    let mut llm_stream = llm.dyn_stream(&[]).await.unwrap();
+    assert_eq!(
+        llm_stream.next().await.unwrap().unwrap().content,
+        "llm stream"
+    );
+    assert_eq!(llm.dyn_invoke("hello").await.unwrap(), "native llm");
+
+    assert_eq!(
+        chain.dyn_call(PromptArgs::new()).await.unwrap().generation,
         "native chain"
     );
-    assert_eq!(tool.call("hello").await.unwrap(), "\"hello\"");
+    let output = chain.dyn_execute(PromptArgs::new()).await.unwrap();
+    assert_eq!(output["output"], Value::String("native chain".to_string()));
+    let mut chain_stream = chain.dyn_stream(PromptArgs::new()).await.unwrap();
+    assert_eq!(
+        chain_stream.next().await.unwrap().unwrap().content,
+        "chain stream"
+    );
+    assert_eq!(
+        chain.dyn_invoke(PromptArgs::new()).await.unwrap(),
+        "native chain"
+    );
+    assert!(chain.dyn_required_keys().is_empty());
+    assert!(chain.dyn_validate_input(&PromptArgs::new()).is_ok());
+    assert!(chain.dyn_get_input_keys().is_empty());
+    assert_eq!(chain.dyn_get_output_keys()[0], "output");
+
+    assert_eq!(tool.dyn_name(), "native_tool");
+    assert_eq!(
+        tool.dyn_description(),
+        "Exercises native async trait dispatch"
+    );
+    assert_eq!(tool.dyn_parameters()["type"], "object");
+    assert_eq!(
+        tool.dyn_run(Value::String("direct".to_string()))
+            .await
+            .unwrap(),
+        "\"direct\""
+    );
+    assert_eq!(
+        tool.dyn_parse_input(r#"{"input":"parsed"}"#).await,
+        Value::String("parsed".to_string())
+    );
+    assert_eq!(tool.dyn_call("hello").await.unwrap(), "\"hello\"");
 }

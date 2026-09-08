@@ -61,8 +61,8 @@ where
     fn get_name_to_tools(&self) -> HashMap<String, Arc<dyn DynTool>> {
         let mut name_to_tool = HashMap::new();
         for tool in self.agent.get_tools().iter() {
-            log::debug!("Loading Tool:{}", tool.name());
-            name_to_tool.insert(tool.name().trim().replace(" ", "_"), tool.clone());
+            log::debug!("Loading Tool:{}", tool.dyn_name());
+            name_to_tool.insert(tool.dyn_name().trim().replace(" ", "_"), tool.clone());
         }
         name_to_tool
     }
@@ -104,7 +104,7 @@ where
                             })
                             .map_err(|e| ChainError::AgentError(e.to_string()))?;
 
-                        let observation_result = tool.call(&action.tool_input).await;
+                        let observation_result = tool.dyn_call(&action.tool_input).await;
 
                         let observation = match observation_result {
                             Ok(result) => result,

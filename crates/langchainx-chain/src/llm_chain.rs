@@ -71,7 +71,7 @@ impl LLMChainBuilder {
         if let Some(options) = self.options {
             let llm_options = ChainCallOptions::to_llm_options(options);
             if let Some(llm_mut) = Arc::get_mut(&mut llm) {
-                llm_mut.add_options(llm_options);
+                llm_mut.dyn_add_options(llm_options);
             } else {
                 log::warn!(
                     "LLMChain: Arc<dyn DynLLM> is shared; chain-level options were not applied. \
@@ -117,7 +117,7 @@ impl Chain for LLMChain {
         self.validate_input(&input_variables)?;
         let prompt = self.prompt.format_prompt(input_variables.clone())?;
         log::debug!("Prompt: {:?}", prompt);
-        let mut output = self.llm.generate(&prompt.to_chat_messages()).await?;
+        let mut output = self.llm.dyn_generate(&prompt.to_chat_messages()).await?;
         output.generation = self.output_parser.parse(&output.generation).await?;
 
         Ok(output)
@@ -129,7 +129,7 @@ impl Chain for LLMChain {
         log::debug!("Prompt: {:?}", prompt);
         let output = self
             .llm
-            .generate(&prompt.to_chat_messages())
+            .dyn_generate(&prompt.to_chat_messages())
             .await?
             .generation;
         Ok(output)
@@ -142,7 +142,7 @@ impl Chain for LLMChain {
     {
         let prompt = self.prompt.format_prompt(input_variables.clone())?;
         log::debug!("Prompt: {:?}", prompt);
-        let llm_stream = self.llm.stream(&prompt.to_chat_messages()).await?;
+        let llm_stream = self.llm.dyn_stream(&prompt.to_chat_messages()).await?;
 
         // Map the errors from LLMError to ChainError
         let mapped_stream = llm_stream.map_err(ChainError::from);

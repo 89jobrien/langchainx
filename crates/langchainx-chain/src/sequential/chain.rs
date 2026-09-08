@@ -43,10 +43,10 @@ impl Chain for SequentialChain {
         let mut output_result = HashMap::new();
         let mut final_result = GenerateResult::default();
         for chain in self.chains.iter() {
-            let output = chain.execute(input_variables.clone()).await?;
+            let output = chain.dyn_execute(input_variables.clone()).await?;
             //Get the oput key for the chain result
             let output_key = chain
-                .get_output_keys()
+                .dyn_get_output_keys()
                 .first()
                 .unwrap_or(&DEFAULT_OUTPUT_KEY.to_string())
                 .clone();
